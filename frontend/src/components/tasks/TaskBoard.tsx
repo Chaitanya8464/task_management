@@ -1,7 +1,11 @@
 import TaskColumn from "./TaskColumn";
-import { tasks } from "./task-data";
+import { Task } from "./TaskCard";
 
-export default function TaskBoard() {
+interface TaskBoardProps {
+  tasks: Task[];
+}
+
+export default function TaskBoard({ tasks }: TaskBoardProps) {
   const todo = tasks.filter((task) => task.status === "To Do");
   const doing = tasks.filter((task) => task.status === "Doing");
   const completed = tasks.filter(
