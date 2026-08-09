@@ -10,6 +10,10 @@ import {
   LayoutGrid,
 } from "lucide-react";
 
+import TaskFilters, {
+  TaskFilterState,
+} from "@/components/tasks/TaskFilters";
+
 import AppShell from "@/components/layout/AppShell";
 import TaskBoard from "@/components/tasks/TaskBoard";
 import TaskList from "@/components/tasks/TaskList";
@@ -18,22 +22,41 @@ import { tasks } from "@/components/tasks/task-data";
 export default function TasksPage() {
   const [view, setView] = useState<"board" | "list">("board");
   const [search, setSearch] = useState("");
-
+  const [filters, setFilters] = useState<TaskFilterState>({
+    status: "All",
+    priority: "All",
+    assignee: "All",
+    });
   const filteredTasks = tasks.filter((task) => {
-    const query = search.toLowerCase().trim();
+  const query = search.toLowerCase().trim();
 
-    if (!query) {
-      return true;
-    }
+  const matchesSearch =
+    !query ||
+    task.title.toLowerCase().includes(query) ||
+    task.description?.toLowerCase().includes(query) ||
+    task.assignee.toLowerCase().includes(query) ||
+    task.priority.toLowerCase().includes(query) ||
+    task.status.toLowerCase().includes(query);
 
-    return (
-      task.title.toLowerCase().includes(query) ||
-      task.description?.toLowerCase().includes(query) ||
-      task.assignee.toLowerCase().includes(query) ||
-      task.priority.toLowerCase().includes(query) ||
-      task.status.toLowerCase().includes(query)
-    );
-  });
+  const matchesStatus =
+    filters.status === "All" ||
+    task.status === filters.status;
+
+  const matchesPriority =
+    filters.priority === "All" ||
+    task.priority === filters.priority;
+
+  const matchesAssignee =
+    filters.assignee === "All" ||
+    task.assignee === filters.assignee;
+
+  return (
+    matchesSearch &&
+    matchesStatus &&
+    matchesPriority &&
+    matchesAssignee
+  );
+});
 
   return (
     <AppShell>
@@ -76,13 +99,10 @@ export default function TasksPage() {
             </div>
 
             {/* Filter */}
-            <button
-              type="button"
-              className="flex h-9 items-center gap-2 rounded-md border border-zinc-200 px-3 text-xs text-zinc-600 hover:bg-zinc-50"
-            >
-              <Filter className="h-3.5 w-3.5" />
-              Filter
-            </button>
+          <TaskFilters
+  filters={filters}
+  onChange={setFilters}
+/>
 
             {/* Fields */}
             <button
