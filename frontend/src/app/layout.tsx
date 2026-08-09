@@ -8,7 +8,7 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: "TaskFlow",
-  description: "A modern task management application",
+  description: "Task management application",
 };
 
 export default function RootLayout({
