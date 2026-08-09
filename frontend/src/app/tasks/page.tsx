@@ -10,11 +10,13 @@ import {
 } from "lucide-react";
 import AppShell from "@/components/layout/AppShell";
 import TaskBoard from "@/components/tasks/TaskBoard";
-import { useState } from "react";
+
+import TaskList from "@/components/tasks/TaskList";
+import { tasks } from "@/components/tasks/task-data";import { useState } from "react";
 
 export default function TasksPage() {
   const [view, setView] = useState<"board" | "list">("board");
-
+    
   return (
     <AppShell>
       <div className="flex min-h-screen flex-col">
@@ -64,23 +66,41 @@ export default function TasksPage() {
           </div>
 
           {/* View switcher */}
-          <div className="flex items-center rounded-md border border-zinc-200 p-1">
-            <button className="flex items-center gap-1 rounded bg-zinc-100 px-2.5 py-1.5 text-[10px] font-medium text-zinc-800">
-              <LayoutGrid className="h-3 w-3" />
-              Board
-            </button>
+       <div className="flex items-center rounded-md border border-zinc-200 p-1">
+  <button
+    onClick={() => setView("board")}
+    className={`flex items-center gap-1 rounded px-2.5 py-1.5 text-[10px] font-medium transition ${
+      view === "board"
+        ? "bg-zinc-100 text-zinc-800"
+        : "text-zinc-500 hover:bg-zinc-50"
+    }`}
+  >
+    <LayoutGrid className="h-3 w-3" />
+    Board
+  </button>
 
-            <button className="flex items-center gap-1 rounded px-2.5 py-1.5 text-[10px] text-zinc-500 hover:bg-zinc-50">
-              <List className="h-3 w-3" />
-              List
-            </button>
-          </div>
+  <button
+    onClick={() => setView("list")}
+    className={`flex items-center gap-1 rounded px-2.5 py-1.5 text-[10px] font-medium transition ${
+      view === "list"
+        ? "bg-zinc-100 text-zinc-800"
+        : "text-zinc-500 hover:bg-zinc-50"
+    }`}
+  >
+    <List className="h-3 w-3" />
+    List
+  </button>
+</div>
         </div>
 
         {/* Board */}
         <div className="flex-1 overflow-hidden p-4 sm:p-6">
-          <TaskBoard />
-        </div>
+  {view === "board" ? (
+    <TaskBoard />
+  ) : (
+    <TaskList tasks={tasks} />
+  )}
+</div>
       </div>
     </AppShell>
   );
