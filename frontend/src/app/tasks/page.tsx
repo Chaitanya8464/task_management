@@ -10,8 +10,11 @@ import {
 } from "lucide-react";
 import AppShell from "@/components/layout/AppShell";
 import TaskBoard from "@/components/tasks/TaskBoard";
+import { useState } from "react";
 
 export default function TasksPage() {
+  const [view, setView] = useState<"board" | "list">("board");
+
   return (
     <AppShell>
       <div className="flex min-h-screen flex-col">
