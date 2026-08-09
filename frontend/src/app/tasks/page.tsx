@@ -10,6 +10,10 @@ import {
   LayoutGrid,
 } from "lucide-react";
 
+import FieldsMenu, {
+  TaskFields,
+} from "@/components/tasks/FieldsMenu";
+
 import TaskFilters, {
   TaskFilterState,
 } from "@/components/tasks/TaskFilters";
@@ -27,6 +31,12 @@ export default function TasksPage() {
     priority: "All",
     assignee: "All",
     });
+    const [fields, setFields] = useState<TaskFields>({
+  priority: true,
+  members: true,
+  dueDate: true,
+  comments: true,
+});
   const filteredTasks = tasks.filter((task) => {
   const query = search.toLowerCase().trim();
 
@@ -105,13 +115,10 @@ export default function TasksPage() {
 />
 
             {/* Fields */}
-            <button
-              type="button"
-              className="hidden h-9 items-center gap-2 rounded-md border border-zinc-200 px-3 text-xs text-zinc-600 hover:bg-zinc-50 sm:flex"
-            >
-              <SlidersHorizontal className="h-3.5 w-3.5" />
-              Fields
-            </button>
+            <FieldsMenu
+  fields={fields}
+  onChange={setFields}
+/>
           </div>
 
           {/* View switcher */}
@@ -161,7 +168,10 @@ export default function TasksPage() {
           ) : view === "board" ? (
             <TaskBoard tasks={filteredTasks} />
           ) : (
-            <TaskList tasks={filteredTasks} />
+            <TaskList
+  tasks={filteredTasks}
+  fields={fields}
+/>
           )}
         </div>
       </div>

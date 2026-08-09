@@ -1,8 +1,15 @@
-import { CalendarDays, MessageCircle, User } from "lucide-react";
+import {
+  CalendarDays,
+  MessageCircle,
+  User,
+} from "lucide-react";
+
 import { Task } from "./TaskCard";
+import { TaskFields } from "./FieldsMenu";
 
 interface TaskListProps {
   tasks: Task[];
+  fields: TaskFields;
 }
 
 const priorityStyles = {
@@ -19,18 +26,21 @@ const statusGroups: Task["status"][] = [
   "Completed",
 ];
 
-export default function TaskList({ tasks }: TaskListProps) {
+export default function TaskList({
+  tasks,
+  fields,
+}: TaskListProps) {
   return (
     <div className="overflow-x-auto">
       <div className="min-w-[700px]">
         {statusGroups.map((status) => {
           const statusTasks = tasks.filter(
-            (task) => task.status === status,
+            (task) => task.status === status
           );
 
           return (
             <section key={status} className="mb-6">
-              {/* Group header */}
+              {/* Group Header */}
               <div className="mb-2 flex items-center gap-2">
                 <span
                   className={`h-2 w-2 rounded-full ${
@@ -53,33 +63,60 @@ export default function TaskList({ tasks }: TaskListProps) {
 
               {/* Table */}
               <div className="overflow-hidden rounded-lg border border-zinc-200">
-                {/* Header */}
-                <div className="grid grid-cols-[minmax(220px,1fr)_120px_150px_130px] border-b border-zinc-200 bg-zinc-50 px-4 py-2.5">
-                  <span className="text-[10px] font-medium text-zinc-400">
-                    Task
-                  </span>
+                {/* Table Header */}
+                <div className="flex items-center border-b border-zinc-200 bg-zinc-50 px-4 py-2.5">
+                  {/* Task */}
+                  <div className="min-w-[260px] flex-1">
+                    <span className="text-[10px] font-medium text-zinc-400">
+                      Task
+                    </span>
+                  </div>
 
-                  <span className="text-[10px] font-medium text-zinc-400">
-                    Priority
-                  </span>
+                  {/* Priority */}
+                  {fields.priority && (
+                    <div className="w-[120px]">
+                      <span className="text-[10px] font-medium text-zinc-400">
+                        Priority
+                      </span>
+                    </div>
+                  )}
 
-                  <span className="text-[10px] font-medium text-zinc-400">
-                    Members
-                  </span>
+                  {/* Members */}
+                  {fields.members && (
+                    <div className="w-[150px]">
+                      <span className="text-[10px] font-medium text-zinc-400">
+                        Members
+                      </span>
+                    </div>
+                  )}
 
-                  <span className="text-[10px] font-medium text-zinc-400">
-                    Due Date
-                  </span>
+                  {/* Due Date */}
+                  {fields.dueDate && (
+                    <div className="w-[130px]">
+                      <span className="text-[10px] font-medium text-zinc-400">
+                        Due Date
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Comments */}
+                  {fields.comments && (
+                    <div className="w-[80px]">
+                      <span className="text-[10px] font-medium text-zinc-400">
+                        Comments
+                      </span>
+                    </div>
+                  )}
                 </div>
 
-                {/* Rows */}
+                {/* Task Rows */}
                 {statusTasks.map((task) => (
                   <div
                     key={task.id}
-                    className="grid grid-cols-[minmax(220px,1fr)_120px_150px_130px] items-center border-b border-zinc-100 px-4 py-3 last:border-b-0 hover:bg-zinc-50"
+                    className="flex items-center border-b border-zinc-100 px-4 py-3 last:border-b-0 hover:bg-zinc-50"
                   >
                     {/* Task */}
-                    <div className="min-w-0">
+                    <div className="min-w-[260px] flex-1">
                       <p className="truncate text-xs font-medium text-zinc-800">
                         {task.title}
                       </p>
@@ -92,38 +129,50 @@ export default function TaskList({ tasks }: TaskListProps) {
                     </div>
 
                     {/* Priority */}
-                    <div>
-                      <span
-                        className={`rounded-md px-2 py-1 text-[10px] font-medium ${
-                          priorityStyles[task.priority]
-                        }`}
-                      >
-                        {task.priority}
-                      </span>
-                    </div>
+                    {fields.priority && (
+                      <div className="w-[120px]">
+                        <span
+                          className={`rounded-md px-2 py-1 text-[10px] font-medium ${
+                            priorityStyles[task.priority]
+                          }`}
+                        >
+                          {task.priority}
+                        </span>
+                      </div>
+                    )}
 
                     {/* Member */}
-                    <div className="flex items-center gap-2">
-                      <div className="flex h-6 w-6 items-center justify-center rounded-full bg-zinc-100">
-                        <User className="h-3 w-3 text-zinc-500" />
+                    {fields.members && (
+                      <div className="flex w-[150px] items-center gap-2">
+                        <div className="flex h-6 w-6 items-center justify-center rounded-full bg-zinc-100">
+                          <User className="h-3 w-3 text-zinc-500" />
+                        </div>
+
+                        <span className="truncate text-[10px] text-zinc-500">
+                          {task.assignee}
+                        </span>
                       </div>
+                    )}
 
-                      <span className="text-[10px] text-zinc-500">
-                        {task.assignee}
-                      </span>
-                    </div>
+                    {/* Due Date */}
+                    {fields.dueDate && (
+                      <div className="flex w-[130px] items-center gap-2 text-[10px] text-zinc-400">
+                        <CalendarDays className="h-3 w-3" />
+                        {task.dueDate}
+                      </div>
+                    )}
 
-                    {/* Due date */}
-                    <div className="flex items-center gap-2 text-[10px] text-zinc-400">
-                      <CalendarDays className="h-3 w-3" />
-                      {task.dueDate}
-
-                      <MessageCircle className="ml-2 h-3 w-3" />
-                      {task.comments}
-                    </div>
+                    {/* Comments */}
+                    {fields.comments && (
+                      <div className="flex w-[80px] items-center gap-2 text-[10px] text-zinc-400">
+                        <MessageCircle className="h-3 w-3" />
+                        {task.comments}
+                      </div>
+                    )}
                   </div>
                 ))}
 
+                {/* Empty State */}
                 {statusTasks.length === 0 && (
                   <div className="px-4 py-6 text-center text-xs text-zinc-400">
                     No tasks
