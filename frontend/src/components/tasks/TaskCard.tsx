@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import {
   CalendarDays,
   MessageCircle,
@@ -30,14 +32,25 @@ const priorityStyles = {
 
 export default function TaskCard({ task }: TaskCardProps) {
   return (
-    <article className="group rounded-lg border border-zinc-200 bg-white p-3 shadow-sm transition hover:border-zinc-300 hover:shadow">
+    <Link
+      href={`/tasks/${task.id}`}
+      className="group block rounded-lg border border-zinc-200 bg-white p-3 shadow-sm transition hover:border-zinc-300 hover:shadow"
+    >
       {/* Top */}
       <div className="flex items-start justify-between gap-2">
         <h3 className="text-sm font-medium leading-5 text-zinc-900">
           {task.title}
         </h3>
 
-        <button className="shrink-0 rounded-md p-1 text-zinc-400 opacity-0 transition hover:bg-zinc-100 group-hover:opacity-100">
+        <button
+          type="button"
+          onClick={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+          }}
+          className="shrink-0 rounded-md p-1 text-zinc-400 opacity-0 transition hover:bg-zinc-100 group-hover:opacity-100"
+          aria-label="Task options"
+        >
           <MoreHorizontal className="h-4 w-4" />
         </button>
       </div>
@@ -84,6 +97,6 @@ export default function TaskCard({ task }: TaskCardProps) {
           </span>
         </div>
       </div>
-    </article>
+    </Link>
   );
 }
