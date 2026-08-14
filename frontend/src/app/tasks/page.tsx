@@ -14,6 +14,8 @@ import TaskList from "@/components/tasks/TaskList";
 import TaskFilters from "@/components/tasks/TaskFilters";
 import FieldsMenu from "@/components/tasks/FieldsMenu";
 import AddTaskModal from "@/components/tasks/AddTaskModal";
+import EditTaskModal from "@/components/tasks/EditTaskModal";
+import DeleteTaskDialog from "@/components/tasks/DeleteTaskDialog";
 
 import { getTasks, ApiTask } from "@/lib/api";
 import { Task } from "@/components/tasks/TaskCard";
@@ -55,61 +57,72 @@ function mapApiTaskToUiTask(task: ApiTask): Task {
   return {
     id: task.id,
     title: task.title,
-    description: task.description ?? undefined,
+    description:
+      task.description ?? undefined,
     priority: mapTaskPriority(task.priority),
     status: mapTaskStatus(task.status),
-    assignee: task.assignee?.name ?? "Unassigned",
+    assignee:
+      task.assignee?.name ?? "Unassigned",
     dueDate: task.dueDate
-      ? new Date(task.dueDate).toLocaleDateString()
+      ? new Date(
+          task.dueDate,
+        ).toLocaleDateString()
       : "No due date",
-    comments: task.comments?.length ?? 0,
+    comments:
+      task.comments?.length ?? 0,
   };
 }
 
 export default function TasksPage() {
   // -----------------------------
-  // Task state
+  // Tasks
   // -----------------------------
 
-  const [taskList, setTaskList] = useState<Task[]>([]);
+  const [taskList, setTaskList] =
+    useState<Task[]>([]);
 
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] =
+    useState(true);
 
-  const [error, setError] = useState("");
+  const [error, setError] =
+    useState("");
 
   // -----------------------------
-  // View state
+  // View
   // -----------------------------
 
   const [view, setView] =
     useState<"board" | "list">("board");
 
   // -----------------------------
-  // Search state
+  // Search
   // -----------------------------
 
-  const [search, setSearch] = useState("");
+  const [search, setSearch] =
+    useState("");
 
   // -----------------------------
-  // Filter state
+  // Filters
   // -----------------------------
 
-  const [filters, setFilters] = useState({
-    status: "All",
-    priority: "All",
-    assignee: "All",
-  });
+  const [filters, setFilters] =
+    useState({
+      status: "All",
+      priority: "All",
+      assignee: "All",
+    });
 
   // -----------------------------
-  // Fields state
+  // Fields
   // -----------------------------
 
-  const [fields, setFields] = useState({
-    priority: true,
-    members: true,
-    dueDate: true,
-    comments: true,
-  });
+  const [fields, setFields] =
+    useState({
+      priority: true,
+      members: true,
+      dueDate: true,
+      comments: true,
+    });
 
   // -----------------------------
   // Add task modal
@@ -119,7 +132,15 @@ export default function TasksPage() {
     useState(false);
 
   // -----------------------------
-  // Load tasks from API
+  // Edit task modal
+  // -----------------------------
+
+  const [editingTask, setEditingTask] =
+    useState<Task | null>(null);
+  const [deletingTask, setDeletingTask] =
+    useState<Task | null>(null);
+  // -----------------------------
+  // Load tasks
   // -----------------------------
 
   useEffect(() => {
@@ -130,11 +151,9 @@ export default function TasksPage() {
 
         const data = await getTasks();
 
-        const mappedTasks = data.map(
-          mapApiTaskToUiTask,
+        setTaskList(
+          data.map(mapApiTaskToUiTask),
         );
-
-        setTaskList(mappedTasks);
       } catch (error) {
         console.error(
           "Failed to load tasks:",
@@ -165,55 +184,99 @@ export default function TasksPage() {
     setIsAddTaskOpen(false);
   };
 
+
+  // -----------------------------
+  // Open edit modal
+  // -----------------------------
+
+  const handleEditTask = (task: Task) => {
+    setEditingTask(task);
+  };
+
+  const handleDeleteTask = (task: Task) => {
+  setDeletingTask(task);
+  };
+
+  const handleDeletedTask = (
+    taskId: string,
+    ) => {
+    setTaskList((currentTasks) =>
+        currentTasks.filter(
+        (task) => task.id !== taskId,
+        ),
+    );
+
+    setDeletingTask(null);
+    };
+
+  // -----------------------------
+  // Update task in UI
+  // -----------------------------
+
+  const handleUpdatedTask = (
+    updatedTask: Task,
+  ) => {
+    setTaskList((currentTasks) =>
+      currentTasks.map((task) =>
+        task.id === updatedTask.id
+          ? updatedTask
+          : task,
+      ),
+    );
+
+    setEditingTask(null);
+  };
+
   // -----------------------------
   // Search + Filters
   // -----------------------------
 
-  const filteredTasks = taskList.filter((task) => {
-    const query = search
-      .toLowerCase()
-      .trim();
+  const filteredTasks =
+    taskList.filter((task) => {
+      const query =
+        search.toLowerCase().trim();
 
-    const matchesSearch =
-      !query ||
-      task.title
-        .toLowerCase()
-        .includes(query) ||
-      task.description
-        ?.toLowerCase()
-        .includes(query) ||
-      task.assignee
-        .toLowerCase()
-        .includes(query) ||
-      task.priority
-        .toLowerCase()
-        .includes(query) ||
-      task.status
-        .toLowerCase()
-        .includes(query);
+      const matchesSearch =
+        !query ||
+        task.title
+          .toLowerCase()
+          .includes(query) ||
+        task.description
+          ?.toLowerCase()
+          .includes(query) ||
+        task.assignee
+          .toLowerCase()
+          .includes(query) ||
+        task.priority
+          .toLowerCase()
+          .includes(query) ||
+        task.status
+          .toLowerCase()
+          .includes(query);
 
-    const matchesStatus =
-      filters.status === "All" ||
-      task.status === filters.status;
+      const matchesStatus =
+        filters.status === "All" ||
+        task.status === filters.status;
 
-    const matchesPriority =
-      filters.priority === "All" ||
-      task.priority === filters.priority;
+      const matchesPriority =
+        filters.priority === "All" ||
+        task.priority === filters.priority;
 
-    const matchesAssignee =
-      filters.assignee === "All" ||
-      task.assignee === filters.assignee;
+      const matchesAssignee =
+        filters.assignee === "All" ||
+        task.assignee ===
+          filters.assignee;
 
-    return (
-      matchesSearch &&
-      matchesStatus &&
-      matchesPriority &&
-      matchesAssignee
-    );
-  });
+      return (
+        matchesSearch &&
+        matchesStatus &&
+        matchesPriority &&
+        matchesAssignee
+      );
+    });
 
   // -----------------------------
-  // Loading state
+  // Loading
   // -----------------------------
 
   if (loading) {
@@ -233,7 +296,7 @@ export default function TasksPage() {
   }
 
   // -----------------------------
-  // Error state
+  // Error
   // -----------------------------
 
   if (error) {
@@ -247,7 +310,9 @@ export default function TasksPage() {
 
             <button
               type="button"
-              onClick={() => window.location.reload()}
+              onClick={() =>
+                window.location.reload()
+              }
               className="mt-3 rounded-md bg-black px-3 py-2 text-xs font-medium text-white hover:bg-zinc-800"
             >
               Try again
@@ -261,9 +326,7 @@ export default function TasksPage() {
   return (
     <AppShell>
       <div className="flex min-h-full flex-col">
-        {/* ==============================
-            Header
-        ============================== */}
+        {/* Header */}
 
         <header className="flex min-h-16 items-center justify-between border-b border-zinc-200 px-4 sm:px-6">
           <div>
@@ -284,18 +347,13 @@ export default function TasksPage() {
             className="flex items-center gap-2 rounded-md bg-black px-3 py-2 text-xs font-medium text-white transition hover:bg-zinc-800"
           >
             <Plus className="h-3.5 w-3.5" />
-
             Add Task
           </button>
         </header>
 
-        {/* ==============================
-            Toolbar
-        ============================== */}
+        {/* Toolbar */}
 
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-100 px-4 py-3 sm:px-6">
-          {/* Left controls */}
-
           <div className="flex flex-1 flex-wrap items-center gap-2">
             {/* Search */}
 
@@ -307,20 +365,18 @@ export default function TasksPage() {
                 placeholder="Search tasks..."
                 value={search}
                 onChange={(event) =>
-                  setSearch(event.target.value)
+                  setSearch(
+                    event.target.value,
+                  )
                 }
                 className="h-9 w-full rounded-md border border-zinc-200 bg-white pl-9 pr-3 text-xs outline-none transition placeholder:text-zinc-400 focus:border-zinc-400"
               />
             </div>
 
-            {/* Filters */}
-
             <TaskFilters
               filters={filters}
               onChange={setFilters}
             />
-
-            {/* Fields */}
 
             <FieldsMenu
               fields={fields}
@@ -343,7 +399,6 @@ export default function TasksPage() {
               }`}
             >
               <LayoutGrid className="h-3 w-3" />
-
               Board
             </button>
 
@@ -359,15 +414,12 @@ export default function TasksPage() {
               }`}
             >
               <List className="h-3 w-3" />
-
               List
             </button>
           </div>
         </div>
 
-        {/* ==============================
-            Task content
-        ============================== */}
+        {/* Task content */}
 
         <div className="flex-1 overflow-hidden p-4 sm:p-6">
           {filteredTasks.length === 0 ? (
@@ -383,8 +435,10 @@ export default function TasksPage() {
               </div>
             </div>
           ) : view === "board" ? (
-            <TaskBoard
-              tasks={filteredTasks}
+          <TaskBoard
+                tasks={filteredTasks}
+                onEdit={handleEditTask}
+                onDelete={handleDeleteTask}
             />
           ) : (
             <TaskList
@@ -395,9 +449,7 @@ export default function TasksPage() {
         </div>
       </div>
 
-      {/* ==============================
-          Add Task Modal
-      ============================== */}
+      {/* Add Task */}
 
       <AddTaskModal
         isOpen={isAddTaskOpen}
@@ -406,6 +458,25 @@ export default function TasksPage() {
         }
         onAdd={handleAddTask}
       />
+
+      {/* Edit Task */}
+
+      <EditTaskModal
+        isOpen={editingTask !== null}
+        task={editingTask}
+        onClose={() =>
+          setEditingTask(null)
+        }
+        onUpdated={handleUpdatedTask}
+      />
+      <DeleteTaskDialog
+        isOpen={deletingTask !== null}
+        task={deletingTask}
+        onClose={() =>
+            setDeletingTask(null)
+        }
+  onDeleted={handleDeletedTask}
+/>
     </AppShell>
   );
 }
