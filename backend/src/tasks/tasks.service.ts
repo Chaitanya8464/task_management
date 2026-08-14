@@ -1,0 +1,128 @@
+import {
+  Injectable,
+  NotFoundException,
+} from "@nestjs/common";
+
+import { PrismaService } from "../prisma.service.js";
+import { CreateTaskDto } from "./dto/create-task.dto.js";
+import { UpdateTaskDto } from "./dto/update-task.dto.js";
+
+@Injectable()
+export class TasksService {
+  constructor(
+    private readonly prisma: PrismaService,
+  ) {}
+
+  async create(createTaskDto: CreateTaskDto) {
+    return this.prisma.task.create({
+      data: {
+        title: createTaskDto.title,
+        description: createTaskDto.description,
+        status: createTaskDto.status,
+        priority: createTaskDto.priority,
+        dueDate: createTaskDto.dueDate
+          ? new Date(createTaskDto.dueDate)
+          : undefined,
+        workspaceId: createTaskDto.workspaceId,
+        assigneeId: createTaskDto.assigneeId,
+        creatorId: createTaskDto.creatorId,
+      },
+      include: {
+        assignee: true,
+        creator: true,
+        subtasks: true,
+        comments: true,
+        labels: true,
+      },
+    });
+  }
+
+  async findAll() {
+    return this.prisma.task.findMany({
+      orderBy: {
+        createdAt: "desc",
+      },
+      include: {
+        assignee: true,
+        creator: true,
+        subtasks: true,
+        comments: true,
+        labels: true,
+      },
+    });
+  }
+
+  async findOne(id: string) {
+    const task = await this.prisma.task.findUnique({
+      where: {
+        id,
+      },
+      include: {
+        assignee: true,
+        creator: true,
+        subtasks: true,
+        comments: {
+          include: {
+            user: true,
+          },
+          orderBy: {
+            createdAt: "asc",
+          },
+        },
+        labels: true,
+      },
+    });
+
+    if (!task) {
+      throw new NotFoundException(
+        `Task with ID ${id} not found`,
+      );
+    }
+
+    return task;
+  }
+
+  async update(
+    id: string,
+    updateTaskDto: UpdateTaskDto,
+  ) {
+    await this.findOne(id);
+
+    return this.prisma.task.update({
+      where: {
+        id,
+      },
+      data: {
+        title: updateTaskDto.title,
+        description: updateTaskDto.description,
+        status: updateTaskDto.status,
+        priority: updateTaskDto.priority,
+        dueDate: updateTaskDto.dueDate
+          ? new Date(updateTaskDto.dueDate)
+          : undefined,
+        assigneeId: updateTaskDto.assigneeId,
+      },
+      include: {
+        assignee: true,
+        creator: true,
+        subtasks: true,
+        comments: true,
+        labels: true,
+      },
+    });
+  }
+
+  async remove(id: string) {
+    await this.findOne(id);
+
+    await this.prisma.task.delete({
+      where: {
+        id,
+      },
+    });
+
+    return {
+      message: "Task deleted successfully",
+    };
+  }
+}

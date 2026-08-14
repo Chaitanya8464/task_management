@@ -1,10 +1,50 @@
 "use client";
 
 import { CheckCircle2 } from "lucide-react";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { guestLogin } from "@/lib/api";
 
 export default function Home() {
-  const handleGuestLogin = () => {
-    console.log("Guest login clicked");
+  const router = useRouter();
+
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleGuestLogin = async () => {
+    if (isLoggingIn) return;
+
+    setIsLoggingIn(true);
+    setError("");
+
+    try {
+      const data = await guestLogin();
+
+      console.log("Guest login successful:", data);
+
+      // Store the logged-in user
+      localStorage.setItem(
+        "taskflow_user",
+        JSON.stringify(data.user),
+      );
+
+      // Store the active workspace
+      localStorage.setItem(
+        "taskflow_workspace",
+        JSON.stringify(data.workspace),
+      );
+
+      // Navigate to dashboard
+      router.push("/dashboard");
+    } catch (error) {
+      console.error("Guest login failed:", error);
+
+      setError(
+        "Unable to login as guest. Please try again.",
+      );
+    } finally {
+      setIsLoggingIn(false);
+    }
   };
 
   const handleGoogleLogin = () => {
@@ -12,10 +52,7 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen bg-white text-zinc-900">
-      {/* Top accent */}
-      <div className="h-1 w-full bg-violet-500" />
-
+    <main className="min-h-screen border-t-4 border-violet-600 bg-white">
       <div className="flex min-h-[calc(100vh-4px)] flex-col">
         {/* Main content */}
         <div className="flex flex-1 items-center justify-center px-4">
@@ -27,7 +64,7 @@ export default function Home() {
                   T
                 </div>
 
-                <span className="text-lg font-semibold tracking-tight">
+                <span className="text-lg font-semibold tracking-tight text-zinc-900">
                   TaskFlow
                 </span>
               </div>
@@ -36,7 +73,7 @@ export default function Home() {
             {/* Login card */}
             <div className="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm">
               <div className="text-center">
-                <h1 className="text-[16px] font-semibold">
+                <h1 className="text-[16px] font-semibold text-zinc-900">
                   Let's get back on track
                 </h1>
 
@@ -46,23 +83,36 @@ export default function Home() {
               </div>
 
               <div className="mt-5 space-y-2">
+                {/* Guest Login */}
                 <button
                   type="button"
                   onClick={handleGuestLogin}
-                  className="h-9 w-full rounded-full bg-black px-4 text-xs font-medium text-white transition hover:bg-zinc-800 active:scale-[0.99]"
+                  disabled={isLoggingIn}
+                  className="h-9 w-full rounded-full bg-black px-4 text-xs font-medium text-white transition hover:bg-zinc-800 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  Continue as Guest
+                  {isLoggingIn
+                    ? "Signing in..."
+                    : "Continue as Guest"}
                 </button>
 
+                {/* Google Login */}
                 <button
                   type="button"
                   onClick={handleGoogleLogin}
-                  className="flex h-9 w-full items-center justify-center gap-2 rounded-full border border-zinc-200 bg-white px-4 text-xs font-medium text-zinc-700 transition hover:bg-zinc-50 active:scale-[0.99]"
+                  disabled={isLoggingIn}
+                  className="flex h-9 w-full items-center justify-center gap-2 rounded-full border border-zinc-200 bg-white px-4 text-xs font-medium text-zinc-700 transition hover:bg-zinc-50 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   <span className="font-semibold">G</span>
                   <span>Login with Google</span>
                 </button>
               </div>
+
+              {/* Error */}
+              {error && (
+                <p className="mt-3 text-center text-[10px] text-red-500">
+                  {error}
+                </p>
+              )}
             </div>
 
             {/* Terms */}
