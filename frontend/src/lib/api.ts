@@ -21,159 +21,18 @@ async function request<T>(
     const errorText = await response.text();
 
     throw new Error(
-      errorText || `Request failed: ${response.status}`,
+      errorText ||
+        `Request failed: ${response.status}`,
     );
   }
 
   return response.json();
 }
 
-export interface ApiTask {
-  id: string;
-  title: string;
-  description?: string | null;
-  status: "TODO" | "DOING" | "COMPLETED" | "ON_HOLD";
-  priority:
-    | "URGENT"
-    | "HIGH"
-    | "MEDIUM"
-    | "LOW"
-    | "NO_PRIORITY";
-  dueDate?: string | null;
-  createdAt: string;
-  updatedAt: string;
-  workspaceId: string;
-  assigneeId?: string | null;
-  creatorId?: string | null;
-  assignee?: {
-    id: string;
-    name: string;
-    email: string;
-    avatar?: string | null;
-  } | null;
-  creator?: {
-    id: string;
-    name: string;
-    email: string;
-    avatar?: string | null;
-  } | null;
-  subtasks: ApiSubtask[];
+// =====================================================
+// Subtask
+// =====================================================
 
-comments: Array<{
-  id: string;
-  content: string;
-  createdAt: string;
-  updatedAt: string;
-  taskId: string;
-  userId: string;
-  user?: {
-    id: string;
-    name: string;
-    email: string;
-    avatar?: string | null;
-  };
-}>;
-
-labels: Array<{
-  id: string;
-  name: string;
-  color: string;
-}>;
-}
-export interface WorkspaceMember {
-  id: string;
-  role: "OWNER" | "ADMIN" | "MEMBER";
-  joinedAt: string;
-  workspaceId: string;
-  userId: string;
-  user: {
-    id: string;
-    name: string;
-    email: string;
-    avatar?: string | null;
-  };
-}
-
-export async function getWorkspaceMembers(
-  workspaceId: string,
-) {
-  return request<WorkspaceMember[]>(
-    `/workspaces/${workspaceId}/members`,
-  );
-}
-export interface GuestLoginResponse {
-  message: string;
-  user: {
-    id: string;
-    name: string;
-    email: string;
-    avatar?: string | null;
-  };
-  workspace: {
-    id: string;
-    name: string;
-    ownerId: string;
-  };
-}
-
-export interface CreateTaskInput {
-  title: string;
-  description?: string;
-  priority?:
-    | "URGENT"
-    | "HIGH"
-    | "MEDIUM"
-    | "LOW"
-    | "NO_PRIORITY";
-  status?: "TODO" | "DOING" | "COMPLETED" | "ON_HOLD";
-  dueDate?: string;
-  workspaceId: string;
-  assigneeId?: string;
-  creatorId?: string;
-}
-
-export async function guestLogin() {
-  return request<GuestLoginResponse>("/auth/guest", {
-    method: "POST",
-  });
-}
-
-export async function getTasks() {
-  return request<ApiTask[]>("/tasks");
-}
-
-export async function getTask(id: string) {
-  return request<ApiTask>(`/tasks/${id}`);
-}
-
-export async function createTask(
-  task: CreateTaskInput,
-) {
-  return request<ApiTask>("/tasks", {
-    method: "POST",
-    body: JSON.stringify(task),
-  });
-}
-
-export async function updateTask(
-  id: string,
-  task: Partial<CreateTaskInput>,
-) {
-  return request<ApiTask>(`/tasks/${id}`, {
-    method: "PATCH",
-    body: JSON.stringify(task),
-  });
-}
-
-export async function deleteTask(id: string) {
-  return request<{ message: string }>(
-    `/tasks/${id}`,
-    {
-      method: "DELETE",
-    },
-  );
-  
-}
 export interface ApiSubtask {
   id: string;
   title: string;
@@ -191,6 +50,240 @@ export interface UpdateSubtaskInput {
   title?: string;
   completed?: boolean;
 }
+
+// =====================================================
+// Comment
+// =====================================================
+
+export interface ApiComment {
+  id: string;
+  content: string;
+  createdAt: string;
+  updatedAt: string;
+  taskId: string;
+  userId: string;
+  user?: {
+    id: string;
+    name: string;
+    email: string;
+    avatar?: string | null;
+  };
+}
+
+// =====================================================
+// Label
+// =====================================================
+
+export interface ApiLabel {
+  id: string;
+  name: string;
+  color: string;
+}
+
+// =====================================================
+// Task
+// =====================================================
+
+export interface ApiTask {
+  id: string;
+  title: string;
+  description?: string | null;
+
+  status:
+    | "TODO"
+    | "DOING"
+    | "COMPLETED"
+    | "ON_HOLD";
+
+  priority:
+    | "URGENT"
+    | "HIGH"
+    | "MEDIUM"
+    | "LOW"
+    | "NO_PRIORITY";
+
+  dueDate?: string | null;
+
+  createdAt: string;
+  updatedAt: string;
+
+  workspaceId: string;
+
+  assigneeId?: string | null;
+  creatorId?: string | null;
+
+  assignee?: {
+    id: string;
+    name: string;
+    email: string;
+    avatar?: string | null;
+  } | null;
+
+  creator?: {
+    id: string;
+    name: string;
+    email: string;
+    avatar?: string | null;
+  } | null;
+
+  subtasks: ApiSubtask[];
+
+  comments: ApiComment[];
+
+  labels: ApiLabel[];
+}
+
+export type ApiTaskDetails = ApiTask;
+
+// =====================================================
+// Workspace
+// =====================================================
+
+export interface WorkspaceMember {
+  id: string;
+
+  role:
+    | "OWNER"
+    | "ADMIN"
+    | "MEMBER";
+
+  joinedAt: string;
+
+  workspaceId: string;
+  userId: string;
+
+  user: {
+    id: string;
+    name: string;
+    email: string;
+    avatar?: string | null;
+  };
+}
+
+// =====================================================
+// Authentication
+// =====================================================
+
+export interface GuestLoginResponse {
+  message: string;
+
+  user: {
+    id: string;
+    name: string;
+    email: string;
+    avatar?: string | null;
+  };
+
+  workspace: {
+    id: string;
+    name: string;
+    ownerId: string;
+  };
+}
+
+// =====================================================
+// Task Input
+// =====================================================
+
+export interface CreateTaskInput {
+  title: string;
+
+  description?: string;
+
+  priority?:
+    | "URGENT"
+    | "HIGH"
+    | "MEDIUM"
+    | "LOW"
+    | "NO_PRIORITY";
+
+  status?:
+    | "TODO"
+    | "DOING"
+    | "COMPLETED"
+    | "ON_HOLD";
+
+  dueDate?: string;
+
+  workspaceId: string;
+
+  assigneeId?: string;
+  creatorId?: string;
+}
+
+// =====================================================
+// Authentication API
+// =====================================================
+
+export async function guestLogin() {
+  return request<GuestLoginResponse>(
+    "/auth/guest",
+    {
+      method: "POST",
+    },
+  );
+}
+
+// =====================================================
+// Task API
+// =====================================================
+
+export async function getTasks() {
+  return request<ApiTask[]>("/tasks");
+}
+
+export async function getTask(
+  id: string,
+) {
+  return request<ApiTask>(
+    `/tasks/${id}`,
+  );
+}
+
+export async function getTaskDetails(
+  id: string,
+) {
+  return request<ApiTaskDetails>(
+    `/tasks/${id}`,
+  );
+}
+
+export async function createTask(
+  task: CreateTaskInput,
+) {
+  return request<ApiTask>("/tasks", {
+    method: "POST",
+    body: JSON.stringify(task),
+  });
+}
+
+export async function updateTask(
+  id: string,
+  task: Partial<CreateTaskInput>,
+) {
+  return request<ApiTask>(
+    `/tasks/${id}`,
+    {
+      method: "PATCH",
+      body: JSON.stringify(task),
+    },
+  );
+}
+
+export async function deleteTask(
+  id: string,
+) {
+  return request<{ message: string }>(
+    `/tasks/${id}`,
+    {
+      method: "DELETE",
+    },
+  );
+}
+
+// =====================================================
+// Subtask API
+// =====================================================
 
 export async function createSubtask(
   taskId: string,
@@ -228,5 +321,17 @@ export async function deleteSubtask(
     {
       method: "DELETE",
     },
+  );
+}
+
+// =====================================================
+// Workspace API
+// =====================================================
+
+export async function getWorkspaceMembers(
+  workspaceId: string,
+) {
+  return request<WorkspaceMember[]>(
+    `/workspaces/${workspaceId}/members`,
   );
 }
