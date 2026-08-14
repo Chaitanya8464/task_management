@@ -3,14 +3,20 @@
 import {
   ArrowLeft,
   CalendarDays,
+  Check,
   CheckCircle2,
+  ChevronDown,
   Circle,
   Clock3,
+  Eye,
+  Link2,
   MessageCircle,
   MoreHorizontal,
   Paperclip,
   Plus,
   Send,
+  Settings,
+  Share2,
   Tag,
   Trash2,
   User,
@@ -19,26 +25,38 @@ import {
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
+
 import {
   FormEvent,
   ReactNode,
   useEffect,
+  useRef,
   useState,
 } from "react";
 
 import {
   ApiLabel,
+  ApiSubtask,
   ApiTaskDetails,
+  ApiUser,
+  TaskPriority,
+  WorkspaceMember,
   createComment,
   createLabel,
   createSubtask,
   deleteSubtask,
   getTaskDetails,
   getWorkspaceLabels,
+  getWorkspaceMembers,
   assignLabel,
   removeLabel,
   updateSubtask,
+  updateTask,
 } from "@/lib/api";
+
+// =====================================================
+// Labels
+// =====================================================
 
 const statusLabels: Record<
   ApiTaskDetails["status"],
@@ -51,7 +69,7 @@ const statusLabels: Record<
 };
 
 const priorityLabels: Record<
-  ApiTaskDetails["priority"],
+  TaskPriority,
   string
 > = {
   URGENT: "Urgent",
@@ -60,6 +78,32 @@ const priorityLabels: Record<
   LOW: "Low",
   NO_PRIORITY: "No Priority",
 };
+
+const priorityColors: Record<
+  TaskPriority,
+  string
+> = {
+  URGENT: "text-red-500",
+  HIGH: "text-orange-500",
+  MEDIUM: "text-amber-500",
+  LOW: "text-zinc-400",
+  NO_PRIORITY: "text-zinc-400",
+};
+
+const priorityDotColors: Record<
+  TaskPriority,
+  string
+> = {
+  URGENT: "bg-red-500",
+  HIGH: "bg-orange-500",
+  MEDIUM: "bg-amber-500",
+  LOW: "bg-zinc-400",
+  NO_PRIORITY: "bg-zinc-300",
+};
+
+// =====================================================
+// Page
+// =====================================================
 
 export default function TaskDetailsPage() {
   const params = useParams();
@@ -76,10 +120,19 @@ export default function TaskDetailsPage() {
     useState("");
 
   // =====================================================
-  // Subtask states
+  // Subtask
   // =====================================================
 
   const [newSubtask, setNewSubtask] =
+    useState("");
+
+  const [newSubtaskPriority, setNewSubtaskPriority] =
+    useState<TaskPriority>("NO_PRIORITY");
+
+  const [newSubtaskDueDate, setNewSubtaskDueDate] =
+    useState("");
+
+  const [newSubtaskAssigneeId, setNewSubtaskAssigneeId] =
     useState("");
 
   const [isSubtaskInputOpen, setIsSubtaskInputOpen] =
@@ -91,8 +144,32 @@ export default function TaskDetailsPage() {
   const [subtaskError, setSubtaskError] =
     useState("");
 
+  const [editingSubtaskId, setEditingSubtaskId] =
+    useState<string | null>(null);
+
+  const [openSubtaskMenu, setOpenSubtaskMenu] =
+    useState<string | null>(null);
+
+  const [editingSubtaskTitle, setEditingSubtaskTitle] =
+    useState("");
+
+  const [editingSubtaskPriority, setEditingSubtaskPriority] =
+    useState<TaskPriority>("NO_PRIORITY");
+
+  const [editingSubtaskDueDate, setEditingSubtaskDueDate] =
+    useState("");
+
+  const [editingSubtaskAssigneeId, setEditingSubtaskAssigneeId] =
+    useState("");
+
+  const [isUpdatingSubtask, setIsUpdatingSubtask] =
+    useState(false);
+
+  const subtaskMenuRef =
+    useRef<HTMLDivElement | null>(null);
+
   // =====================================================
-  // Comment states
+  // Comment
   // =====================================================
 
   const [newComment, setNewComment] =
@@ -105,7 +182,7 @@ export default function TaskDetailsPage() {
     useState("");
 
   // =====================================================
-  // Label states
+  // Labels
   // =====================================================
 
   const [workspaceLabels, setWorkspaceLabels] =
@@ -130,7 +207,23 @@ export default function TaskDetailsPage() {
     useState("");
 
   // =====================================================
-  // Load task
+  // Members
+  // =====================================================
+
+  const [workspaceMembers, setWorkspaceMembers] =
+    useState<WorkspaceMember[]>([]);
+
+  // =====================================================
+  // Dropdowns
+  // =====================================================
+
+  const [openMenu, setOpenMenu] =
+    useState<
+      "status" | "priority" | "member" | null
+    >(null);
+
+  // =====================================================
+  // Load Task
   // =====================================================
 
   useEffect(() => {
@@ -151,16 +244,30 @@ export default function TaskDetailsPage() {
             );
 
           setWorkspaceLabels(labels);
-        } catch (labelLoadError) {
+        } catch (labelError) {
           console.error(
-            "Failed to load workspace labels:",
-            labelLoadError,
+            "Failed to load labels:",
+            labelError,
           );
         }
-      } catch (error) {
+
+        try {
+          const members =
+            await getWorkspaceMembers(
+              data.workspaceId,
+            );
+
+          setWorkspaceMembers(members);
+        } catch (memberError) {
+          console.error(
+            "Failed to load members:",
+            memberError,
+          );
+        }
+      } catch (err) {
         console.error(
           "Failed to load task:",
-          error,
+          err,
         );
 
         setError(
@@ -177,7 +284,65 @@ export default function TaskDetailsPage() {
   }, [taskId]);
 
   // =====================================================
-  // Add subtask
+  // Close Subtask Menu When Clicking Outside
+  // =====================================================
+
+  useEffect(() => {
+    function handleClickOutside(
+      event: MouseEvent,
+    ) {
+      if (
+        subtaskMenuRef.current &&
+        !subtaskMenuRef.current.contains(
+          event.target as Node,
+        )
+      ) {
+        setOpenSubtaskMenu(null);
+      }
+    }
+
+    document.addEventListener(
+      "mousedown",
+      handleClickOutside,
+    );
+
+    return () => {
+      document.removeEventListener(
+        "mousedown",
+        handleClickOutside,
+      );
+    };
+  }, []);
+
+  // =====================================================
+  // Update Task
+  // =====================================================
+
+  const handleUpdateTask = async (
+    changes: Parameters<typeof updateTask>[1],
+  ) => {
+    if (!task) return;
+
+    try {
+      const updated =
+        await updateTask(
+          task.id,
+          changes,
+        );
+
+      setTask(updated);
+    } catch (err) {
+      console.error(
+        "Failed to update task:",
+        err,
+      );
+    }
+
+    setOpenMenu(null);
+  };
+
+  // =====================================================
+  // Add Subtask
   // =====================================================
 
   const handleAddSubtask = async (
@@ -185,11 +350,10 @@ export default function TaskDetailsPage() {
   ) => {
     event.preventDefault();
 
-    const title = newSubtask.trim();
+    const title =
+      newSubtask.trim();
 
-    if (!title || !task) {
-      return;
-    }
+    if (!title || !task) return;
 
     try {
       setIsAddingSubtask(true);
@@ -200,13 +364,19 @@ export default function TaskDetailsPage() {
           task.id,
           {
             title,
+            priority:
+              newSubtaskPriority,
+            dueDate:
+              newSubtaskDueDate ||
+              undefined,
+            assigneeId:
+              newSubtaskAssigneeId ||
+              undefined,
           },
         );
 
       setTask((current) => {
-        if (!current) {
-          return current;
-        }
+        if (!current) return current;
 
         return {
           ...current,
@@ -218,17 +388,20 @@ export default function TaskDetailsPage() {
       });
 
       setNewSubtask("");
-
-      // Keep input open for another subtask
+      setNewSubtaskPriority(
+        "NO_PRIORITY",
+      );
+      setNewSubtaskDueDate("");
+      setNewSubtaskAssigneeId("");
       setIsSubtaskInputOpen(true);
-    } catch (error) {
+    } catch (err) {
       console.error(
         "Failed to create subtask:",
-        error,
+        err,
       );
 
       setSubtaskError(
-        "Unable to create subtask. Please try again.",
+        "Unable to create subtask.",
       );
     } finally {
       setIsAddingSubtask(false);
@@ -236,24 +409,19 @@ export default function TaskDetailsPage() {
   };
 
   // =====================================================
-  // Toggle subtask completion
+  // Toggle Subtask
   // =====================================================
 
   const handleToggleSubtask = async (
     subtaskId: string,
     completed: boolean,
   ) => {
-    if (!task) {
-      return;
-    }
+    if (!task) return;
 
     const previousTask = task;
 
-    // Optimistic update
     setTask((current) => {
-      if (!current) {
-        return current;
-      }
+      if (!current) return current;
 
       return {
         ...current,
@@ -271,21 +439,15 @@ export default function TaskDetailsPage() {
     });
 
     try {
-      setSubtaskError("");
-
       const updated =
         await updateSubtask(
           task.id,
           subtaskId,
-          {
-            completed,
-          },
+          { completed },
         );
 
       setTask((current) => {
-        if (!current) {
-          return current;
-        }
+        if (!current) return current;
 
         return {
           ...current,
@@ -298,76 +460,190 @@ export default function TaskDetailsPage() {
             ),
         };
       });
-    } catch (error) {
+    } catch (err) {
       console.error(
         "Failed to update subtask:",
-        error,
+        err,
       );
 
-      // Roll back optimistic update
       setTask(previousTask);
 
       setSubtaskError(
-        "Unable to update subtask. Please try again.",
+        "Unable to update subtask.",
       );
     }
   };
 
   // =====================================================
-  // Delete subtask
+  // Start Edit Subtask
+  // =====================================================
+
+  const handleStartEditSubtask = (
+    subtask: ApiSubtask,
+  ) => {
+    setEditingSubtaskId(
+      subtask.id,
+    );
+
+    setEditingSubtaskTitle(
+      subtask.title,
+    );
+
+    setEditingSubtaskPriority(
+      subtask.priority ||
+        "NO_PRIORITY",
+    );
+
+    setEditingSubtaskDueDate(
+      subtask.dueDate
+        ? formatDateForInput(
+            subtask.dueDate,
+          )
+        : "",
+    );
+
+    setEditingSubtaskAssigneeId(
+      subtask.assigneeId || "",
+    );
+
+    setOpenSubtaskMenu(null);
+  };
+
+  // =====================================================
+  // Cancel Edit Subtask
+  // =====================================================
+
+  const handleCancelEditSubtask = () => {
+    setEditingSubtaskId(null);
+    setEditingSubtaskTitle("");
+    setEditingSubtaskPriority(
+      "NO_PRIORITY",
+    );
+    setEditingSubtaskDueDate("");
+    setEditingSubtaskAssigneeId("");
+  };
+
+  // =====================================================
+  // Save Subtask
+  // =====================================================
+
+  const handleSaveSubtask = async (
+    subtaskId: string,
+  ) => {
+    if (!task) return;
+
+    const title =
+      editingSubtaskTitle.trim();
+
+    if (!title) {
+      setSubtaskError(
+        "Subtask title cannot be empty.",
+      );
+      return;
+    }
+
+    try {
+      setIsUpdatingSubtask(true);
+      setSubtaskError("");
+
+      const updated =
+        await updateSubtask(
+          task.id,
+          subtaskId,
+          {
+            title,
+            priority:
+              editingSubtaskPriority,
+            dueDate:
+              editingSubtaskDueDate ||
+              undefined,
+            assigneeId:
+              editingSubtaskAssigneeId ||
+              null,
+          },
+        );
+
+      setTask((current) => {
+        if (!current) return current;
+
+        return {
+          ...current,
+          subtasks:
+            current.subtasks.map(
+              (subtask) =>
+                subtask.id === subtaskId
+                  ? updated
+                  : subtask,
+            ),
+        };
+      });
+
+      handleCancelEditSubtask();
+    } catch (err) {
+      console.error(
+        "Failed to update subtask:",
+        err,
+      );
+
+      setSubtaskError(
+        "Unable to update subtask.",
+      );
+    } finally {
+      setIsUpdatingSubtask(false);
+    }
+  };
+
+  // =====================================================
+  // Delete Subtask
   // =====================================================
 
   const handleDeleteSubtask = async (
     subtaskId: string,
   ) => {
-    if (!task) {
-      return;
-    }
+    if (!task) return;
 
-    const confirmed = window.confirm(
-      "Are you sure you want to delete this subtask?",
-    );
+    const confirmed =
+      window.confirm(
+        "Delete this subtask?",
+      );
 
-    if (!confirmed) {
-      return;
-    }
+    if (!confirmed) return;
 
     try {
-      setSubtaskError("");
-
       await deleteSubtask(
         task.id,
         subtaskId,
       );
 
       setTask((current) => {
-        if (!current) {
-          return current;
-        }
+        if (!current) return current;
 
         return {
           ...current,
           subtasks:
             current.subtasks.filter(
               (subtask) =>
-                subtask.id !== subtaskId,
+                subtask.id !==
+                subtaskId,
             ),
         };
       });
-    } catch (error) {
+
+      setOpenSubtaskMenu(null);
+    } catch (err) {
       console.error(
         "Failed to delete subtask:",
-        error,
+        err,
       );
 
       setSubtaskError(
-        "Unable to delete subtask. Please try again.",
+        "Unable to delete subtask.",
       );
     }
   };
 
   // =====================================================
-  // Add comment
+  // Add Comment
   // =====================================================
 
   const handleAddComment = async (
@@ -375,17 +651,15 @@ export default function TaskDetailsPage() {
   ) => {
     event.preventDefault();
 
-    const content = newComment.trim();
+    const content =
+      newComment.trim();
 
-    if (!content || !task) {
-      return;
-    }
+    if (!content || !task) return;
 
     try {
       setIsAddingComment(true);
       setCommentError("");
 
-      // Get logged-in user
       const storedUser =
         localStorage.getItem(
           "taskflow_user",
@@ -397,9 +671,8 @@ export default function TaskDetailsPage() {
         );
       }
 
-      const user = JSON.parse(
-        storedUser,
-      );
+      const user =
+        JSON.parse(storedUser);
 
       if (!user?.id) {
         throw new Error(
@@ -417,9 +690,7 @@ export default function TaskDetailsPage() {
         );
 
       setTask((current) => {
-        if (!current) {
-          return current;
-        }
+        if (!current) return current;
 
         return {
           ...current,
@@ -431,14 +702,14 @@ export default function TaskDetailsPage() {
       });
 
       setNewComment("");
-    } catch (error) {
+    } catch (err) {
       console.error(
         "Failed to create comment:",
-        error,
+        err,
       );
 
       setCommentError(
-        "Unable to add comment. Please try again.",
+        "Unable to add comment.",
       );
     } finally {
       setIsAddingComment(false);
@@ -446,7 +717,7 @@ export default function TaskDetailsPage() {
   };
 
   // =====================================================
-  // Labels
+  // Create Label
   // =====================================================
 
   const handleCreateLabel = async (
@@ -466,112 +737,129 @@ export default function TaskDetailsPage() {
       setIsAddingLabel(true);
       setLabelError("");
 
-      const created = await createLabel(
-        task.workspaceId,
-        {
-          name: newLabelName.trim(),
-          color: newLabelColor,
-        },
+      const created =
+        await createLabel(
+          task.workspaceId,
+          {
+            name:
+              newLabelName.trim(),
+            color: newLabelColor,
+          },
+        );
+
+      setWorkspaceLabels(
+        (current) =>
+          [...current, created].sort(
+            (a, b) =>
+              a.name.localeCompare(
+                b.name,
+              ),
+          ),
       );
 
-      setWorkspaceLabels((current) => [
-        ...current,
-        created,
-      ].sort((a, b) =>
-        a.name.localeCompare(b.name),
-      ));
-
       setNewLabelName("");
-      setSelectedLabelId(created.id);
-    } catch (error) {
+      setSelectedLabelId(
+        created.id,
+      );
+    } catch (err) {
       console.error(
         "Failed to create label:",
-        error,
+        err,
       );
 
       setLabelError(
-        "Unable to create label. It may already exist.",
+        "Unable to create label.",
       );
     } finally {
       setIsAddingLabel(false);
     }
   };
 
-  const handleAssignLabel = async () => {
-    if (
-      !task ||
-      !selectedLabelId ||
-      isAssigningLabel
-    ) {
-      return;
-    }
+  // =====================================================
+  // Assign Label
+  // =====================================================
 
-    if (
-      task.labels.some(
-        (label) =>
-          label.id === selectedLabelId,
-      )
-    ) {
-      setSelectedLabelId("");
-      return;
-    }
+  const handleAssignLabel =
+    async () => {
+      if (
+        !task ||
+        !selectedLabelId ||
+        isAssigningLabel
+      ) {
+        return;
+      }
 
-    try {
-      setIsAssigningLabel(true);
-      setLabelError("");
+      if (
+        task.labels.some(
+          (label) =>
+            label.id ===
+            selectedLabelId,
+        )
+      ) {
+        setSelectedLabelId("");
+        return;
+      }
 
-      const updatedTask = await assignLabel(
-  task.id,
-  selectedLabelId,
-);
+      try {
+        setIsAssigningLabel(true);
+        setLabelError("");
 
-      setTask(updatedTask);
-      setSelectedLabelId("");
-    } catch (error) {
-      console.error(
-        "Failed to assign label:",
-        error,
-      );
+        const updated =
+          await assignLabel(
+            task.id,
+            selectedLabelId,
+          );
 
-      setLabelError(
-        "Unable to assign label. Please try again.",
-      );
-    } finally {
-      setIsAssigningLabel(false);
-    }
-  };
-
-  const handleRemoveLabel = async (
-    labelId: string,
-  ) => {
-    if (!task || isAssigningLabel) {
-      return;
-    }
-
-    try {
-      setIsAssigningLabel(true);
-      setLabelError("");
-
-      const updatedTask =
-        await removeLabel(
-          task.id,
-          labelId,
+        setTask(updated);
+        setSelectedLabelId("");
+      } catch (err) {
+        console.error(
+          "Failed to assign label:",
+          err,
         );
 
-      setTask(updatedTask);
-    } catch (error) {
-      console.error(
-        "Failed to remove label:",
-        error,
-      );
+        setLabelError(
+          "Unable to assign label.",
+        );
+      } finally {
+        setIsAssigningLabel(false);
+      }
+    };
 
-      setLabelError(
-        "Unable to remove label. Please try again.",
-      );
-    } finally {
-      setIsAssigningLabel(false);
-    }
-  };
+  // =====================================================
+  // Remove Label
+  // =====================================================
+
+  const handleRemoveLabel =
+    async (
+      labelId: string,
+    ) => {
+      if (
+        !task ||
+        isAssigningLabel
+      ) {
+        return;
+      }
+
+      try {
+        setIsAssigningLabel(true);
+
+        const updated =
+          await removeLabel(
+            task.id,
+            labelId,
+          );
+
+        setTask(updated);
+      } catch (err) {
+        console.error(
+          "Failed to remove label:",
+          err,
+        );
+      } finally {
+        setIsAssigningLabel(false);
+      }
+    };
 
   // =====================================================
   // Loading
@@ -579,12 +867,10 @@ export default function TaskDetailsPage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-white text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100">
-        <div className="flex min-h-screen items-center justify-center">
-          <p className="text-sm text-zinc-400">
-            Loading task...
-          </p>
-        </div>
+      <main className="flex min-h-screen items-center justify-center bg-white text-zinc-900 dark:bg-zinc-950 dark:text-white">
+        <p className="text-sm text-zinc-400">
+          Loading task...
+        </p>
       </main>
     );
   }
@@ -595,28 +881,26 @@ export default function TaskDetailsPage() {
 
   if (error || !task) {
     return (
-      <main className="min-h-screen bg-white text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100">
-        <div className="flex min-h-screen items-center justify-center">
-          <div className="text-center">
-            <p className="text-sm font-medium">
-              {error ||
-                "Task not found."}
-            </p>
+      <main className="flex min-h-screen items-center justify-center bg-white dark:bg-zinc-950">
+        <div className="text-center">
+          <p className="text-sm font-medium">
+            {error ||
+              "Task not found."}
+          </p>
 
-            <Link
-              href="/tasks"
-              className="mt-3 inline-flex text-xs text-violet-600 hover:underline"
-            >
-              Back to Tasks
-            </Link>
-          </div>
+          <Link
+            href="/tasks"
+            className="mt-3 inline-flex text-xs text-violet-600 hover:underline"
+          >
+            Back to Tasks
+          </Link>
         </div>
       </main>
     );
   }
 
   // =====================================================
-  // Subtask count
+  // Calculations
   // =====================================================
 
   const completedSubtasks =
@@ -631,525 +915,980 @@ export default function TaskDetailsPage() {
 
   return (
     <main className="min-h-screen bg-white text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100">
-
       {/* =================================================
-          Header
+          TOP HEADER
       ================================================= */}
 
-      <header className="flex min-h-16 items-center justify-between border-b border-zinc-200 px-4 dark:border-zinc-800 sm:px-6">
-        <div className="flex items-center gap-3">
+      <header className="flex min-h-[64px] items-center justify-between border-b border-zinc-200 px-4 dark:border-zinc-800 sm:px-6">
+        <div className="flex min-w-0 items-center gap-3">
           <Link
             href="/tasks"
-            className="rounded-md p-2 text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
+            className="rounded-md p-1.5 text-zinc-400 transition hover:bg-zinc-100 dark:hover:bg-zinc-800"
           >
             <ArrowLeft className="h-4 w-4" />
           </Link>
 
-          <div>
+          <div className="min-w-0">
             <p className="text-[10px] text-zinc-400">
-              Tasks / Task Details
+              Tasks
             </p>
 
-            <h1 className="text-sm font-semibold">
+            <h1 className="truncate text-sm font-semibold sm:text-base">
               {task.title}
             </h1>
           </div>
         </div>
 
-        <button
-          type="button"
-          className="rounded-md p-2 text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
-        >
-          <MoreHorizontal className="h-5 w-5" />
-        </button>
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            className="hidden rounded-md border border-zinc-200 p-2 text-zinc-500 hover:bg-zinc-50 sm:block dark:border-zinc-700 dark:hover:bg-zinc-800"
+          >
+            <Eye className="h-4 w-4" />
+          </button>
+
+          <button
+            type="button"
+            className="rounded-md border border-zinc-200 p-2 text-zinc-500 hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800"
+          >
+            <Share2 className="h-4 w-4" />
+          </button>
+
+          <button
+            type="button"
+            className="rounded-md border border-zinc-200 p-2 text-zinc-500 hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800"
+          >
+            <MoreHorizontal className="h-4 w-4" />
+          </button>
+        </div>
       </header>
 
       {/* =================================================
-          Content
+          PAGE
       ================================================= */}
 
-      <div className="mx-auto max-w-6xl p-4 sm:p-6">
-        <div className="grid gap-5 lg:grid-cols-[1fr_320px]">
+      <div className="mx-auto max-w-[1280px] px-4 py-5 sm:px-6 lg:px-8">
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_270px]">
 
           {/* =================================================
-              Main
+              MAIN CONTENT
           ================================================= */}
 
-          <section className="space-y-5">
+          <section className="min-w-0">
 
-            {/* =================================================
-                Task Information
-            ================================================= */}
+            {/* Title */}
 
-            <div className="rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900">
-
-              <div className="flex flex-wrap items-center gap-2">
-
-                <span className="rounded-md bg-orange-50 px-2 py-1 text-[10px] font-medium text-orange-600 dark:bg-orange-950/40 dark:text-orange-400">
-                  {priorityLabels[
-                    task.priority
-                  ]}
-                </span>
-
-                <span className="rounded-md bg-zinc-100 px-2 py-1 text-[10px] font-medium text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400">
-                  {statusLabels[
-                    task.status
-                  ]}
-                </span>
-
-                {task.labels.map((label) => (
-                  <span
-                    key={label.id}
-                    className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[10px] font-medium"
-                    style={{
-                      backgroundColor: `${label.color}18`,
-                      color: label.color,
-                    }}
-                  >
-                    <Tag className="h-3 w-3" />
-                    {label.name}
-                    <button
-                      type="button"
-                      onClick={() =>
-                        handleRemoveLabel(label.id)
-                      }
-                      disabled={isAssigningLabel}
-                      className="ml-0.5 rounded-full opacity-60 transition hover:opacity-100 disabled:cursor-not-allowed"
-                      aria-label={`Remove label ${label.name}`}
-                    >
-                      <X className="h-3 w-3" />
-                    </button>
-                  </span>
-                ))}
-
-              </div>
-
-              <div className="mt-4 rounded-lg border border-zinc-200 p-3 dark:border-zinc-700">
-                <div className="flex items-center gap-2">
-                  <Tag className="h-3.5 w-3.5 text-zinc-400" />
-
-                  <span className="text-[10px] font-medium text-zinc-600 dark:text-zinc-300">
-                    Labels
-                  </span>
-                </div>
-
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {task.labels.length === 0 ? (
-                    <span className="text-[10px] text-zinc-400">
-                      No labels assigned.
-                    </span>
-                  ) : (
-                    task.labels.map((label) => (
-                      <span
-                        key={`detail-${label.id}`}
-                        className="rounded-md px-2 py-1 text-[10px] font-medium"
-                        style={{
-                          backgroundColor: `${label.color}18`,
-                          color: label.color,
-                        }}
-                      >
-                        {label.name}
-                      </span>
-                    ))
-                  )}
-                </div>
-
-                <div className="mt-3 flex flex-col gap-2 sm:flex-row">
-                  <select
-                    value={selectedLabelId}
-                    onChange={(event) =>
-                      setSelectedLabelId(
-                        event.target.value,
-                      )
-                    }
-                    className="h-9 min-w-0 flex-1 rounded-md border border-zinc-200 bg-white px-2 text-xs text-zinc-700 outline-none focus:border-violet-400 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-200"
-                  >
-                    <option value="">
-                      Select a label...
-                    </option>
-
-                    {workspaceLabels
-                      .filter(
-                        (label) =>
-                          !task.labels.some(
-                            (assigned) =>
-                              assigned.id ===
-                              label.id,
-                          ),
-                      )
-                      .map((label) => (
-                        <option
-                          key={label.id}
-                          value={label.id}
-                        >
-                          {label.name}
-                        </option>
-                      ))}
-                  </select>
-
-                  <button
-                    type="button"
-                    onClick={handleAssignLabel}
-                    disabled={
-                      !selectedLabelId ||
-                      isAssigningLabel
-                    }
-                    className="h-9 rounded-md bg-black px-3 text-xs font-medium text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-40 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
-                  >
-                    {isAssigningLabel
-                      ? "Saving..."
-                      : "Assign"}
-                  </button>
-                </div>
-
-                <form
-                  onSubmit={handleCreateLabel}
-                  className="mt-2 flex flex-col gap-2 sm:flex-row"
-                >
-                  <input
-                    value={newLabelName}
-                    onChange={(event) =>
-                      setNewLabelName(
-                        event.target.value,
-                      )
-                    }
-                    placeholder="New label name"
-                    disabled={isAddingLabel}
-                    className="h-9 min-w-0 flex-1 rounded-md border border-zinc-200 bg-white px-3 text-xs text-zinc-700 outline-none focus:border-violet-400 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-200"
-                  />
-
-                  <input
-                    type="color"
-                    value={newLabelColor}
-                    onChange={(event) =>
-                      setNewLabelColor(
-                        event.target.value,
-                      )
-                    }
-                    title="Label color"
-                    disabled={isAddingLabel}
-                    className="h-9 w-12 cursor-pointer rounded-md border border-zinc-200 bg-white p-1 dark:border-zinc-700 dark:bg-zinc-950"
-                  />
-
-                  <button
-                    type="submit"
-                    disabled={
-                      !newLabelName.trim() ||
-                      isAddingLabel
-                    }
-                    className="h-9 rounded-md border border-zinc-200 px-3 text-xs font-medium text-zinc-700 transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800"
-                  >
-                    {isAddingLabel
-                      ? "Creating..."
-                      : "Create"}
-                  </button>
-                </form>
-
-                {labelError && (
-                  <p className="mt-2 text-[10px] text-red-500">
-                    {labelError}
-                  </p>
-                )}
-              </div>
-
-              <h2 className="mt-4 text-xl font-semibold">
+            <div className="mb-5">
+              <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
                 {task.title}
               </h2>
 
-              <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-500 dark:text-zinc-400">
+              <p className="mt-1.5 max-w-2xl text-xs leading-5 text-zinc-500 dark:text-zinc-400">
                 {task.description ||
-                  "No description provided."}
+                  "Create and manage detailed task information."}
               </p>
-
             </div>
 
             {/* =================================================
-                Subtasks
+                PROPERTIES
             ================================================= */}
 
-            <div className="rounded-xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
+            <div className="mb-5">
+              <div className="mb-2 text-xs font-medium text-zinc-500">
+                Properties
+              </div>
 
-              {/* Subtask Header */}
+              <div className="flex flex-wrap items-center gap-2">
 
-              <div className="flex items-center justify-between border-b border-zinc-100 px-5 py-4 dark:border-zinc-800">
+                {/* Assignee */}
 
-                <div>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setOpenMenu(
+                      openMenu ===
+                        "member"
+                        ? null
+                        : "member",
+                    )
+                  }
+                  className="inline-flex items-center gap-2 rounded-md border border-zinc-200 px-2.5 py-1.5 text-xs hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-900"
+                >
+                  <User className="h-3.5 w-3.5 text-zinc-400" />
+
+                  {task.assignee?.name ||
+                    "Unassigned"}
+
+                  <ChevronDown className="h-3 w-3 text-zinc-400" />
+                </button>
+
+                {/* Due date */}
+
+                <span className="inline-flex items-center gap-2 rounded-md bg-red-50 px-2.5 py-1.5 text-xs text-red-500 dark:bg-red-950/30 dark:text-red-400">
+                  <CalendarDays className="h-3.5 w-3.5" />
+
+                  {task.dueDate
+                    ? new Date(
+                        task.dueDate,
+                      ).toLocaleDateString(
+                        undefined,
+                        {
+                          day: "numeric",
+                          month: "short",
+                        },
+                      )
+                    : "No date"}
+                </span>
+
+                {/* Priority */}
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    setOpenMenu(
+                      openMenu ===
+                        "priority"
+                        ? null
+                        : "priority",
+                    )
+                  }
+                  className={`inline-flex items-center gap-2 rounded-md border border-zinc-200 px-2.5 py-1.5 text-xs dark:border-zinc-700 ${priorityColors[task.priority]}`}
+                >
+                  <Clock3 className="h-3.5 w-3.5" />
+
+                  {priorityLabels[
+                    task.priority
+                  ]}
+
+                  <ChevronDown className="h-3 w-3" />
+                </button>
+              </div>
+
+              {/* Member Dropdown */}
+
+              {openMenu === "member" && (
+                <Dropdown>
+                  <DropdownTitle>
+                    Members
+                  </DropdownTitle>
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      handleUpdateTask({
+                        assigneeId:
+                          undefined,
+                      })
+                    }
+                    className="dropdown-item"
+                  >
+                    Unassigned
+                  </button>
+
+                  {workspaceMembers.map(
+                    (member) => (
+                      <button
+                        key={
+                          member.userId
+                        }
+                        type="button"
+                        onClick={() =>
+                          handleUpdateTask({
+                            assigneeId:
+                              member.userId,
+                          })
+                        }
+                        className="dropdown-item"
+                      >
+                        {member.user.name}
+                      </button>
+                    ),
+                  )}
+                </Dropdown>
+              )}
+
+              {/* Priority Dropdown */}
+
+              {openMenu ===
+                "priority" && (
+                <Dropdown>
+                  <DropdownTitle>
+                    Priority
+                  </DropdownTitle>
+
+                  {(
+                    Object.keys(
+                      priorityLabels,
+                    ) as TaskPriority[]
+                  ).map(
+                    (priority) => (
+                      <button
+                        key={priority}
+                        type="button"
+                        onClick={() =>
+                          handleUpdateTask({
+                            priority,
+                          })
+                        }
+                        className="dropdown-item"
+                      >
+                        <span
+                          className={
+                            priorityColors[
+                              priority
+                            ]
+                          }
+                        >
+                          {
+                            priorityLabels[
+                              priority
+                            ]
+                          }
+                        </span>
+
+                        {task.priority ===
+                          priority && (
+                          <Check className="ml-auto h-3.5 w-3.5" />
+                        )}
+                      </button>
+                    ),
+                  )}
+                </Dropdown>
+              )}
+            </div>
+
+            {/* =================================================
+                LABELS
+            ================================================= */}
+
+            <div className="mb-5">
+              <div className="mb-2 text-xs font-medium text-zinc-500">
+                Labels
+              </div>
+
+              <div className="flex flex-wrap gap-1.5">
+                {task.labels.map(
+                  (label) => (
+                    <span
+                      key={label.id}
+                      className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-[10px] font-medium"
+                      style={{
+                        borderColor:
+                          `${label.color}55`,
+                        color:
+                          label.color,
+                        backgroundColor:
+                          `${label.color}10`,
+                      }}
+                    >
+                      <Tag className="h-3 w-3" />
+
+                      {label.name}
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          handleRemoveLabel(
+                            label.id,
+                          )
+                        }
+                        className="ml-0.5 opacity-50 hover:opacity-100"
+                      >
+                        <X className="h-2.5 w-2.5" />
+                      </button>
+                    </span>
+                  ),
+                )}
+
+                <select
+                  value=""
+                  onChange={(event) => {
+                    setSelectedLabelId(
+                      event.target.value,
+                    );
+
+                    setTimeout(
+                      handleAssignLabel,
+                      0,
+                    );
+                  }}
+                  className="h-6 rounded-md border border-dashed border-zinc-300 bg-transparent px-2 text-[10px] text-zinc-500 outline-none dark:border-zinc-700"
+                >
+                  <option value="">
+                    + Add label
+                  </option>
+
+                  {workspaceLabels
+                    .filter(
+                      (label) =>
+                        !task.labels.some(
+                          (assigned) =>
+                            assigned.id ===
+                            label.id,
+                        ),
+                    )
+                    .map((label) => (
+                      <option
+                        key={label.id}
+                        value={label.id}
+                      >
+                        {label.name}
+                      </option>
+                    ))}
+                </select>
+              </div>
+
+              {/* Create label */}
+
+              <form
+                onSubmit={
+                  handleCreateLabel
+                }
+                className="mt-2 flex max-w-sm gap-2"
+              >
+                <input
+                  value={newLabelName}
+                  onChange={(event) =>
+                    setNewLabelName(
+                      event.target.value,
+                    )
+                  }
+                  placeholder="Create label..."
+                  className="h-8 min-w-0 flex-1 rounded-md border border-zinc-200 bg-transparent px-2.5 text-xs outline-none focus:border-violet-400 dark:border-zinc-700"
+                />
+
+                <input
+                  type="color"
+                  value={newLabelColor}
+                  onChange={(event) =>
+                    setNewLabelColor(
+                      event.target.value,
+                    )
+                  }
+                  className="h-8 w-9 rounded-md border border-zinc-200 p-1 dark:border-zinc-700"
+                />
+
+                <button
+                  type="submit"
+                  disabled={
+                    !newLabelName.trim() ||
+                    isAddingLabel
+                  }
+                  className="rounded-md border border-zinc-200 px-3 text-xs dark:border-zinc-700"
+                >
+                  Create
+                </button>
+              </form>
+
+              {labelError && (
+                <p className="mt-1 text-[10px] text-red-500">
+                  {labelError}
+                </p>
+              )}
+            </div>
+
+            {/* =================================================
+                RESOURCES
+            ================================================= */}
+
+            <div className="mb-6">
+              <div className="mb-2 text-xs font-medium text-zinc-500">
+                Resources
+              </div>
+
+              <button
+                type="button"
+                className="flex items-center gap-2 text-[11px] text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200"
+              >
+                <Link2 className="h-3.5 w-3.5" />
+
+                Add document or link...
+              </button>
+            </div>
+
+            {/* =================================================
+                SUBTASKS
+            ================================================= */}
+
+            <section className="mb-6">
+              <div className="mb-3 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <ChevronDown className="h-3.5 w-3.5 text-zinc-500" />
+
                   <h3 className="text-sm font-semibold">
                     Subtasks
                   </h3>
 
-                  <p className="mt-0.5 text-[10px] text-zinc-400">
-                    {completedSubtasks} of{" "}
-                    {task.subtasks.length}{" "}
-                    completed
-                  </p>
+                  <span className="text-[10px] text-zinc-400">
+                    {completedSubtasks}/
+                    {task.subtasks.length}
+                  </span>
                 </div>
 
                 <button
                   type="button"
-                  onClick={() => {
+                  onClick={() =>
                     setIsSubtaskInputOpen(
                       (current) =>
                         !current,
-                    );
-
-                    setSubtaskError("");
-                  }}
-                  className="flex items-center gap-1.5 rounded-md border border-zinc-200 px-2.5 py-1.5 text-[10px] font-medium text-zinc-600 transition hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                    )
+                  }
+                  className="flex items-center gap-1 rounded-md px-2 py-1 text-[10px] text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800"
                 >
                   <Plus className="h-3 w-3" />
-
-                  {isSubtaskInputOpen
-                    ? "Close"
-                    : "Add"}
+                  Add Subtask
                 </button>
-
               </div>
 
-              {/* Add Subtask Form */}
+              {/* =================================================
+                  ADD SUBTASK FORM
+              ================================================= */}
 
               {isSubtaskInputOpen && (
                 <form
                   onSubmit={
                     handleAddSubtask
                   }
-                  className="border-b border-zinc-100 p-4 dark:border-zinc-800"
+                  className="mb-3 rounded-lg border border-zinc-200 bg-zinc-50 p-3 dark:border-zinc-800 dark:bg-zinc-900"
                 >
-                  <div className="flex gap-2">
+                  <input
+                    autoFocus
+                    value={newSubtask}
+                    onChange={(event) =>
+                      setNewSubtask(
+                        event.target.value,
+                      )
+                    }
+                    placeholder="Enter subtask..."
+                    className="mb-3 h-9 w-full rounded-md border border-zinc-200 bg-white px-3 text-xs outline-none focus:border-violet-400 dark:border-zinc-700 dark:bg-zinc-950"
+                  />
+
+                  <div className="flex flex-wrap items-center gap-2">
+
+                    {/* Priority */}
+
+                    <select
+                      value={
+                        newSubtaskPriority
+                      }
+                      onChange={(event) =>
+                        setNewSubtaskPriority(
+                          event.target
+                            .value as TaskPriority,
+                        )
+                      }
+                      className="h-8 rounded-md border border-zinc-200 bg-white px-2 text-[11px] outline-none dark:border-zinc-700 dark:bg-zinc-950"
+                    >
+                      {(
+                        Object.keys(
+                          priorityLabels,
+                        ) as TaskPriority[]
+                      ).map(
+                        (priority) => (
+                          <option
+                            key={priority}
+                            value={priority}
+                          >
+                            {
+                              priorityLabels[
+                                priority
+                              ]
+                            }
+                          </option>
+                        ),
+                      )}
+                    </select>
+
+                    {/* Assignee */}
+
+                    <select
+                      value={
+                        newSubtaskAssigneeId
+                      }
+                      onChange={(event) =>
+                        setNewSubtaskAssigneeId(
+                          event.target
+                            .value,
+                        )
+                      }
+                      className="h-8 max-w-[170px] rounded-md border border-zinc-200 bg-white px-2 text-[11px] outline-none dark:border-zinc-700 dark:bg-zinc-950"
+                    >
+                      <option value="">
+                        Unassigned
+                      </option>
+
+                      {workspaceMembers.map(
+                        (member) => (
+                          <option
+                            key={
+                              member.userId
+                            }
+                            value={
+                              member.userId
+                            }
+                          >
+                            {member.user.name}
+                          </option>
+                        ),
+                      )}
+                    </select>
+
+                    {/* Due Date */}
 
                     <input
-                      autoFocus
-                      value={newSubtask}
+                      type="date"
+                      value={
+                        newSubtaskDueDate
+                      }
                       onChange={(event) =>
-                        setNewSubtask(
+                        setNewSubtaskDueDate(
                           event.target.value,
                         )
                       }
-                      onKeyDown={(event) => {
-                        if (
-                          event.key ===
-                            "Escape" &&
-                          !isAddingSubtask
-                        ) {
-                          setIsSubtaskInputOpen(
-                            false,
-                          );
-
-                          setNewSubtask(
-                            "",
-                          );
-
-                          setSubtaskError(
-                            "",
-                          );
-                        }
-                      }}
-                      placeholder="Enter subtask title..."
-                      disabled={
-                        isAddingSubtask
-                      }
-                      className="h-9 min-w-0 flex-1 rounded-md border border-zinc-200 bg-white px-3 text-xs text-zinc-800 outline-none transition placeholder:text-zinc-400 focus:border-violet-400 focus:ring-2 focus:ring-violet-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:focus:border-violet-500 dark:focus:ring-violet-950"
+                      className="h-8 rounded-md border border-zinc-200 bg-white px-2 text-[11px] outline-none dark:border-zinc-700 dark:bg-zinc-950"
                     />
 
-                    <button
-                      type="submit"
-                      disabled={
-                        !newSubtask.trim() ||
-                        isAddingSubtask
-                      }
-                      className="flex h-9 items-center gap-1.5 rounded-md bg-black px-3 text-xs font-medium text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-40 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
-                    >
-                      <Plus className="h-3.5 w-3.5" />
+                    <div className="ml-auto flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setIsSubtaskInputOpen(
+                            false,
+                          )
+                        }
+                        className="h-8 rounded-md px-3 text-[11px] text-zinc-500 hover:bg-zinc-200 dark:hover:bg-zinc-800"
+                      >
+                        Cancel
+                      </button>
 
-                      {isAddingSubtask
-                        ? "Adding..."
-                        : "Add"}
-                    </button>
-
+                      <button
+                        type="submit"
+                        disabled={
+                          !newSubtask.trim() ||
+                          isAddingSubtask
+                        }
+                        className="h-8 rounded-md bg-zinc-900 px-3 text-[11px] font-medium text-white disabled:opacity-40 dark:bg-white dark:text-black"
+                      >
+                        {isAddingSubtask
+                          ? "Adding..."
+                          : "Add"}
+                      </button>
+                    </div>
                   </div>
-
-                  {subtaskError && (
-                    <p className="mt-2 text-[10px] text-red-500">
-                      {subtaskError}
-                    </p>
-                  )}
                 </form>
               )}
 
-              {/* Subtask List */}
+              {/* =================================================
+                  SUBTASK TABLE
+              ================================================= */}
 
-              <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
+              <div className="overflow-visible rounded-lg border border-zinc-200 dark:border-zinc-800">
+
+                {/* Table Header */}
+
+                <div className="grid grid-cols-[minmax(0,1fr)_100px_125px_110px_40px] border-b border-zinc-200 bg-zinc-50 px-3 py-2 text-[10px] font-medium text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900">
+                  <span>Task</span>
+                  <span>Priority</span>
+                  <span>Members</span>
+                  <span>Due Date</span>
+                  <span />
+                </div>
 
                 {task.subtasks.length ===
                 0 ? (
-                  <div className="px-5 py-6 text-center text-xs text-zinc-400">
+                  <div className="px-4 py-7 text-center text-xs text-zinc-400">
                     No subtasks yet.
                   </div>
                 ) : (
                   task.subtasks.map(
-                    (subtask) => (
-                      <div
-                        key={
-                          subtask.id
-                        }
-                        className="flex items-center justify-between gap-3 px-5 py-3 transition hover:bg-zinc-50 dark:hover:bg-zinc-800/50"
-                      >
+                    (subtask) => {
+                      const isEditing =
+                        editingSubtaskId ===
+                        subtask.id;
 
-                        {/* Toggle */}
-
-                        <button
-                          type="button"
-                          onClick={() =>
-                            handleToggleSubtask(
-                              subtask.id,
-                              !subtask.completed,
-                            )
+                      return (
+                        <div
+                          key={
+                            subtask.id
                           }
-                          className="flex min-w-0 flex-1 items-center gap-3 text-left"
+                          className="border-b border-zinc-100 last:border-0 dark:border-zinc-800"
                         >
-                          {subtask.completed ? (
-                            <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-500" />
+                          {isEditing ? (
+                            /* =================================================
+                               EDIT SUBTASK
+                            ================================================= */
+
+                            <div className="space-y-3 bg-zinc-50 p-3 dark:bg-zinc-900">
+                              <input
+                                value={
+                                  editingSubtaskTitle
+                                }
+                                onChange={(
+                                  event,
+                                ) =>
+                                  setEditingSubtaskTitle(
+                                    event
+                                      .target
+                                      .value,
+                                  )
+                                }
+                                className="h-8 w-full rounded-md border border-zinc-200 bg-white px-2.5 text-xs outline-none focus:border-violet-400 dark:border-zinc-700 dark:bg-zinc-950"
+                              />
+
+                              <div className="flex flex-wrap gap-2">
+                                <select
+                                  value={
+                                    editingSubtaskPriority
+                                  }
+                                  onChange={(
+                                    event,
+                                  ) =>
+                                    setEditingSubtaskPriority(
+                                      event
+                                        .target
+                                        .value as TaskPriority,
+                                    )
+                                  }
+                                  className="h-8 rounded-md border border-zinc-200 bg-white px-2 text-[11px] dark:border-zinc-700 dark:bg-zinc-950"
+                                >
+                                  {(
+                                    Object.keys(
+                                      priorityLabels,
+                                    ) as TaskPriority[]
+                                  ).map(
+                                    (
+                                      priority,
+                                    ) => (
+                                      <option
+                                        key={
+                                          priority
+                                        }
+                                        value={
+                                          priority
+                                        }
+                                      >
+                                        {
+                                          priorityLabels[
+                                            priority
+                                          ]
+                                        }
+                                      </option>
+                                    ),
+                                  )}
+                                </select>
+
+                                <select
+                                  value={
+                                    editingSubtaskAssigneeId
+                                  }
+                                  onChange={(
+                                    event,
+                                  ) =>
+                                    setEditingSubtaskAssigneeId(
+                                      event
+                                        .target
+                                        .value,
+                                    )
+                                  }
+                                  className="h-8 max-w-[170px] rounded-md border border-zinc-200 bg-white px-2 text-[11px] dark:border-zinc-700 dark:bg-zinc-950"
+                                >
+                                  <option value="">
+                                    Unassigned
+                                  </option>
+
+                                  {workspaceMembers.map(
+                                    (
+                                      member,
+                                    ) => (
+                                      <option
+                                        key={
+                                          member.userId
+                                        }
+                                        value={
+                                          member.userId
+                                        }
+                                      >
+                                        {
+                                          member
+                                            .user
+                                            .name
+                                        }
+                                      </option>
+                                    ),
+                                  )}
+                                </select>
+
+                                <input
+                                  type="date"
+                                  value={
+                                    editingSubtaskDueDate
+                                  }
+                                  onChange={(
+                                    event,
+                                  ) =>
+                                    setEditingSubtaskDueDate(
+                                      event
+                                        .target
+                                        .value,
+                                    )
+                                  }
+                                  className="h-8 rounded-md border border-zinc-200 bg-white px-2 text-[11px] dark:border-zinc-700 dark:bg-zinc-950"
+                                />
+
+                                <div className="ml-auto flex gap-2">
+                                  <button
+                                    type="button"
+                                    onClick={
+                                      handleCancelEditSubtask
+                                    }
+                                    className="rounded-md px-3 py-1.5 text-[10px] text-zinc-500 hover:bg-zinc-200 dark:hover:bg-zinc-800"
+                                  >
+                                    Cancel
+                                  </button>
+
+                                  <button
+                                    type="button"
+                                    disabled={
+                                      isUpdatingSubtask
+                                    }
+                                    onClick={() =>
+                                      handleSaveSubtask(
+                                        subtask.id,
+                                      )
+                                    }
+                                    className="rounded-md bg-zinc-900 px-3 py-1.5 text-[10px] text-white disabled:opacity-40 dark:bg-white dark:text-black"
+                                  >
+                                    {isUpdatingSubtask
+                                      ? "Saving..."
+                                      : "Save"}
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
                           ) : (
-                            <Circle className="h-4 w-4 shrink-0 text-zinc-300 dark:text-zinc-600" />
+                            /* =================================================
+                               NORMAL SUBTASK ROW
+                            ================================================= */
+
+                            <div className="grid grid-cols-[minmax(0,1fr)_100px_125px_110px_40px] items-center px-3 py-2.5 text-xs">
+
+                              {/* Task */}
+
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  handleToggleSubtask(
+                                    subtask.id,
+                                    !subtask.completed,
+                                  )
+                                }
+                                className="flex min-w-0 items-center gap-2 text-left"
+                              >
+                                {subtask.completed ? (
+                                  <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-500" />
+                                ) : (
+                                  <Circle className="h-4 w-4 shrink-0 text-zinc-300 dark:text-zinc-600" />
+                                )}
+
+                                <span
+                                  className={
+                                    subtask.completed
+                                      ? "truncate text-zinc-400 line-through"
+                                      : "truncate"
+                                  }
+                                >
+                                  {
+                                    subtask.title
+                                  }
+                                </span>
+                              </button>
+
+                              {/* Priority */}
+
+                              <div className="flex items-center gap-1.5">
+                                <span
+                                  className={`h-1.5 w-1.5 rounded-full ${
+                                    priorityDotColors[
+                                      subtask.priority ||
+                                        "NO_PRIORITY"
+                                    ]
+                                  }`}
+                                />
+
+                                <span
+                                  className={`text-[10px] ${
+                                    priorityColors[
+                                      subtask.priority ||
+                                        "NO_PRIORITY"
+                                    ]
+                                  }`}
+                                >
+                                  {
+                                    priorityLabels[
+                                      subtask.priority ||
+                                        "NO_PRIORITY"
+                                    ]
+                                  }
+                                </span>
+                              </div>
+
+                              {/* Member */}
+
+                              <div className="flex min-w-0 items-center gap-1.5">
+                                <Avatar
+                                  user={
+                                    subtask.assignee
+                                  }
+                                  small
+                                />
+
+                                <span className="truncate text-[10px] text-zinc-500 dark:text-zinc-400">
+                                  {subtask
+                                    .assignee
+                                    ?.name ||
+                                    "Unassigned"}
+                                </span>
+                              </div>
+
+                              {/* Due Date */}
+
+                              <div className="flex items-center gap-1.5 text-[10px] text-zinc-500">
+                                <CalendarDays className="h-3 w-3 text-zinc-400" />
+
+                                {subtask.dueDate
+                                  ? new Date(
+                                      subtask.dueDate,
+                                    ).toLocaleDateString(
+                                      undefined,
+                                      {
+                                        day: "numeric",
+                                        month: "short",
+                                      },
+                                    )
+                                  : "No date"}
+                              </div>
+
+                              {/* Actions */}
+
+                              <div
+                                className="relative flex justify-end"
+                                ref={
+                                  openSubtaskMenu ===
+                                  subtask.id
+                                    ? subtaskMenuRef
+                                    : null
+                                }
+                              >
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setOpenSubtaskMenu(
+                                      openSubtaskMenu ===
+                                        subtask.id
+                                        ? null
+                                        : subtask.id,
+                                    )
+                                  }
+                                  className="rounded p-1 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
+                                  aria-label="Subtask actions"
+                                >
+                                  <MoreHorizontal className="h-3.5 w-3.5" />
+                                </button>
+
+                                {openSubtaskMenu ===
+                                  subtask.id && (
+                                  <div className="absolute right-0 top-7 z-50 w-36 rounded-lg border border-zinc-200 bg-white p-1.5 shadow-lg dark:border-zinc-700 dark:bg-zinc-900">
+
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        handleStartEditSubtask(
+                                          subtask,
+                                        )
+                                      }
+                                      className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-[11px] hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                                    >
+                                      <Settings className="h-3.5 w-3.5 text-zinc-400" />
+                                      Edit
+                                    </button>
+
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        handleDeleteSubtask(
+                                          subtask.id,
+                                        )
+                                      }
+                                      className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-[11px] text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30"
+                                    >
+                                      <Trash2 className="h-3.5 w-3.5" />
+                                      Delete
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
                           )}
-
-                          <span
-                            className={`truncate text-xs ${
-                              subtask.completed
-                                ? "text-zinc-400 line-through"
-                                : "text-zinc-700 dark:text-zinc-300"
-                            }`}
-                          >
-                            {
-                              subtask.title
-                            }
-                          </span>
-                        </button>
-
-                        {/* Delete */}
-
-                        <button
-                          type="button"
-                          onClick={() =>
-                            handleDeleteSubtask(
-                              subtask.id,
-                            )
-                          }
-                          className="rounded-md p-1.5 text-zinc-400 transition hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-950/40"
-                          aria-label={`Delete subtask ${subtask.title}`}
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
-
-                      </div>
-                    ),
+                        </div>
+                      );
+                    },
                   )
                 )}
-
               </div>
 
-              {subtaskError &&
-                !isSubtaskInputOpen && (
-                  <p className="border-t border-zinc-100 px-5 py-2 text-[10px] text-red-500 dark:border-zinc-800">
-                    {subtaskError}
-                  </p>
-                )}
-
-            </div>
+              {subtaskError && (
+                <p className="mt-2 text-[10px] text-red-500">
+                  {subtaskError}
+                </p>
+              )}
+            </section>
 
             {/* =================================================
-                Updates / Comments
+                UPDATES
             ================================================= */}
 
-            <div className="rounded-xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
+            <section>
+              <div className="mb-3 flex items-center gap-2">
+                <ChevronDown className="h-3.5 w-3.5 text-zinc-500" />
 
-              {/* Updates Header */}
+                <h3 className="text-sm font-semibold">
+                  Updates
+                </h3>
 
-              <div className="border-b border-zinc-100 px-5 py-4 dark:border-zinc-800">
-
-                <div className="flex items-center justify-between">
-
-                  <div>
-                    <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-                      Updates
-                    </h3>
-
-                    <p className="mt-0.5 text-[10px] text-zinc-400">
-                      Activity and comments for this task.
-                    </p>
-                  </div>
-
-                  <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-[10px] text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400">
-                    {task.comments.length}
-                  </span>
-
-                </div>
-
+                <span className="text-[10px] text-zinc-400">
+                  {task.comments.length}
+                </span>
               </div>
 
-              {/* Comments */}
-
-              <div className="p-5">
-
+              <div className="rounded-lg border border-zinc-200 dark:border-zinc-800">
                 {task.comments.length ===
                 0 ? (
-                  <div className="rounded-lg border border-dashed border-zinc-200 px-4 py-8 text-center dark:border-zinc-800">
-
-                    <MessageCircle className="mx-auto h-5 w-5 text-zinc-300 dark:text-zinc-600" />
+                  <div className="px-5 py-7 text-center">
+                    <MessageCircle className="mx-auto h-5 w-5 text-zinc-300 dark:text-zinc-700" />
 
                     <p className="mt-2 text-xs text-zinc-400">
                       No updates yet.
                     </p>
-
-                    <p className="mt-1 text-[10px] text-zinc-400">
-                      Be the first to add an update.
-                    </p>
-
                   </div>
                 ) : (
-                  <div className="space-y-5">
-
+                  <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
                     {task.comments.map(
                       (comment) => (
                         <div
                           key={
                             comment.id
                           }
-                          className="flex gap-3"
+                          className="flex gap-3 p-4"
                         >
-
-                          {/* Avatar */}
-
-                          <div className="flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800">
-
-                            {comment.user
-                              ?.avatar ? (
-                              <img
-                                src={
-                                  comment
-                                    .user
-                                    .avatar
-                                }
-                                alt={
-                                  comment
-                                    .user
-                                    .name
-                                }
-                                className="h-7 w-7 rounded-full object-cover"
-                              />
-                            ) : (
-                              <User className="h-3.5 w-3.5 text-zinc-500 dark:text-zinc-400" />
-                            )}
-
-                          </div>
-
-                          {/* Comment */}
+                          <Avatar
+                            user={
+                              comment.user
+                            }
+                          />
 
                           <div className="min-w-0 flex-1">
-
                             <div className="flex flex-wrap items-center gap-2">
-
-                              <span className="text-xs font-medium text-zinc-800 dark:text-zinc-200">
+                              <span className="text-xs font-medium">
                                 {comment.user
                                   ?.name ||
                                   "User"}
@@ -1160,7 +1899,6 @@ export default function TaskDetailsPage() {
                                   comment.createdAt,
                                 ).toLocaleString()}
                               </span>
-
                             </div>
 
                             <p className="mt-1 text-xs leading-5 text-zinc-500 dark:text-zinc-400">
@@ -1168,39 +1906,30 @@ export default function TaskDetailsPage() {
                                 comment.content
                               }
                             </p>
-
                           </div>
-
                         </div>
                       ),
                     )}
-
                   </div>
                 )}
 
-              </div>
-
-              {/* Add Comment */}
-
-              <div className="border-t border-zinc-100 p-4 dark:border-zinc-800">
+                {/* Comment */}
 
                 <form
                   onSubmit={
                     handleAddComment
                   }
-                  className="overflow-hidden rounded-lg border border-zinc-200 bg-white transition focus-within:border-zinc-300 focus-within:ring-2 focus-within:ring-zinc-100 dark:border-zinc-700 dark:bg-zinc-950 dark:focus-within:border-zinc-600 dark:focus-within:ring-zinc-900"
+                  className="border-t border-zinc-200 dark:border-zinc-800"
                 >
-
                   <textarea
                     value={newComment}
                     onChange={(event) => {
                       setNewComment(
-                        event.target.value,
+                        event.target
+                          .value,
                       );
 
-                      setCommentError(
-                        "",
-                      );
+                      setCommentError("");
                     }}
                     onKeyDown={(event) => {
                       if (
@@ -1220,26 +1949,17 @@ export default function TaskDetailsPage() {
                     }}
                     placeholder="Add a comment..."
                     rows={3}
-                    disabled={
-                      isAddingComment
-                    }
-                    className="w-full resize-none bg-transparent px-3 py-2.5 text-xs text-zinc-800 outline-none placeholder:text-zinc-400 disabled:cursor-not-allowed disabled:opacity-60 dark:text-zinc-100"
+                    className="w-full resize-none bg-transparent px-4 py-3 text-xs outline-none placeholder:text-zinc-400"
                   />
 
                   <div className="flex items-center justify-between border-t border-zinc-100 px-3 py-2 dark:border-zinc-800">
-
-                    {/* Attachment button */}
-
                     <button
                       type="button"
                       disabled
-                      className="rounded-md p-1.5 text-zinc-300 dark:text-zinc-600"
-                      aria-label="Attach file"
+                      className="p-1.5 text-zinc-300 dark:text-zinc-700"
                     >
                       <Paperclip className="h-4 w-4" />
                     </button>
-
-                    {/* Submit */}
 
                     <button
                       type="submit"
@@ -1247,7 +1967,7 @@ export default function TaskDetailsPage() {
                         !newComment.trim() ||
                         isAddingComment
                       }
-                      className="flex items-center gap-1.5 rounded-md bg-black px-3 py-1.5 text-[10px] font-medium text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-40 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
+                      className="flex items-center gap-1.5 rounded-md bg-zinc-900 px-3 py-1.5 text-[10px] font-medium text-white disabled:opacity-40 dark:bg-white dark:text-black"
                     >
                       <Send className="h-3 w-3" />
 
@@ -1255,124 +1975,337 @@ export default function TaskDetailsPage() {
                         ? "Posting..."
                         : "Comment"}
                     </button>
-
                   </div>
-
                 </form>
-
-                {commentError && (
-                  <p className="mt-2 text-[10px] text-red-500">
-                    {commentError}
-                  </p>
-                )}
-
-                <p className="mt-2 text-[10px] text-zinc-400">
-                  Press Enter to comment · Shift + Enter for a new line
-                </p>
-
               </div>
 
-            </div>
-
+              {commentError && (
+                <p className="mt-2 text-[10px] text-red-500">
+                  {commentError}
+                </p>
+              )}
+            </section>
           </section>
 
           {/* =================================================
-              Details Sidebar
+              RIGHT DETAILS PANEL
           ================================================= */}
 
           <aside className="h-fit rounded-xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
+            <div className="flex items-center justify-between border-b border-zinc-200 px-4 py-3 dark:border-zinc-800">
+              <div className="flex items-center gap-2">
+                <ChevronDown className="h-3 w-3" />
 
-            <div className="border-b border-zinc-100 px-5 py-4 dark:border-zinc-800">
-              <h3 className="text-sm font-semibold">
-                Details
-              </h3>
+                <h3 className="text-xs font-semibold">
+                  Details
+                </h3>
+              </div>
+
+              <button
+                type="button"
+                className="rounded p-1 text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+              >
+                <Settings className="h-3.5 w-3.5" />
+              </button>
             </div>
 
-            <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
+            {/* Status */}
 
-              <DetailRow
-                icon={
-                  <Circle className="h-4 w-4" />
-                }
-                label="Status"
-                value={
-                  statusLabels[
-                    task.status
-                  ]
-                }
-              />
+            <DetailButton
+              label="Status"
+              value={
+                statusLabels[
+                  task.status
+                ]
+              }
+              color="text-orange-500"
+              onClick={() =>
+                setOpenMenu(
+                  openMenu ===
+                    "status"
+                    ? null
+                    : "status",
+                )
+              }
+            />
 
-              <DetailRow
-                icon={
-                  <Clock3 className="h-4 w-4" />
-                }
-                label="Priority"
-                value={
-                  priorityLabels[
-                    task.priority
-                  ]
-                }
-              />
+            {openMenu === "status" && (
+              <div className="border-b border-zinc-100 px-4 pb-2 dark:border-zinc-800">
+                {(
+                  Object.keys(
+                    statusLabels,
+                  ) as ApiTaskDetails["status"][]
+                ).map(
+                  (status) => (
+                    <button
+                      key={status}
+                      type="button"
+                      onClick={() =>
+                        handleUpdateTask({
+                          status,
+                        })
+                      }
+                      className="flex w-full items-center justify-between rounded-md px-2 py-1.5 text-xs hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                    >
+                      {
+                        statusLabels[
+                          status
+                        ]
+                      }
 
-              <DetailRow
-                icon={
-                  <User className="h-4 w-4" />
-                }
-                label="Assignee"
-                value={
-                  task.assignee?.name ||
-                  "Unassigned"
-                }
-              />
-
-              <DetailRow
-                icon={
-                  <CalendarDays className="h-4 w-4" />
-                }
-                label="Due Date"
-                value={
-                  task.dueDate
-                    ? new Date(
-                        task.dueDate,
-                      ).toLocaleDateString()
-                    : "No date"
-                }
-              />
-
-              <DetailRow
-                icon={
-                  <Tag className="h-4 w-4" />
-                }
-                label="Labels"
-                value={String(task.labels.length)}
-              />
-
-              <DetailRow
-                icon={
-                  <MessageCircle className="h-4 w-4" />
-                }
-                label="Comments"
-                value={String(
-                  task.comments.length,
+                      {task.status ===
+                        status && (
+                        <Check className="h-3.5 w-3.5" />
+                      )}
+                    </button>
+                  ),
                 )}
-              />
+              </div>
+            )}
 
-              <DetailRow
-                icon={
-                  <CheckCircle2 className="h-4 w-4" />
-                }
-                label="Task ID"
-                value={task.id}
-              />
+            {/* Priority */}
 
+            <DetailButton
+              label="Priority"
+              value={
+                priorityLabels[
+                  task.priority
+                ]
+              }
+              color={
+                priorityColors[
+                  task.priority
+                ]
+              }
+              onClick={() =>
+                setOpenMenu(
+                  openMenu ===
+                    "priority"
+                    ? null
+                    : "priority",
+                )
+              }
+            />
+
+            {/* Members */}
+
+            <DetailRow
+              icon={
+                <User className="h-3.5 w-3.5" />
+              }
+              label="Members"
+              value={
+                task.assignee?.name ||
+                "Unassigned"
+              }
+            />
+
+            {/* Dates */}
+
+            <DetailRow
+              icon={
+                <CalendarDays className="h-3.5 w-3.5" />
+              }
+              label="Dates"
+              value={
+                task.dueDate
+                  ? new Date(
+                      task.dueDate,
+                    ).toLocaleDateString()
+                  : "No date"
+              }
+            />
+
+            {/* Labels */}
+
+            <DetailRow
+              icon={
+                <Tag className="h-3.5 w-3.5" />
+              }
+              label="Labels"
+              value={String(
+                task.labels.length,
+              )}
+            />
+
+            {/* Teams */}
+
+            <DetailRow
+              icon={
+                <User className="h-3.5 w-3.5" />
+              }
+              label="Teams"
+              value="Workspace"
+            />
+
+            {/* Reporter */}
+
+            <DetailRow
+              icon={
+                <User className="h-3.5 w-3.5" />
+              }
+              label="Reporter"
+              value={
+                task.creator?.name ||
+                "Unknown"
+              }
+            />
+
+            {/* Updates */}
+
+            <div className="border-t border-zinc-200 dark:border-zinc-800">
+              <div className="flex items-center gap-2 px-4 py-3">
+                <ChevronDown className="h-3 w-3" />
+
+                <span className="text-xs font-semibold">
+                  Updates
+                </span>
+              </div>
+
+              {task.comments
+                .slice(-3)
+                .reverse()
+                .map(
+                  (comment) => (
+                    <div
+                      key={
+                        comment.id
+                      }
+                      className="flex gap-2 border-t border-zinc-100 px-4 py-3 dark:border-zinc-800"
+                    >
+                      <Avatar
+                        user={
+                          comment.user
+                        }
+                        small
+                      />
+
+                      <div className="min-w-0">
+                        <p className="text-[10px] font-medium">
+                          {comment.user
+                            ?.name ||
+                            "User"}
+                        </p>
+
+                        <p className="mt-0.5 truncate text-[10px] text-zinc-400">
+                          {
+                            comment.content
+                          }
+                        </p>
+
+                        <p className="mt-1 text-[9px] text-zinc-400">
+                          {new Date(
+                            comment.createdAt,
+                          ).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </div>
+                  ),
+                )}
             </div>
-
           </aside>
-
         </div>
       </div>
-
     </main>
+  );
+}
+
+// =====================================================
+// Helpers
+// =====================================================
+
+function formatDateForInput(
+  date: string,
+) {
+  const parsed =
+    new Date(date);
+
+  if (
+    Number.isNaN(
+      parsed.getTime(),
+    )
+  ) {
+    return "";
+  }
+
+  const year =
+    parsed.getFullYear();
+
+  const month =
+    String(
+      parsed.getMonth() + 1,
+    ).padStart(2, "0");
+
+  const day =
+    String(
+      parsed.getDate(),
+    ).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
+
+// =====================================================
+// Dropdown
+// =====================================================
+
+function Dropdown({
+  children,
+}: {
+  children: ReactNode;
+}) {
+  return (
+    <div className="relative z-20 mt-2 w-64 rounded-lg border border-zinc-200 bg-white p-2 shadow-lg dark:border-zinc-700 dark:bg-zinc-900">
+      {children}
+    </div>
+  );
+}
+
+function DropdownTitle({
+  children,
+}: {
+  children: ReactNode;
+}) {
+  return (
+    <div className="px-2 pb-2 text-[10px] font-medium text-zinc-400">
+      {children}
+    </div>
+  );
+}
+
+// =====================================================
+// Detail Button
+// =====================================================
+
+function DetailButton({
+  label,
+  value,
+  color,
+  onClick,
+}: {
+  label: string;
+  value: string;
+  color?: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex w-full items-center justify-between border-b border-zinc-100 px-4 py-3 text-left hover:bg-zinc-50 dark:border-zinc-800 dark:hover:bg-zinc-800/50"
+    >
+      <span className="text-[10px] text-zinc-500">
+        {label}
+      </span>
+
+      <span
+        className={`text-[10px] font-medium ${
+          color ||
+          "text-zinc-700 dark:text-zinc-300"
+        }`}
+      >
+        {value}
+      </span>
+    </button>
   );
 }
 
@@ -1380,32 +2313,62 @@ export default function TaskDetailsPage() {
 // Detail Row
 // =====================================================
 
-interface DetailRowProps {
-  icon: ReactNode;
-  label: string;
-  value: string;
-}
-
 function DetailRow({
   icon,
   label,
   value,
-}: DetailRowProps) {
+}: {
+  icon: ReactNode;
+  label: string;
+  value: string;
+}) {
   return (
-    <div className="flex items-center justify-between gap-4 px-5 py-4">
-
-      <div className="flex items-center gap-3 text-zinc-400">
+    <div className="flex items-center justify-between gap-3 border-b border-zinc-100 px-4 py-3 dark:border-zinc-800">
+      <div className="flex items-center gap-2 text-zinc-400">
         {icon}
 
-        <span className="text-xs text-zinc-500 dark:text-zinc-400">
+        <span className="text-[10px] text-zinc-500">
           {label}
         </span>
       </div>
 
-      <span className="max-w-[160px] truncate text-right text-xs font-medium text-zinc-700 dark:text-zinc-300">
+      <span className="max-w-[130px] truncate text-right text-[10px] font-medium text-zinc-700 dark:text-zinc-300">
         {value}
       </span>
+    </div>
+  );
+}
 
+// =====================================================
+// Avatar
+// =====================================================
+
+function Avatar({
+  user,
+  small = false,
+}: {
+  user?: ApiUser | null;
+  small?: boolean;
+}) {
+  const size = small
+    ? "h-6 w-6"
+    : "h-7 w-7";
+
+  if (user?.avatar) {
+    return (
+      <img
+        src={user.avatar}
+        alt={user.name}
+        className={`${size} shrink-0 rounded-full object-cover`}
+      />
+    );
+  }
+
+  return (
+    <div
+      className={`${size} flex shrink-0 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800`}
+    >
+      <User className="h-3.5 w-3.5 text-zinc-500" />
     </div>
   );
 }

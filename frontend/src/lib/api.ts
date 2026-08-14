@@ -22,7 +22,8 @@ async function request<T>(
   );
 
   if (!response.ok) {
-    const errorText = await response.text();
+    const errorText =
+      await response.text();
 
     throw new Error(
       errorText ||
@@ -65,25 +66,68 @@ export interface CreateCommentInput {
 }
 
 // =====================================================
+// Task Status & Priority
+// =====================================================
+
+export type TaskStatus =
+  | "TODO"
+  | "DOING"
+  | "COMPLETED"
+  | "ON_HOLD";
+
+export type TaskPriority =
+  | "URGENT"
+  | "HIGH"
+  | "MEDIUM"
+  | "LOW"
+  | "NO_PRIORITY";
+
+// =====================================================
 // Subtask Types
 // =====================================================
 
 export interface ApiSubtask {
   id: string;
+
   title: string;
+
   completed: boolean;
+
+  priority: TaskPriority;
+
+  dueDate?: string | null;
+
   createdAt: string;
+
   updatedAt: string;
+
   taskId: string;
+
+  assigneeId?: string | null;
+
+  assignee?: ApiUser | null;
 }
 
 export interface CreateSubtaskInput {
   title: string;
+
+  priority?: TaskPriority;
+
+  dueDate?: string;
+
+  assigneeId?: string;
 }
 
 export interface UpdateSubtaskInput {
   title?: string;
+
   completed?: boolean;
+
+  priority?: TaskPriority;
+
+  dueDate?: string;
+
+  assigneeId?: string | null;
 }
 
 // =====================================================
@@ -108,19 +152,6 @@ export interface AssignLabelInput {
 // =====================================================
 // Task Types
 // =====================================================
-
-export type TaskStatus =
-  | "TODO"
-  | "DOING"
-  | "COMPLETED"
-  | "ON_HOLD";
-
-export type TaskPriority =
-  | "URGENT"
-  | "HIGH"
-  | "MEDIUM"
-  | "LOW"
-  | "NO_PRIORITY";
 
 export interface ApiTask {
   id: string;

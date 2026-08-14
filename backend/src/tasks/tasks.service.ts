@@ -63,7 +63,13 @@ export class TasksService {
       include: {
         assignee: true,
         creator: true,
-        subtasks: true,
+
+        subtasks: {
+          include: {
+            assignee: true,
+          },
+        },
+
         comments: true,
         labels: true,
       },
@@ -79,7 +85,13 @@ export class TasksService {
       include: {
         assignee: true,
         creator: true,
-        subtasks: true,
+
+        subtasks: {
+          include: {
+            assignee: true,
+          },
+        },
+
         comments: true,
         labels: true,
       },
@@ -101,10 +113,13 @@ export class TasksService {
           creator: true,
 
           subtasks: {
-            orderBy: {
-              createdAt: "asc",
+            include: {
+            assignee: true,
             },
-          },
+            orderBy: {
+            createdAt: "asc",
+            },
+        },
 
           comments: {
             include: {
@@ -167,7 +182,13 @@ export class TasksService {
       include: {
         assignee: true,
         creator: true,
-        subtasks: true,
+
+        subtasks: {
+          include: {
+            assignee: true,
+          },
+        },
+
         comments: true,
         labels: true,
       },
@@ -200,16 +221,64 @@ export class TasksService {
     createSubtaskDto: CreateSubtaskDto,
   ) {
     // Check parent task
-    await this.findOne(taskId);
+    const task =
+      await this.prisma.task.findUnique({
+        where: {
+          id: taskId,
+        },
+      });
 
-    return this.prisma.subtask.create({
-      data: {
-        title:
-          createSubtaskDto.title,
+    if (!task) {
+      throw new NotFoundException(
+        `Task with ID ${taskId} not found`,
+      );
+    }
 
-        taskId,
-      },
-    });
+    // If an assignee was provided,
+    // make sure that user exists.
+    if (createSubtaskDto.assigneeId) {
+      const user =
+        await this.prisma.user.findUnique({
+          where: {
+            id: createSubtaskDto.assigneeId,
+          },
+        });
+
+      if (!user) {
+        throw new NotFoundException(
+          `User with ID ${createSubtaskDto.assigneeId} not found`,
+        );
+      }
+    }
+
+    const subtask =
+      await this.prisma.subtask.create({
+        data: {
+          title:
+            createSubtaskDto.title.trim(),
+
+          priority:
+            createSubtaskDto.priority,
+
+          dueDate:
+            createSubtaskDto.dueDate
+              ? new Date(
+                  createSubtaskDto.dueDate,
+                )
+              : undefined,
+
+          assigneeId:
+            createSubtaskDto.assigneeId,
+
+          taskId,
+        },
+
+        include: {
+          assignee: true,
+        },
+      });
+
+    return subtask;
   }
 
   async updateSubtask(
@@ -231,19 +300,57 @@ export class TasksService {
       );
     }
 
-    return this.prisma.subtask.update({
-      where: {
-        id: subtaskId,
-      },
+    // Check assignee if supplied
+    if (
+      updateSubtaskDto.assigneeId
+    ) {
+      const user =
+        await this.prisma.user.findUnique({
+          where: {
+            id: updateSubtaskDto.assigneeId,
+          },
+        });
 
-      data: {
-        title:
-          updateSubtaskDto.title,
+      if (!user) {
+        throw new NotFoundException(
+          `User with ID ${updateSubtaskDto.assigneeId} not found`,
+        );
+      }
+    }
 
-        completed:
-          updateSubtaskDto.completed,
-      },
-    });
+    const updatedSubtask =
+      await this.prisma.subtask.update({
+        where: {
+          id: subtaskId,
+        },
+
+        data: {
+          title:
+            updateSubtaskDto.title,
+
+          completed:
+            updateSubtaskDto.completed,
+
+          priority:
+            updateSubtaskDto.priority,
+
+          dueDate:
+            updateSubtaskDto.dueDate
+              ? new Date(
+                  updateSubtaskDto.dueDate,
+                )
+              : undefined,
+
+          assigneeId:
+            updateSubtaskDto.assigneeId,
+        },
+
+        include: {
+          assignee: true,
+        },
+      });
+
+    return updatedSubtask;
   }
 
   async removeSubtask(
@@ -458,12 +565,19 @@ export class TasksService {
       include: {
         assignee: true,
         creator: true,
-        subtasks: true,
+
+        subtasks: {
+          include: {
+            assignee: true,
+          },
+        },
+
         comments: {
           include: {
             user: true,
           },
         },
+
         labels: true,
       },
     });
@@ -522,12 +636,19 @@ export class TasksService {
       include: {
         assignee: true,
         creator: true,
-        subtasks: true,
+
+        subtasks: {
+          include: {
+            assignee: true,
+          },
+        },
+
         comments: {
           include: {
             user: true,
           },
         },
+
         labels: true,
       },
     });
