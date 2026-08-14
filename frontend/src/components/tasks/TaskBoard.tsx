@@ -29,7 +29,7 @@ export default function TaskBoard({
   );
 
   return (
-    <div className="grid min-w-0 gap-4 xl:grid-cols-4">
+    <div className="grid min-w-0 grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
       <TaskColumn
         title="To Do"
         tasks={todo}
