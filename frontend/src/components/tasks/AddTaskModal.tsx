@@ -2,6 +2,7 @@
 
 import { X } from "lucide-react";
 import { FormEvent, useState } from "react";
+import { createTask } from "@/lib/api";
 import { Task } from "./TaskCard";
 
 interface AddTaskModalProps {
@@ -10,57 +11,206 @@ interface AddTaskModalProps {
   onAdd: (task: Task) => void;
 }
 
+function mapStatusToApi(
+  status: Task["status"],
+) {
+  const statusMap = {
+    "To Do": "TODO",
+    Doing: "DOING",
+    Completed: "COMPLETED",
+    "On Hold": "ON_HOLD",
+  } as const;
+
+  return statusMap[status];
+}
+
+function mapPriorityToApi(
+  priority: Task["priority"],
+) {
+  const priorityMap = {
+    Urgent: "URGENT",
+    High: "HIGH",
+    Medium: "MEDIUM",
+    Low: "LOW",
+    "No Priority": "NO_PRIORITY",
+  } as const;
+
+  return priorityMap[priority];
+}
+
 export default function AddTaskModal({
   isOpen,
   onClose,
   onAdd,
 }: AddTaskModalProps) {
   const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
+  const [description, setDescription] =
+    useState("");
+
   const [status, setStatus] =
     useState<Task["status"]>("To Do");
+
   const [priority, setPriority] =
     useState<Task["priority"]>("No Priority");
-  const [assignee, setAssignee] = useState("John");
-  const [dueDate, setDueDate] = useState("");
+
+  const [assignee, setAssignee] =
+    useState("Unassigned");
+
+  const [dueDate, setDueDate] =
+    useState("");
+
+  const [isSubmitting, setIsSubmitting] =
+    useState(false);
+
+  const [error, setError] = useState("");
 
   if (!isOpen) {
     return null;
   }
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-
-    if (!title.trim()) {
-      return;
-    }
-
-    const newTask: Task = {
-      id: crypto.randomUUID(),
-      title: title.trim(),
-      description: description.trim(),
-      status,
-      priority,
-      assignee,
-      dueDate: dueDate || "No date",
-      comments: 0,
-    };
-
-    onAdd(newTask);
-
+  const resetForm = () => {
     setTitle("");
     setDescription("");
     setStatus("To Do");
     setPriority("No Priority");
-    setAssignee("John");
+    setAssignee("Unassigned");
     setDueDate("");
+    setError("");
+  };
+
+  const handleSubmit = async (
+    event: FormEvent,
+  ) => {
+    event.preventDefault();
+
+    if (!title.trim()) {
+      setError("Task title is required.");
+      return;
+    }
+
+    const storedWorkspace =
+      localStorage.getItem(
+        "taskflow_workspace",
+      );
+
+    if (!storedWorkspace) {
+      setError(
+        "Workspace not found. Please login again.",
+      );
+      return;
+    }
+
+    let workspace;
+
+    try {
+      workspace = JSON.parse(
+        storedWorkspace,
+      );
+    } catch {
+      setError(
+        "Invalid workspace information. Please login again.",
+      );
+      return;
+    }
+
+    if (!workspace?.id) {
+      setError(
+        "Workspace ID is missing. Please login again.",
+      );
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      setError("");
+
+      /*
+       * Send the task to the NestJS API.
+       *
+       * The backend will create the actual
+       * database record through Prisma.
+       */
+      const createdTask = await createTask({
+        title: title.trim(),
+        description:
+          description.trim() || undefined,
+
+        status: mapStatusToApi(status),
+
+        priority:
+          mapPriorityToApi(priority),
+
+        dueDate: dueDate
+          ? new Date(
+              `${dueDate}T00:00:00`,
+            ).toISOString()
+          : undefined,
+
+        workspaceId: workspace.id,
+      });
+
+      /*
+       * Convert the API response back into
+       * the format expected by TaskCard.
+       */
+      const newTask: Task = {
+        id: createdTask.id,
+
+        title: createdTask.title,
+
+        description:
+          createdTask.description ??
+          undefined,
+
+        status:
+          status,
+
+        priority:
+          priority,
+
+        assignee:
+          createdTask.assignee?.name ??
+          "Unassigned",
+
+        dueDate:
+          createdTask.dueDate
+            ? new Date(
+                createdTask.dueDate,
+              ).toLocaleDateString()
+            : "No due date",
+
+        comments:
+          createdTask.comments?.length ?? 0,
+      };
+
+      /*
+       * Update the TaskBoard immediately
+       * after successful database creation.
+       */
+      onAdd(newTask);
+
+      resetForm();
+      onClose();
+    } catch (error) {
+      console.error(
+        "Failed to create task:",
+        error,
+      );
+
+      setError(
+        "Unable to create task. Please try again.",
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-      <div className="w-full max-w-lg rounded-xl border border-zinc-200 bg-white shadow-xl">
+      <div className="w-full max-w-lg overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-xl">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-zinc-100 px-5 py-4">
+
+        <div className="flex items-start justify-between border-b border-zinc-100 p-5">
           <div>
             <h2 className="text-sm font-semibold text-zinc-900">
               Create Task
@@ -74,16 +224,22 @@ export default function AddTaskModal({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-md p-1.5 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700"
+            disabled={isSubmitting}
+            className="rounded-md p-1.5 text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <X className="h-4 w-4" />
           </button>
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="p-5">
+
+        <form
+          onSubmit={handleSubmit}
+          className="p-5"
+        >
           <div className="space-y-4">
             {/* Title */}
+
             <div>
               <label
                 htmlFor="task-title"
@@ -100,11 +256,13 @@ export default function AddTaskModal({
                 }
                 placeholder="Enter task title"
                 autoFocus
-                className="h-10 w-full rounded-md border border-zinc-200 px-3 text-xs outline-none transition placeholder:text-zinc-400 focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+                disabled={isSubmitting}
+                className="h-10 w-full rounded-md border border-zinc-200 px-3 text-xs outline-none transition placeholder:text-zinc-400 focus:border-violet-400 focus:ring-2 focus:ring-violet-100 disabled:bg-zinc-50"
               />
             </div>
 
             {/* Description */}
+
             <div>
               <label
                 htmlFor="task-description"
@@ -117,15 +275,19 @@ export default function AddTaskModal({
                 id="task-description"
                 value={description}
                 onChange={(event) =>
-                  setDescription(event.target.value)
+                  setDescription(
+                    event.target.value,
+                  )
                 }
                 placeholder="Describe the task..."
                 rows={3}
-                className="w-full resize-none rounded-md border border-zinc-200 px-3 py-2.5 text-xs outline-none transition placeholder:text-zinc-400 focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+                disabled={isSubmitting}
+                className="w-full resize-none rounded-md border border-zinc-200 px-3 py-2.5 text-xs outline-none transition placeholder:text-zinc-400 focus:border-violet-400 focus:ring-2 focus:ring-violet-100 disabled:bg-zinc-50"
               />
             </div>
 
             {/* Status + Priority */}
+
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div>
                 <label
@@ -140,15 +302,28 @@ export default function AddTaskModal({
                   value={status}
                   onChange={(event) =>
                     setStatus(
-                      event.target.value as Task["status"],
+                      event.target
+                        .value as Task["status"],
                     )
                   }
-                  className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-xs outline-none focus:border-violet-400"
+                  disabled={isSubmitting}
+                  className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-xs outline-none focus:border-violet-400 disabled:bg-zinc-50"
                 >
-                  <option value="To Do">To Do</option>
-                  <option value="Doing">Doing</option>
-                  <option value="Completed">Completed</option>
-                  <option value="On Hold">On Hold</option>
+                  <option value="To Do">
+                    To Do
+                  </option>
+
+                  <option value="Doing">
+                    Doing
+                  </option>
+
+                  <option value="Completed">
+                    Completed
+                  </option>
+
+                  <option value="On Hold">
+                    On Hold
+                  </option>
                 </select>
               </div>
 
@@ -165,23 +340,38 @@ export default function AddTaskModal({
                   value={priority}
                   onChange={(event) =>
                     setPriority(
-                      event.target.value as Task["priority"],
+                      event.target
+                        .value as Task["priority"],
                     )
                   }
-                  className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-xs outline-none focus:border-violet-400"
+                  disabled={isSubmitting}
+                  className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-xs outline-none focus:border-violet-400 disabled:bg-zinc-50"
                 >
                   <option value="No Priority">
                     No Priority
                   </option>
-                  <option value="Urgent">Urgent</option>
-                  <option value="High">High</option>
-                  <option value="Medium">Medium</option>
-                  <option value="Low">Low</option>
+
+                  <option value="Urgent">
+                    Urgent
+                  </option>
+
+                  <option value="High">
+                    High
+                  </option>
+
+                  <option value="Medium">
+                    Medium
+                  </option>
+
+                  <option value="Low">
+                    Low
+                  </option>
                 </select>
               </div>
             </div>
 
             {/* Assignee + Due date */}
+
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div>
                 <label
@@ -195,15 +385,36 @@ export default function AddTaskModal({
                   id="task-assignee"
                   value={assignee}
                   onChange={(event) =>
-                    setAssignee(event.target.value)
+                    setAssignee(
+                      event.target.value,
+                    )
                   }
-                  className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-xs outline-none focus:border-violet-400"
+                  disabled={isSubmitting}
+                  className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-xs outline-none focus:border-violet-400 disabled:bg-zinc-50"
                 >
-                  <option>John</option>
-                  <option>Sarah</option>
-                  <option>Mike</option>
-                  <option>Alex</option>
-                  <option>David</option>
+                  <option>
+                    Unassigned
+                  </option>
+
+                  <option>
+                    John
+                  </option>
+
+                  <option>
+                    Sarah
+                  </option>
+
+                  <option>
+                    Mike
+                  </option>
+
+                  <option>
+                    Alex
+                  </option>
+
+                  <option>
+                    David
+                  </option>
                 </select>
               </div>
 
@@ -220,30 +431,48 @@ export default function AddTaskModal({
                   type="date"
                   value={dueDate}
                   onChange={(event) =>
-                    setDueDate(event.target.value)
+                    setDueDate(
+                      event.target.value,
+                    )
                   }
-                  className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-xs outline-none focus:border-violet-400"
+                  disabled={isSubmitting}
+                  className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-xs outline-none focus:border-violet-400 disabled:bg-zinc-50"
                 />
               </div>
             </div>
           </div>
 
+          {/* Error */}
+
+          {error && (
+            <p className="mt-4 rounded-md bg-red-50 px-3 py-2 text-xs text-red-600">
+              {error}
+            </p>
+          )}
+
           {/* Actions */}
+
           <div className="mt-6 flex justify-end gap-2">
             <button
               type="button"
               onClick={onClose}
-              className="rounded-md border border-zinc-200 px-4 py-2 text-xs font-medium text-zinc-600 hover:bg-zinc-50"
+              disabled={isSubmitting}
+              className="rounded-md border border-zinc-200 px-4 py-2 text-xs font-medium text-zinc-600 transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50"
             >
               Cancel
             </button>
 
             <button
               type="submit"
-              disabled={!title.trim()}
+              disabled={
+                !title.trim() ||
+                isSubmitting
+              }
               className="rounded-md bg-black px-4 py-2 text-xs font-medium text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-40"
             >
-              Create Task
+              {isSubmitting
+                ? "Creating..."
+                : "Create Task"}
             </button>
           </div>
         </form>
