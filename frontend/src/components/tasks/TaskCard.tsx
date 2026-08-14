@@ -397,7 +397,7 @@ export default function TaskCard({
       aria-label={`Open task ${task.title}`}
       className="
         min-w-0
-        cursor-pointer
+        cursor-grab
         overflow-hidden
         rounded-lg
         border

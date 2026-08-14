@@ -2,35 +2,26 @@
 
 import {
   createContext,
+  ReactNode,
   useContext,
   useEffect,
-  useMemo,
   useState,
-  type ReactNode,
 } from "react";
 
-export type ThemeMode = "light" | "dark";
-
-export type AccentColor =
-  | "amber"
-  | "blue"
-  | "pink"
-  | "rose"
-  | "emerald"
-  | "black";
+type Theme = "light" | "dark";
 
 interface ThemeContextValue {
-  theme: ThemeMode;
-  accent: AccentColor;
-  setTheme: (theme: ThemeMode) => void;
-  setAccent: (accent: AccentColor) => void;
+  theme: Theme;
+  setTheme: (theme: Theme) => void;
+  toggleTheme: () => void;
 }
 
 const ThemeContext =
-  createContext<ThemeContextValue | null>(null);
+  createContext<ThemeContextValue | undefined>(
+    undefined,
+  );
 
-const THEME_KEY = "taskflow-theme";
-const ACCENT_KEY = "taskflow-accent";
+const STORAGE_KEY = "taskflow_theme";
 
 export function ThemeProvider({
   children,
@@ -38,38 +29,50 @@ export function ThemeProvider({
   children: ReactNode;
 }) {
   const [theme, setThemeState] =
-    useState<ThemeMode>("light");
+    useState<Theme>("light");
 
-  const [accent, setAccentState] =
-    useState<AccentColor>("blue");
+  const [mounted, setMounted] =
+    useState(false);
+
+  // ------------------------------------------
+  // Load saved theme
+  // ------------------------------------------
 
   useEffect(() => {
     const savedTheme =
-      localStorage.getItem(THEME_KEY);
+      localStorage.getItem(STORAGE_KEY);
 
-    const savedAccent =
-      localStorage.getItem(ACCENT_KEY);
-
-    if (
-      savedTheme === "light" ||
+    const initialTheme: Theme =
       savedTheme === "dark"
-    ) {
-      setThemeState(savedTheme);
-    }
+        ? "dark"
+        : savedTheme === "light"
+          ? "light"
+          : window.matchMedia(
+              "(prefers-color-scheme: dark)",
+            ).matches
+            ? "dark"
+            : "light";
 
-    if (
-      savedAccent === "amber" ||
-      savedAccent === "blue" ||
-      savedAccent === "pink" ||
-      savedAccent === "rose" ||
-      savedAccent === "emerald" ||
-      savedAccent === "black"
-    ) {
-      setAccentState(savedAccent);
-    }
+    setThemeState(initialTheme);
+
+    document.documentElement.classList.toggle(
+      "dark",
+      initialTheme === "dark",
+    );
+
+    document.documentElement.style.colorScheme =
+      initialTheme;
+
+    setMounted(true);
   }, []);
 
+  // ------------------------------------------
+  // Apply theme whenever it changes
+  // ------------------------------------------
+
   useEffect(() => {
+    if (!mounted) return;
+
     const root =
       document.documentElement;
 
@@ -78,42 +81,42 @@ export function ThemeProvider({
       theme === "dark",
     );
 
-    root.dataset.theme = theme;
-    root.dataset.accent = accent;
+    root.style.colorScheme = theme;
 
     localStorage.setItem(
-      THEME_KEY,
+      STORAGE_KEY,
       theme,
     );
+  }, [theme, mounted]);
 
-    localStorage.setItem(
-      ACCENT_KEY,
-      accent,
+  // ------------------------------------------
+  // Set theme
+  // ------------------------------------------
+
+  const setTheme = (newTheme: Theme) => {
+    setThemeState(newTheme);
+  };
+
+  // ------------------------------------------
+  // Toggle theme
+  // ------------------------------------------
+
+  const toggleTheme = () => {
+    setThemeState((current) =>
+      current === "dark"
+        ? "light"
+        : "dark",
     );
-  }, [theme, accent]);
-
-  const value = useMemo(
-    () => ({
-      theme,
-      accent,
-
-      setTheme: (
-        value: ThemeMode,
-      ) => {
-        setThemeState(value);
-      },
-
-      setAccent: (
-        value: AccentColor,
-      ) => {
-        setAccentState(value);
-      },
-    }),
-    [theme, accent],
-  );
+  };
 
   return (
-    <ThemeContext.Provider value={value}>
+    <ThemeContext.Provider
+      value={{
+        theme,
+        setTheme,
+        toggleTheme,
+      }}
+    >
       {children}
     </ThemeContext.Provider>
   );

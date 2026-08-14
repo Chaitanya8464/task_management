@@ -88,48 +88,34 @@ export type TaskPriority =
 
 export interface ApiSubtask {
   id: string;
-
   title: string;
-
   completed: boolean;
 
   priority: TaskPriority;
-
   dueDate?: string | null;
 
-  createdAt: string;
-
-  updatedAt: string;
-
-  taskId: string;
-
   assigneeId?: string | null;
-
   assignee?: ApiUser | null;
+
+  createdAt: string;
+  updatedAt: string;
+  taskId: string;
 }
 
 export interface CreateSubtaskInput {
   title: string;
-
   priority?: TaskPriority;
-
   dueDate?: string;
-
   assigneeId?: string;
 }
 
 export interface UpdateSubtaskInput {
   title?: string;
-
   completed?: boolean;
-
   priority?: TaskPriority;
-
   dueDate?: string;
-
   assigneeId?: string | null;
 }
-
 // =====================================================
 // Label Types
 // =====================================================

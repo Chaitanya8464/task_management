@@ -1,271 +1,170 @@
 "use client";
 
 import {
-  Check,
   ChevronDown,
   Moon,
   Sun,
 } from "lucide-react";
-
-import { useState } from "react";
-
-import {
-  useTheme,
-  type AccentColor,
-  type ThemeMode,
-} from "@/providers/ThemeProvider";
-
-const accents: {
-  id: AccentColor;
-  label: string;
-  className: string;
-}[] = [
-  {
-    id: "amber",
-    label: "Amber",
-    className: "bg-amber-500",
-  },
-  {
-    id: "blue",
-    label: "Blue",
-    className: "bg-blue-500",
-  },
-  {
-    id: "pink",
-    label: "Pink",
-    className: "bg-pink-500",
-  },
-  {
-    id: "rose",
-    label: "Rose",
-    className: "bg-rose-500",
-  },
-  {
-    id: "emerald",
-    label: "Emerald",
-    className: "bg-emerald-500",
-  },
-  {
-    id: "black",
-    label: "Black",
-    className:
-      "bg-zinc-950 dark:bg-white",
-  },
-];
+import { useEffect, useRef, useState } from "react";
+import { useTheme } from "@/providers/ThemeProvider";
 
 export default function ThemeToggle() {
   const {
     theme,
-    accent,
     setTheme,
-    setAccent,
   } = useTheme();
 
   const [open, setOpen] =
     useState(false);
 
+  const menuRef =
+    useRef<HTMLDivElement | null>(null);
+
+  // ------------------------------------------
+  // Close when clicking outside
+  // ------------------------------------------
+
+  useEffect(() => {
+    if (!open) return;
+
+    const handleOutsideClick = (
+      event: MouseEvent,
+    ) => {
+      const target =
+        event.target as Node;
+
+      if (
+        menuRef.current &&
+        !menuRef.current.contains(target)
+      ) {
+        setOpen(false);
+      }
+    };
+
+    const handleEscape = (
+      event: KeyboardEvent,
+    ) => {
+      if (event.key === "Escape") {
+        setOpen(false);
+      }
+    };
+
+    document.addEventListener(
+      "mousedown",
+      handleOutsideClick,
+    );
+
+    document.addEventListener(
+      "keydown",
+      handleEscape,
+    );
+
+    return () => {
+      document.removeEventListener(
+        "mousedown",
+        handleOutsideClick,
+      );
+
+      document.removeEventListener(
+        "keydown",
+        handleEscape,
+      );
+    };
+  }, [open]);
+
+  const appearanceLabel =
+    theme === "dark"
+      ? "Dark"
+      : "Light";
+
   return (
-    <div className="relative">
+    <div
+      ref={menuRef}
+      className="relative"
+    >
+      {/* Trigger */}
+
       <button
         type="button"
         onClick={() =>
-          setOpen((value) => !value)
+          setOpen((current) => !current)
         }
-        aria-label="Open appearance settings"
+        className="flex h-10 items-center gap-2 rounded-md border border-zinc-200 bg-white px-3 text-sm text-zinc-700 shadow-sm transition hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
+        aria-haspopup="menu"
         aria-expanded={open}
-        className="
-          flex h-8 items-center gap-2
-          rounded-md
-          border border-zinc-200
-          bg-white
-          px-2.5
-          text-xs font-medium
-          text-zinc-700
-          shadow-sm
-          transition
-          hover:bg-zinc-50
-          dark:border-zinc-800
-          dark:bg-zinc-900
-          dark:text-zinc-200
-          dark:hover:bg-zinc-800
-        "
       >
         {theme === "dark" ? (
-          <Moon size={14} />
+          <Moon className="h-4 w-4" />
         ) : (
-          <Sun size={14} />
+          <Sun className="h-4 w-4" />
         )}
 
-        <span>Appearance</span>
+        <span>
+          Appearance
+        </span>
 
-        <ChevronDown size={13} />
+        <ChevronDown
+          className={`h-3.5 w-3.5 transition-transform ${
+            open ? "rotate-180" : ""
+          }`}
+        />
       </button>
 
+      {/* Dropdown */}
+
       {open && (
-        <>
+        <div
+          className="absolute right-0 top-full z-[100] mt-2 w-44 rounded-lg border border-zinc-200 bg-white p-1.5 shadow-lg dark:border-zinc-700 dark:bg-zinc-900"
+          role="menu"
+        >
+          <p className="px-2.5 py-2 text-[10px] font-medium uppercase tracking-wide text-zinc-400">
+            Appearance
+          </p>
+
           <button
             type="button"
-            aria-label="Close appearance menu"
-            className="
-              fixed inset-0
-              z-40
-              cursor-default
-            "
-            onClick={() =>
-              setOpen(false)
-            }
-          />
-
-          <div
-            className="
-              absolute right-0 z-50 mt-2
-              w-64
-              rounded-xl
-              border border-zinc-200
-              bg-white
-              p-3
-              shadow-xl
-              dark:border-zinc-800
-              dark:bg-zinc-950
-            "
+            onClick={() => {
+              setTheme("light");
+              setOpen(false);
+            }}
+            className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-xs text-zinc-700 transition hover:bg-zinc-100 dark:text-zinc-200 dark:hover:bg-zinc-800"
+            role="menuitem"
           >
-            {/* Theme */}
+            <Sun className="h-3.5 w-3.5" />
 
-            <div className="mb-3">
-              <p
-                className="
-                  px-1
-                  text-xs
-                  font-semibold
-                  text-zinc-900
-                  dark:text-zinc-100
-                "
-              >
-                Theme
-              </p>
+            <span className="flex-1 text-left">
+              Light
+            </span>
 
-              <div className="mt-2 grid grid-cols-2 gap-2">
-                {(
-                  ["light", "dark"] as ThemeMode[]
-                ).map((mode) => (
-                  <button
-                    key={mode}
-                    type="button"
-                    onClick={() =>
-                      setTheme(mode)
-                    }
-                    className={`
-                      flex items-center
-                      justify-center gap-2
-                      rounded-lg
-                      border
-                      px-3 py-2
-                      text-xs
-                      font-medium
-                      capitalize
-                      transition
+            {theme === "light" && (
+              <span className="text-violet-600">
+                ✓
+              </span>
+            )}
+          </button>
 
-                      ${
-                        theme === mode
-                          ? `
-                            border-zinc-900
-                            bg-zinc-900
-                            text-white
-                            dark:border-white
-                            dark:bg-white
-                            dark:text-zinc-950
-                          `
-                          : `
-                            border-zinc-200
-                            text-zinc-600
-                            hover:bg-zinc-50
-                            dark:border-zinc-800
-                            dark:text-zinc-300
-                            dark:hover:bg-zinc-900
-                          `
-                      }
-                    `}
-                  >
-                    {mode === "light" ? (
-                      <Sun size={14} />
-                    ) : (
-                      <Moon size={14} />
-                    )}
+          <button
+            type="button"
+            onClick={() => {
+              setTheme("dark");
+              setOpen(false);
+            }}
+            className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-xs text-zinc-700 transition hover:bg-zinc-100 dark:text-zinc-200 dark:hover:bg-zinc-800"
+            role="menuitem"
+          >
+            <Moon className="h-3.5 w-3.5" />
 
-                    {mode}
-                  </button>
-                ))}
-              </div>
-            </div>
+            <span className="flex-1 text-left">
+              Dark
+            </span>
 
-            {/* Color Mode */}
-
-            <div
-              className="
-                border-t
-                border-zinc-100
-                pt-3
-                dark:border-zinc-800
-              "
-            >
-              <p
-                className="
-                  px-1
-                  text-xs
-                  font-semibold
-                  text-zinc-900
-                  dark:text-zinc-100
-                "
-              >
-                Color Mode
-              </p>
-
-              <div className="mt-2 space-y-1">
-                {accents.map((item) => (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() =>
-                      setAccent(item.id)
-                    }
-                    className="
-                      flex w-full
-                      items-center
-                      justify-between
-                      rounded-lg
-                      px-2.5 py-2
-                      text-left
-                      text-xs
-                      text-zinc-700
-                      transition
-                      hover:bg-zinc-100
-                      dark:text-zinc-200
-                      dark:hover:bg-zinc-900
-                    "
-                  >
-                    <span className="flex items-center gap-2.5">
-                      <span
-                        className={`
-                          h-3.5 w-3.5
-                          rounded-full
-                          border
-                          border-black/10
-                          ${item.className}
-                        `}
-                      />
-
-                      {item.label}
-                    </span>
-
-                    {accent === item.id && (
-                      <Check size={14} />
-                    )}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-        </>
+            {theme === "dark" && (
+              <span className="text-violet-600">
+                ✓
+              </span>
+            )}
+          </button>
+        </div>
       )}
     </div>
   );

@@ -6,9 +6,7 @@ import {
   useState,
 } from "react";
 
-import TaskCard, {
-  Task,
-} from "./TaskCard";
+import TaskCard, { Task } from "./TaskCard";
 
 interface TaskColumnProps {
   title: string;
@@ -46,8 +44,13 @@ export default function TaskColumn({
   const [isDragOver, setIsDragOver] =
     useState(false);
 
+  const [isDropping, setIsDropping] =
+    useState(false);
+
+  const targetStatus = statusMap[title];
+
   // ==========================================
-  // Drag Over
+  // DRAG OVER
   // ==========================================
 
   const handleDragOver = (
@@ -55,33 +58,41 @@ export default function TaskColumn({
   ) => {
     event.preventDefault();
 
-    event.dataTransfer.dropEffect =
-      "move";
+    event.dataTransfer.dropEffect = "move";
 
-    setIsDragOver(true);
+    if (!isDragOver) {
+      setIsDragOver(true);
+    }
   };
 
   // ==========================================
-  // Drag Leave
+  // DRAG LEAVE
   // ==========================================
 
   const handleDragLeave = (
     event: DragEvent<HTMLDivElement>,
   ) => {
     /*
-     * Only remove the highlight when the
-     * pointer leaves the actual column.
+     * Don't remove the highlight when moving
+     * between children inside the column.
      */
+    const relatedTarget =
+      event.relatedTarget as Node | null;
+
     if (
-      event.currentTarget ===
-      event.target
+      relatedTarget &&
+      event.currentTarget.contains(
+        relatedTarget,
+      )
     ) {
-      setIsDragOver(false);
+      return;
     }
+
+    setIsDragOver(false);
   };
 
   // ==========================================
-  // Drop
+  // DROP
   // ==========================================
 
   const handleDrop = (
@@ -90,6 +101,15 @@ export default function TaskColumn({
     event.preventDefault();
 
     setIsDragOver(false);
+    setIsDropping(true);
+
+    window.setTimeout(() => {
+      setIsDropping(false);
+    }, 250);
+
+    if (!targetStatus) {
+      return;
+    }
 
     const taskJson =
       event.dataTransfer.getData(
@@ -101,34 +121,26 @@ export default function TaskColumn({
     }
 
     try {
-      const task: Task =
+      const draggedTask: Task =
         JSON.parse(taskJson);
 
-      const newStatus =
-        statusMap[title];
-
-      if (!newStatus) {
-        return;
-      }
-
       /*
-       * Don't make an unnecessary API request
-       * when the task is dropped into its
-       * existing column.
+       * Don't call the API if the task is
+       * already in this column.
        */
       if (
-        task.status === newStatus
+        draggedTask.status === targetStatus
       ) {
         return;
       }
 
       onStatusChange?.(
-        task,
-        newStatus,
+        draggedTask,
+        targetStatus,
       );
     } catch (error) {
       console.error(
-        "Invalid dragged task:",
+        "Failed to read dragged task:",
         error,
       );
     }
@@ -138,17 +150,24 @@ export default function TaskColumn({
     <section
       className={`
         min-w-0
-        rounded-lg
-        transition
+        rounded-xl
+        transition-all
+        duration-150
         ${
           isDragOver
             ? `
-              bg-violet-50/70
+              bg-violet-50/80
               ring-2
               ring-violet-300
+              ring-inset
               dark:bg-violet-950/20
               dark:ring-violet-700
             `
+            : ""
+        }
+        ${
+          isDropping
+            ? "scale-[0.995]"
             : ""
         }
       `}
@@ -157,7 +176,7 @@ export default function TaskColumn({
       onDrop={handleDrop}
     >
       {/* ======================================
-          Column Header
+          COLUMN HEADER
       ======================================= */}
 
       <div
@@ -167,6 +186,7 @@ export default function TaskColumn({
           min-w-0
           items-center
           justify-between
+          px-1
         "
       >
         <div
@@ -189,7 +209,7 @@ export default function TaskColumn({
             `}
           />
 
-          {/* Column title */}
+          {/* Title */}
 
           <h2
             className="
@@ -217,14 +237,15 @@ export default function TaskColumn({
           </span>
         </div>
 
-        {/* Add button */}
+        {/* Add task */}
 
         <button
           type="button"
+          aria-label={`Add task to ${title}`}
           className="
             flex
-            h-8
-            w-8
+            h-7
+            w-7
             shrink-0
             items-center
             justify-center
@@ -233,29 +254,24 @@ export default function TaskColumn({
             transition
             hover:bg-zinc-100
             hover:text-zinc-700
-            active:bg-zinc-200
+            active:scale-95
             dark:text-zinc-500
             dark:hover:bg-zinc-800
             dark:hover:text-zinc-200
-            dark:active:bg-zinc-700
           "
-          aria-label={`Add task to ${title}`}
         >
           <Plus className="h-4 w-4" />
         </button>
       </div>
 
       {/* ======================================
-          Cards
+          TASK LIST
       ======================================= */}
 
       <div
         className={`
-          flex
           min-h-[90px]
           min-w-0
-          flex-col
-          gap-2
           rounded-lg
           transition
           ${
@@ -264,29 +280,34 @@ export default function TaskColumn({
                 border
                 border-dashed
                 border-violet-400
+                bg-violet-50/40
                 p-2
+                dark:border-violet-700
+                dark:bg-violet-950/10
               `
               : ""
           }
         `}
       >
-        {tasks.map((task) => (
-          <TaskCard
-            key={task.id}
-            task={task}
-            onEdit={onEdit}
-            onDelete={onDelete}
-            onStatusChange={
-              onStatusChange
-            }
-          />
-        ))}
+        <div className="flex min-w-0 flex-col gap-2">
+          {tasks.map((task) => (
+            <TaskCard
+              key={task.id}
+              task={task}
+              onEdit={onEdit}
+              onDelete={onDelete}
+              onStatusChange={
+                onStatusChange
+              }
+            />
+          ))}
+        </div>
 
-        {/* Empty column */}
+        {/* Empty state */}
 
         {tasks.length === 0 && (
           <div
-            className="
+            className={`
               flex
               min-h-[74px]
               w-full
@@ -295,14 +316,26 @@ export default function TaskColumn({
               rounded-lg
               border
               border-dashed
-              border-zinc-200
               px-3
               text-center
               text-[10px]
-              text-zinc-400
-              dark:border-zinc-800
-              dark:text-zinc-600
-            "
+              transition
+              ${
+                isDragOver
+                  ? `
+                    border-violet-400
+                    text-violet-500
+                    dark:border-violet-700
+                    dark:text-violet-400
+                  `
+                  : `
+                    border-zinc-200
+                    text-zinc-400
+                    dark:border-zinc-800
+                    dark:text-zinc-600
+                  `
+              }
+            `}
           >
             {isDragOver
               ? "Drop task here"

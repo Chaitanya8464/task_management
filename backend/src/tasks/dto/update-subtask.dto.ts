@@ -30,5 +30,5 @@ export class UpdateSubtaskDto {
 
   @IsOptional()
   @IsUUID()
-  assigneeId?: string;
+  assigneeId?: string | null;
 }
