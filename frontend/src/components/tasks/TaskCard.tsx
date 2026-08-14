@@ -9,6 +9,7 @@ import {
   Trash2,
 } from "lucide-react";
 import {
+  DragEvent,
   useEffect,
   useRef,
   useState,
@@ -40,20 +41,24 @@ interface TaskCardProps {
   onEdit?: (task: Task) => void;
   onDelete?: (task: Task) => void;
   onStatusChange?: (
-  task: Task,
-  status: Task["status"],
-) => void;
+    task: Task,
+    status: Task["status"],
+  ) => void;
 }
 
 const priorityStyles = {
   Urgent:
     "bg-red-50 text-red-600 dark:bg-red-950/40 dark:text-red-400",
+
   High:
     "bg-orange-50 text-orange-600 dark:bg-orange-950/40 dark:text-orange-400",
+
   Medium:
     "bg-yellow-50 text-yellow-700 dark:bg-yellow-950/40 dark:text-yellow-400",
+
   Low:
     "bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400",
+
   "No Priority":
     "bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400",
 };
@@ -62,7 +67,7 @@ export default function TaskCard({
   task,
   onEdit,
   onDelete,
-    onStatusChange,
+  onStatusChange,
 }: TaskCardProps) {
   const [isMenuOpen, setIsMenuOpen] =
     useState(false);
@@ -74,10 +79,16 @@ export default function TaskCard({
     });
 
   const buttonRef =
-    useRef<HTMLButtonElement>(null);
+    useRef<HTMLButtonElement | null>(null);
 
   const menuRef =
-    useRef<HTMLDivElement>(null);
+    useRef<HTMLDivElement | null>(null);
+
+  /*
+   * ----------------------------------------
+   * Floating menu position
+   * ----------------------------------------
+   */
 
   const updateMenuPosition = () => {
     if (!buttonRef.current) {
@@ -113,7 +124,7 @@ export default function TaskCard({
     }
 
     // If there isn't enough space below,
-    // display it above the button.
+    // display menu above the button.
     if (
       top + menuHeight >
       window.innerHeight - 8
@@ -131,8 +142,11 @@ export default function TaskCard({
   };
 
   /*
-   * Open/close menu.
+   * ----------------------------------------
+   * Menu toggle
+   * ----------------------------------------
    */
+
   const handleMenuToggle = () => {
     if (!isMenuOpen) {
       updateMenuPosition();
@@ -144,8 +158,11 @@ export default function TaskCard({
   };
 
   /*
-   * Close menu when clicking outside.
+   * ----------------------------------------
+   * Close menu outside / Escape
+   * ----------------------------------------
    */
+
   useEffect(() => {
     if (!isMenuOpen) {
       return;
@@ -228,6 +245,12 @@ export default function TaskCard({
     };
   }, [isMenuOpen]);
 
+  /*
+   * ----------------------------------------
+   * Edit / Delete
+   * ----------------------------------------
+   */
+
   const handleEdit = () => {
     setIsMenuOpen(false);
     onEdit?.(task);
@@ -238,11 +261,70 @@ export default function TaskCard({
     onDelete?.(task);
   };
 
+  /*
+   * ----------------------------------------
+   * Drag and Drop
+   * ----------------------------------------
+   */
+
+  const handleDragStart = (
+    event: DragEvent<HTMLElement>,
+  ) => {
+    /*
+     * Don't start dragging if the user
+     * is interacting with the menu.
+     */
+    if (
+      (event.target as HTMLElement).closest(
+        "button, select",
+      )
+    ) {
+      event.preventDefault();
+      return;
+    }
+
+    event.dataTransfer.effectAllowed =
+      "move";
+
+    event.dataTransfer.setData(
+      "text/task-id",
+      task.id,
+    );
+
+    event.dataTransfer.setData(
+      "application/taskflow-task",
+      JSON.stringify(task),
+    );
+
+    event.currentTarget.classList.add(
+      "opacity-50",
+    );
+  };
+
+  const handleDragEnd = (
+    event: DragEvent<HTMLElement>,
+  ) => {
+    event.currentTarget.classList.remove(
+      "opacity-50",
+    );
+  };
+
+  /*
+   * ----------------------------------------
+   * Render
+   * ----------------------------------------
+   */
+
   return (
-    <article className="group rounded-lg border border-zinc-200 bg-white p-3 shadow-sm transition hover:border-zinc-300 hover:shadow dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-700">
+    <article
+      draggable
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+      className="cursor-grab rounded-lg border border-zinc-200 bg-white p-3 shadow-sm transition hover:shadow-md active:cursor-grabbing dark:border-zinc-800 dark:bg-zinc-900 dark:shadow-none"
+    >
       {/* Top */}
       <div className="flex items-start justify-between gap-2">
-        <h3 className="min-w-0 text-sm font-medium leading-5 text-zinc-900 dark:text-zinc-100">
+        <h3 className="min-w-0 flex-1 text-sm font-medium leading-5 text-zinc-900 dark:text-zinc-100">
           {task.title}
         </h3>
 
@@ -305,23 +387,47 @@ export default function TaskCard({
       )}
 
       {/* Priority */}
-     <div className="mt-2">
-  <select
-    value={task.status}
-    onChange={(event) =>
-      onStatusChange?.(
-        task,
-        event.target.value as Task["status"],
-      )
-    }
-    className="h-7 rounded-md border border-zinc-200 bg-white px-2 text-[10px] text-zinc-600 outline-none dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-300"
-  >
-    <option value="To Do">To Do</option>
-    <option value="Doing">Doing</option>
-    <option value="Completed">Completed</option>
-    <option value="On Hold">On Hold</option>
-  </select>
-</div>
+      <div className="mt-2">
+        <span
+          className={`inline-flex rounded-md px-2 py-1 text-[10px] font-medium ${priorityStyles[task.priority]}`}
+        >
+          {task.priority}
+        </span>
+      </div>
+
+      {/* Status */}
+      <div className="mt-2">
+        <select
+          value={task.status}
+          onChange={(event) =>
+            onStatusChange?.(
+              task,
+              event.target
+                .value as Task["status"],
+            )
+          }
+          onClick={(event) =>
+            event.stopPropagation()
+          }
+          className="h-7 rounded-md border border-zinc-200 bg-white px-2 text-[10px] text-zinc-600 outline-none dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-300"
+        >
+          <option value="To Do">
+            To Do
+          </option>
+
+          <option value="Doing">
+            Doing
+          </option>
+
+          <option value="Completed">
+            Completed
+          </option>
+
+          <option value="On Hold">
+            On Hold
+          </option>
+        </select>
+      </div>
 
       {/* Bottom metadata */}
       <div className="mt-4 flex items-center justify-between border-t border-zinc-100 pt-3 dark:border-zinc-800">

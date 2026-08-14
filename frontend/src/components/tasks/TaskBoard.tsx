@@ -1,3 +1,5 @@
+"use client";
+
 import TaskColumn from "./TaskColumn";
 import { Task } from "./TaskCard";
 
