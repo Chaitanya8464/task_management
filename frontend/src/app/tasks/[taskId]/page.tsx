@@ -11,8 +11,10 @@ import {
   Paperclip,
   Plus,
   Send,
+  Tag,
   Trash2,
   User,
+  X,
 } from "lucide-react";
 
 import Link from "next/link";
@@ -25,11 +27,16 @@ import {
 } from "react";
 
 import {
+  ApiLabel,
   ApiTaskDetails,
   createComment,
+  createLabel,
   createSubtask,
   deleteSubtask,
   getTaskDetails,
+  getWorkspaceLabels,
+  assignLabel,
+  removeLabel,
   updateSubtask,
 } from "@/lib/api";
 
@@ -98,6 +105,31 @@ export default function TaskDetailsPage() {
     useState("");
 
   // =====================================================
+  // Label states
+  // =====================================================
+
+  const [workspaceLabels, setWorkspaceLabels] =
+    useState<ApiLabel[]>([]);
+
+  const [newLabelName, setNewLabelName] =
+    useState("");
+
+  const [newLabelColor, setNewLabelColor] =
+    useState("#7c3aed");
+
+  const [selectedLabelId, setSelectedLabelId] =
+    useState("");
+
+  const [isAddingLabel, setIsAddingLabel] =
+    useState(false);
+
+  const [isAssigningLabel, setIsAssigningLabel] =
+    useState(false);
+
+  const [labelError, setLabelError] =
+    useState("");
+
+  // =====================================================
   // Load task
   // =====================================================
 
@@ -111,6 +143,20 @@ export default function TaskDetailsPage() {
           await getTaskDetails(taskId);
 
         setTask(data);
+
+        try {
+          const labels =
+            await getWorkspaceLabels(
+              data.workspaceId,
+            );
+
+          setWorkspaceLabels(labels);
+        } catch (labelLoadError) {
+          console.error(
+            "Failed to load workspace labels:",
+            labelLoadError,
+          );
+        }
       } catch (error) {
         console.error(
           "Failed to load task:",
@@ -400,6 +446,134 @@ export default function TaskDetailsPage() {
   };
 
   // =====================================================
+  // Labels
+  // =====================================================
+
+  const handleCreateLabel = async (
+    event: FormEvent,
+  ) => {
+    event.preventDefault();
+
+    if (
+      !task ||
+      !newLabelName.trim() ||
+      isAddingLabel
+    ) {
+      return;
+    }
+
+    try {
+      setIsAddingLabel(true);
+      setLabelError("");
+
+      const created = await createLabel(
+        task.workspaceId,
+        {
+          name: newLabelName.trim(),
+          color: newLabelColor,
+        },
+      );
+
+      setWorkspaceLabels((current) => [
+        ...current,
+        created,
+      ].sort((a, b) =>
+        a.name.localeCompare(b.name),
+      ));
+
+      setNewLabelName("");
+      setSelectedLabelId(created.id);
+    } catch (error) {
+      console.error(
+        "Failed to create label:",
+        error,
+      );
+
+      setLabelError(
+        "Unable to create label. It may already exist.",
+      );
+    } finally {
+      setIsAddingLabel(false);
+    }
+  };
+
+  const handleAssignLabel = async () => {
+    if (
+      !task ||
+      !selectedLabelId ||
+      isAssigningLabel
+    ) {
+      return;
+    }
+
+    if (
+      task.labels.some(
+        (label) =>
+          label.id === selectedLabelId,
+      )
+    ) {
+      setSelectedLabelId("");
+      return;
+    }
+
+    try {
+      setIsAssigningLabel(true);
+      setLabelError("");
+
+      const updatedTask = await assignLabel(
+  task.id,
+  selectedLabelId,
+);
+
+      setTask(updatedTask);
+      setSelectedLabelId("");
+    } catch (error) {
+      console.error(
+        "Failed to assign label:",
+        error,
+      );
+
+      setLabelError(
+        "Unable to assign label. Please try again.",
+      );
+    } finally {
+      setIsAssigningLabel(false);
+    }
+  };
+
+  const handleRemoveLabel = async (
+    labelId: string,
+  ) => {
+    if (!task || isAssigningLabel) {
+      return;
+    }
+
+    try {
+      setIsAssigningLabel(true);
+      setLabelError("");
+
+      const updatedTask =
+        await removeLabel(
+          task.id,
+          labelId,
+        );
+
+      setTask(updatedTask);
+    } catch (error) {
+      console.error(
+        "Failed to remove label:",
+        error,
+      );
+
+      setLabelError(
+        "Unable to remove label. Please try again.",
+      );
+    } finally {
+      setIsAssigningLabel(false);
+    }
+  };
+
+  // =====================================================
   // Loading
   // =====================================================
 
@@ -523,6 +697,159 @@ export default function TaskDetailsPage() {
                   ]}
                 </span>
 
+                {task.labels.map((label) => (
+                  <span
+                    key={label.id}
+                    className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[10px] font-medium"
+                    style={{
+                      backgroundColor: `${label.color}18`,
+                      color: label.color,
+                    }}
+                  >
+                    <Tag className="h-3 w-3" />
+                    {label.name}
+                    <button
+                      type="button"
+                      onClick={() =>
+                        handleRemoveLabel(label.id)
+                      }
+                      disabled={isAssigningLabel}
+                      className="ml-0.5 rounded-full opacity-60 transition hover:opacity-100 disabled:cursor-not-allowed"
+                      aria-label={`Remove label ${label.name}`}
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </span>
+                ))}
+
+              </div>
+
+              <div className="mt-4 rounded-lg border border-zinc-200 p-3 dark:border-zinc-700">
+                <div className="flex items-center gap-2">
+                  <Tag className="h-3.5 w-3.5 text-zinc-400" />
+
+                  <span className="text-[10px] font-medium text-zinc-600 dark:text-zinc-300">
+                    Labels
+                  </span>
+                </div>
+
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {task.labels.length === 0 ? (
+                    <span className="text-[10px] text-zinc-400">
+                      No labels assigned.
+                    </span>
+                  ) : (
+                    task.labels.map((label) => (
+                      <span
+                        key={`detail-${label.id}`}
+                        className="rounded-md px-2 py-1 text-[10px] font-medium"
+                        style={{
+                          backgroundColor: `${label.color}18`,
+                          color: label.color,
+                        }}
+                      >
+                        {label.name}
+                      </span>
+                    ))
+                  )}
+                </div>
+
+                <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+                  <select
+                    value={selectedLabelId}
+                    onChange={(event) =>
+                      setSelectedLabelId(
+                        event.target.value,
+                      )
+                    }
+                    className="h-9 min-w-0 flex-1 rounded-md border border-zinc-200 bg-white px-2 text-xs text-zinc-700 outline-none focus:border-violet-400 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-200"
+                  >
+                    <option value="">
+                      Select a label...
+                    </option>
+
+                    {workspaceLabels
+                      .filter(
+                        (label) =>
+                          !task.labels.some(
+                            (assigned) =>
+                              assigned.id ===
+                              label.id,
+                          ),
+                      )
+                      .map((label) => (
+                        <option
+                          key={label.id}
+                          value={label.id}
+                        >
+                          {label.name}
+                        </option>
+                      ))}
+                  </select>
+
+                  <button
+                    type="button"
+                    onClick={handleAssignLabel}
+                    disabled={
+                      !selectedLabelId ||
+                      isAssigningLabel
+                    }
+                    className="h-9 rounded-md bg-black px-3 text-xs font-medium text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-40 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
+                  >
+                    {isAssigningLabel
+                      ? "Saving..."
+                      : "Assign"}
+                  </button>
+                </div>
+
+                <form
+                  onSubmit={handleCreateLabel}
+                  className="mt-2 flex flex-col gap-2 sm:flex-row"
+                >
+                  <input
+                    value={newLabelName}
+                    onChange={(event) =>
+                      setNewLabelName(
+                        event.target.value,
+                      )
+                    }
+                    placeholder="New label name"
+                    disabled={isAddingLabel}
+                    className="h-9 min-w-0 flex-1 rounded-md border border-zinc-200 bg-white px-3 text-xs text-zinc-700 outline-none focus:border-violet-400 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-200"
+                  />
+
+                  <input
+                    type="color"
+                    value={newLabelColor}
+                    onChange={(event) =>
+                      setNewLabelColor(
+                        event.target.value,
+                      )
+                    }
+                    title="Label color"
+                    disabled={isAddingLabel}
+                    className="h-9 w-12 cursor-pointer rounded-md border border-zinc-200 bg-white p-1 dark:border-zinc-700 dark:bg-zinc-950"
+                  />
+
+                  <button
+                    type="submit"
+                    disabled={
+                      !newLabelName.trim() ||
+                      isAddingLabel
+                    }
+                    className="h-9 rounded-md border border-zinc-200 px-3 text-xs font-medium text-zinc-700 transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800"
+                  >
+                    {isAddingLabel
+                      ? "Creating..."
+                      : "Create"}
+                  </button>
+                </form>
+
+                {labelError && (
+                  <p className="mt-2 text-[10px] text-red-500">
+                    {labelError}
+                  </p>
+                )}
               </div>
 
               <h2 className="mt-4 text-xl font-semibold">
@@ -1010,6 +1337,14 @@ export default function TaskDetailsPage() {
                       ).toLocaleDateString()
                     : "No date"
                 }
+              />
+
+              <DetailRow
+                icon={
+                  <Tag className="h-4 w-4" />
+                }
+                label="Labels"
+                value={String(task.labels.length)}
               />
 
               <DetailRow

@@ -4,118 +4,116 @@ import {
   createContext,
   useContext,
   useEffect,
+  useMemo,
   useState,
+  type ReactNode,
 } from "react";
 
-type Theme = "light" | "dark" | "system";
+export type ThemeMode = "light" | "dark";
+
+export type AccentColor =
+  | "amber"
+  | "blue"
+  | "pink"
+  | "rose"
+  | "emerald"
+  | "black";
 
 interface ThemeContextValue {
-  theme: Theme;
-  resolvedTheme: "light" | "dark";
-  setTheme: (theme: Theme) => void;
+  theme: ThemeMode;
+  accent: AccentColor;
+  setTheme: (theme: ThemeMode) => void;
+  setAccent: (accent: AccentColor) => void;
 }
 
 const ThemeContext =
-  createContext<ThemeContextValue | undefined>(
-    undefined,
-  );
+  createContext<ThemeContextValue | null>(null);
 
-function getSystemTheme(): "light" | "dark" {
-  if (typeof window === "undefined") {
-    return "light";
-  }
-
-  return window.matchMedia(
-    "(prefers-color-scheme: dark)",
-  ).matches
-    ? "dark"
-    : "light";
-}
+const THEME_KEY = "taskflow-theme";
+const ACCENT_KEY = "taskflow-accent";
 
 export function ThemeProvider({
   children,
 }: {
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
   const [theme, setThemeState] =
-    useState<Theme>("system");
+    useState<ThemeMode>("light");
 
-  const [resolvedTheme, setResolvedTheme] =
-    useState<"light" | "dark">("light");
+  const [accent, setAccentState] =
+    useState<AccentColor>("blue");
 
   useEffect(() => {
     const savedTheme =
-      localStorage.getItem(
-        "taskflow-theme",
-      ) as Theme | null;
+      localStorage.getItem(THEME_KEY);
+
+    const savedAccent =
+      localStorage.getItem(ACCENT_KEY);
 
     if (
       savedTheme === "light" ||
-      savedTheme === "dark" ||
-      savedTheme === "system"
+      savedTheme === "dark"
     ) {
       setThemeState(savedTheme);
+    }
+
+    if (
+      savedAccent === "amber" ||
+      savedAccent === "blue" ||
+      savedAccent === "pink" ||
+      savedAccent === "rose" ||
+      savedAccent === "emerald" ||
+      savedAccent === "black"
+    ) {
+      setAccentState(savedAccent);
     }
   }, []);
 
   useEffect(() => {
-    const applyTheme = () => {
-      const actualTheme =
-        theme === "system"
-          ? getSystemTheme()
-          : theme;
+    const root =
+      document.documentElement;
 
-      setResolvedTheme(actualTheme);
-
-      document.documentElement.classList.toggle(
-        "dark",
-        actualTheme === "dark",
-      );
-
-      document.documentElement.style.colorScheme =
-        actualTheme;
-    };
-
-    applyTheme();
-
-    if (theme !== "system") {
-      return;
-    }
-
-    const mediaQuery = window.matchMedia(
-      "(prefers-color-scheme: dark)",
+    root.classList.toggle(
+      "dark",
+      theme === "dark",
     );
 
-    mediaQuery.addEventListener(
-      "change",
-      applyTheme,
-    );
-
-    return () => {
-      mediaQuery.removeEventListener(
-        "change",
-        applyTheme,
-      );
-    };
-  }, [theme]);
-
-  const setTheme = (newTheme: Theme) => {
-    setThemeState(newTheme);
+    root.dataset.theme = theme;
+    root.dataset.accent = accent;
 
     localStorage.setItem(
-      "taskflow-theme",
-      newTheme,
+      THEME_KEY,
+      theme,
     );
-  };
+
+    localStorage.setItem(
+      ACCENT_KEY,
+      accent,
+    );
+  }, [theme, accent]);
+
+  const value = useMemo(
+    () => ({
+      theme,
+      accent,
+
+      setTheme: (
+        value: ThemeMode,
+      ) => {
+        setThemeState(value);
+      },
+
+      setAccent: (
+        value: AccentColor,
+      ) => {
+        setAccentState(value);
+      },
+    }),
+    [theme, accent],
+  );
 
   return (
-    <ThemeContext.Provider
-      value={{
-        theme,
-        resolvedTheme,
-        setTheme,
-      }}
-    >
+    <ThemeContext.Provider value={value}>
       {children}
     </ThemeContext.Provider>
   );

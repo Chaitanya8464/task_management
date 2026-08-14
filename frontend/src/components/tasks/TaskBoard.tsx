@@ -5,8 +5,11 @@ import { Task } from "./TaskCard";
 
 interface TaskBoardProps {
   tasks: Task[];
+
   onEdit?: (task: Task) => void;
+
   onDelete?: (task: Task) => void;
+
   onStatusChange?: (
     task: Task,
     status: Task["status"],
@@ -36,42 +39,75 @@ export default function TaskBoard({
   );
 
   return (
-    <div className="grid min-w-0 grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-      <TaskColumn
-        title="To Do"
-        tasks={todo}
-        color="bg-zinc-400"
-        onEdit={onEdit}
-        onDelete={onDelete}
-        onStatusChange={onStatusChange}
-      />
+    <div
+      className="
+        grid
+        min-w-0
+        grid-cols-1
+        gap-4
+        md:grid-cols-2
+        xl:grid-cols-4
+      "
+    >
+      {/* ================================
+          To Do
+      ================================= */}
 
-      <TaskColumn
-        title="Doing"
-        tasks={doing}
-        color="bg-blue-500"
-        onEdit={onEdit}
-        onDelete={onDelete}
-        onStatusChange={onStatusChange}
-      />
+      <div className="min-w-0">
+        <TaskColumn
+          title="To Do"
+          tasks={todo}
+          color="bg-zinc-400"
+          onEdit={onEdit}
+          onDelete={onDelete}
+          onStatusChange={onStatusChange}
+        />
+      </div>
 
-      <TaskColumn
-        title="Completed"
-        tasks={completed}
-        color="bg-emerald-500"
-        onEdit={onEdit}
-        onDelete={onDelete}
-        onStatusChange={onStatusChange}
-      />
+      {/* ================================
+          Doing
+      ================================= */}
 
-      <TaskColumn
-        title="On Hold"
-        tasks={onHold}
-        color="bg-orange-500"
-        onEdit={onEdit}
-        onDelete={onDelete}
-        onStatusChange={onStatusChange}
-      />
+      <div className="min-w-0">
+        <TaskColumn
+          title="Doing"
+          tasks={doing}
+          color="bg-blue-500"
+          onEdit={onEdit}
+          onDelete={onDelete}
+          onStatusChange={onStatusChange}
+        />
+      </div>
+
+      {/* ================================
+          Completed
+      ================================= */}
+
+      <div className="min-w-0">
+        <TaskColumn
+          title="Completed"
+          tasks={completed}
+          color="bg-emerald-500"
+          onEdit={onEdit}
+          onDelete={onDelete}
+          onStatusChange={onStatusChange}
+        />
+      </div>
+
+      {/* ================================
+          On Hold
+      ================================= */}
+
+      <div className="min-w-0">
+        <TaskColumn
+          title="On Hold"
+          tasks={onHold}
+          color="bg-orange-500"
+          onEdit={onEdit}
+          onDelete={onDelete}
+          onStatusChange={onStatusChange}
+        />
+      </div>
     </div>
   );
 }

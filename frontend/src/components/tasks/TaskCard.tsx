@@ -95,15 +95,12 @@ export default function TaskCard({
   const menuRef =
     useRef<HTMLDivElement | null>(null);
 
-  // Used to prevent a drag from opening the task.
   const isDraggingRef =
     useRef(false);
 
-  /*
-   * ----------------------------------------
-   * Floating menu position
-   * ----------------------------------------
-   */
+  // ==========================================
+  // Floating menu position
+  // ==========================================
 
   const updateMenuPosition = () => {
     if (!buttonRef.current) {
@@ -116,6 +113,7 @@ export default function TaskCard({
     const menuWidth = 140;
     const menuHeight = 88;
     const gap = 6;
+    const viewportPadding = 8;
 
     let left =
       rect.right - menuWidth;
@@ -123,31 +121,34 @@ export default function TaskCard({
     let top =
       rect.bottom + gap;
 
-    // Keep menu inside viewport horizontally
-    if (left < 8) {
-      left = 8;
+    if (left < viewportPadding) {
+      left = viewportPadding;
     }
 
     if (
       left + menuWidth >
-      window.innerWidth - 8
+      window.innerWidth -
+        viewportPadding
     ) {
       left =
         window.innerWidth -
         menuWidth -
-        8;
+        viewportPadding;
     }
 
-    // Show above button if there isn't enough
-    // space below it.
     if (
       top + menuHeight >
-      window.innerHeight - 8
+      window.innerHeight -
+        viewportPadding
     ) {
       top =
         rect.top -
         menuHeight -
         gap;
+    }
+
+    if (top < viewportPadding) {
+      top = viewportPadding;
     }
 
     setMenuPosition({
@@ -156,11 +157,9 @@ export default function TaskCard({
     });
   };
 
-  /*
-   * ----------------------------------------
-   * Menu toggle
-   * ----------------------------------------
-   */
+  // ==========================================
+  // Menu toggle
+  // ==========================================
 
   const handleMenuToggle = () => {
     if (!isMenuOpen) {
@@ -172,11 +171,9 @@ export default function TaskCard({
     );
   };
 
-  /*
-   * ----------------------------------------
-   * Close menu outside / Escape
-   * ----------------------------------------
-   */
+  // ==========================================
+  // Close menu outside / Escape
+  // ==========================================
 
   useEffect(() => {
     if (!isMenuOpen) {
@@ -260,11 +257,9 @@ export default function TaskCard({
     };
   }, [isMenuOpen]);
 
-  /*
-   * ----------------------------------------
-   * Edit / Delete
-   * ----------------------------------------
-   */
+  // ==========================================
+  // Edit / Delete
+  // ==========================================
 
   const handleEdit = () => {
     setIsMenuOpen(false);
@@ -276,11 +271,9 @@ export default function TaskCard({
     onDelete?.(task);
   };
 
-  /*
-   * ----------------------------------------
-   * Open Task Details
-   * ----------------------------------------
-   */
+  // ==========================================
+  // Open Task Details
+  // ==========================================
 
   const handleCardClick = (
     event: React.MouseEvent<HTMLElement>,
@@ -288,7 +281,6 @@ export default function TaskCard({
     const target =
       event.target as HTMLElement;
 
-    // Don't navigate when clicking controls.
     if (
       target.closest(
         "button, select, a, input, textarea",
@@ -297,7 +289,6 @@ export default function TaskCard({
       return;
     }
 
-    // Don't navigate after dragging.
     if (isDraggingRef.current) {
       return;
     }
@@ -307,21 +298,15 @@ export default function TaskCard({
     );
   };
 
-  /*
-   * ----------------------------------------
-   * Drag and Drop
-   * ----------------------------------------
-   */
+  // ==========================================
+  // Drag and Drop
+  // ==========================================
 
   const handleDragStart = (
     event: DragEvent<HTMLElement>,
   ) => {
     isDraggingRef.current = true;
 
-    /*
-     * Don't start dragging when the user
-     * interacts with a button or select.
-     */
     if (
       (event.target as HTMLElement).closest(
         "button, select",
@@ -359,18 +344,14 @@ export default function TaskCard({
       "opacity-50",
     );
 
-    // Prevent the click generated immediately
-    // after dragend from opening the task.
     window.setTimeout(() => {
       isDraggingRef.current = false;
     }, 100);
   };
 
-  /*
-   * ----------------------------------------
-   * Keyboard
-   * ----------------------------------------
-   */
+  // ==========================================
+  // Keyboard
+  // ==========================================
 
   const handleCardKeyDown = (
     event: React.KeyboardEvent<HTMLElement>,
@@ -400,11 +381,9 @@ export default function TaskCard({
     );
   };
 
-  /*
-   * ----------------------------------------
-   * Render
-   * ----------------------------------------
-   */
+  // ==========================================
+  // Render
+  // ==========================================
 
   return (
     <article
@@ -416,15 +395,54 @@ export default function TaskCard({
       role="link"
       tabIndex={0}
       aria-label={`Open task ${task.title}`}
-      className="cursor-pointer rounded-lg border border-zinc-200 bg-white p-3 shadow-sm transition hover:shadow-md active:cursor-grabbing dark:border-zinc-800 dark:bg-zinc-900 dark:shadow-none"
+      className="
+        min-w-0
+        cursor-pointer
+        overflow-hidden
+        rounded-lg
+        border
+        border-zinc-200
+        bg-white
+        p-3
+        shadow-sm
+        transition
+        hover:shadow-md
+        active:cursor-grabbing
+        dark:border-zinc-800
+        dark:bg-zinc-900
+        dark:shadow-none
+      "
     >
-      {/* Top */}
-      <div className="flex items-start justify-between gap-2">
-        <h3 className="min-w-0 flex-1 text-sm font-medium leading-5 text-zinc-900 dark:text-zinc-100">
+      {/* ======================================
+          Top
+      ======================================= */}
+
+      <div
+        className="
+          flex
+          min-w-0
+          items-start
+          justify-between
+          gap-2
+        "
+      >
+        <h3
+          className="
+            min-w-0
+            flex-1
+            break-words
+            text-sm
+            font-medium
+            leading-5
+            text-zinc-900
+            dark:text-zinc-100
+          "
+        >
           {task.title}
         </h3>
 
         {/* Menu button */}
+
         <button
           ref={buttonRef}
           type="button"
@@ -434,23 +452,53 @@ export default function TaskCard({
             event.stopPropagation();
             handleMenuToggle();
           }}
-          className={`shrink-0 rounded-md p-1 text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700 dark:text-zinc-500 dark:hover:bg-zinc-800 dark:hover:text-zinc-100 ${
-            isMenuOpen
-              ? "bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
-              : ""
-          }`}
+          className={`
+            flex
+            h-8
+            w-8
+            shrink-0
+            items-center
+            justify-center
+            rounded-md
+            text-zinc-400
+            transition
+            hover:bg-zinc-100
+            hover:text-zinc-700
+            active:bg-zinc-200
+            dark:text-zinc-500
+            dark:hover:bg-zinc-800
+            dark:hover:text-zinc-100
+            ${
+              isMenuOpen
+                ? "bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
+                : ""
+            }
+          `}
         >
           <MoreHorizontal className="h-4 w-4" />
         </button>
 
         {/* Floating menu */}
+
         {isMenuOpen &&
           typeof document !==
             "undefined" &&
           createPortal(
             <div
               ref={menuRef}
-              className="fixed z-[9999] w-36 rounded-md border border-zinc-200 bg-white p-1 shadow-xl dark:border-zinc-700 dark:bg-zinc-900"
+              className="
+                fixed
+                z-[9999]
+                w-36
+                rounded-md
+                border
+                border-zinc-200
+                bg-white
+                p-1
+                shadow-xl
+                dark:border-zinc-700
+                dark:bg-zinc-900
+              "
               style={{
                 top: menuPosition.top,
                 left: menuPosition.left,
@@ -462,7 +510,22 @@ export default function TaskCard({
               <button
                 type="button"
                 onClick={handleEdit}
-                className="flex w-full items-center gap-2 rounded px-2.5 py-2 text-left text-xs text-zinc-600 transition hover:bg-zinc-50 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                className="
+                  flex
+                  w-full
+                  items-center
+                  gap-2
+                  rounded
+                  px-2.5
+                  py-2
+                  text-left
+                  text-xs
+                  text-zinc-600
+                  transition
+                  hover:bg-zinc-50
+                  dark:text-zinc-300
+                  dark:hover:bg-zinc-800
+                "
               >
                 <Pencil className="h-3.5 w-3.5" />
                 Edit
@@ -471,7 +534,22 @@ export default function TaskCard({
               <button
                 type="button"
                 onClick={handleDelete}
-                className="flex w-full items-center gap-2 rounded px-2.5 py-2 text-left text-xs text-red-500 transition hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/40"
+                className="
+                  flex
+                  w-full
+                  items-center
+                  gap-2
+                  rounded
+                  px-2.5
+                  py-2
+                  text-left
+                  text-xs
+                  text-red-500
+                  transition
+                  hover:bg-red-50
+                  dark:text-red-400
+                  dark:hover:bg-red-950/40
+                "
               >
                 <Trash2 className="h-3.5 w-3.5" />
                 Delete
@@ -481,23 +559,53 @@ export default function TaskCard({
           )}
       </div>
 
-      {/* Description */}
+      {/* ======================================
+          Description
+      ======================================= */}
+
       {task.description && (
-        <p className="mt-1 line-clamp-2 text-xs leading-4 text-zinc-400 dark:text-zinc-500">
+        <p
+          className="
+            mt-1
+            line-clamp-2
+            break-words
+            text-xs
+            leading-4
+            text-zinc-400
+            dark:text-zinc-500
+          "
+        >
           {task.description}
         </p>
       )}
 
-      {/* Priority */}
+      {/* ======================================
+          Priority
+      ======================================= */}
+
       <div className="mt-2">
         <span
-          className={`inline-flex rounded-md px-2 py-1 text-[10px] font-medium ${priorityStyles[task.priority]}`}
+          className={`
+            inline-flex
+            max-w-full
+            rounded-md
+            px-2
+            py-1
+            text-[10px]
+            font-medium
+            ${priorityStyles[task.priority]}
+          `}
         >
-          {task.priority}
+          <span className="truncate">
+            {task.priority}
+          </span>
         </span>
       </div>
 
-      {/* Status */}
+      {/* ======================================
+          Status
+      ======================================= */}
+
       <div className="mt-2">
         <select
           value={task.status}
@@ -506,13 +614,30 @@ export default function TaskCard({
 
             onStatusChange?.(
               task,
-              event.target.value as Task["status"],
+              event.target
+                .value as Task["status"],
             );
           }}
           onClick={(event) =>
             event.stopPropagation()
           }
-          className="h-7 rounded-md border border-zinc-200 bg-white px-2 text-[10px] text-zinc-600 outline-none dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-300"
+          className="
+            h-8
+            max-w-full
+            rounded-md
+            border
+            border-zinc-200
+            bg-white
+            px-2
+            text-[10px]
+            text-zinc-600
+            outline-none
+            transition
+            focus:border-zinc-400
+            dark:border-zinc-700
+            dark:bg-zinc-950
+            dark:text-zinc-300
+          "
         >
           <option value="To Do">
             To Do
@@ -532,26 +657,114 @@ export default function TaskCard({
         </select>
       </div>
 
-      {/* Bottom metadata */}
-      <div className="mt-4 flex items-center justify-between border-t border-zinc-100 pt-3 dark:border-zinc-800">
-        <div className="flex min-w-0 items-center gap-2">
-          <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800">
-            <User className="h-3 w-3 text-zinc-500 dark:text-zinc-400" />
+      {/* ======================================
+          Bottom Metadata
+      ======================================= */}
+
+      <div
+        className="
+          mt-4
+          flex
+          min-w-0
+          flex-col
+          gap-3
+          border-t
+          border-zinc-100
+          pt-3
+          dark:border-zinc-800
+          sm:flex-row
+          sm:items-center
+          sm:justify-between
+        "
+      >
+        {/* Assignee */}
+
+        <div
+          className="
+            flex
+            min-w-0
+            items-center
+            gap-2
+          "
+        >
+          <div
+            className="
+              flex
+              h-6
+              w-6
+              shrink-0
+              items-center
+              justify-center
+              rounded-full
+              bg-zinc-100
+              dark:bg-zinc-800
+            "
+          >
+            <User
+              className="
+                h-3
+                w-3
+                text-zinc-500
+                dark:text-zinc-400
+              "
+            />
           </div>
 
-          <span className="truncate text-[10px] text-zinc-500 dark:text-zinc-400">
+          <span
+            className="
+              min-w-0
+              truncate
+              text-[10px]
+              text-zinc-500
+              dark:text-zinc-400
+            "
+          >
             {task.assignee}
           </span>
         </div>
 
-        <div className="flex shrink-0 items-center gap-3 text-zinc-400 dark:text-zinc-500">
-          <span className="flex items-center gap-1 text-[10px]">
-            <CalendarDays className="h-3 w-3" />
-            {task.dueDate}
+        {/* Date + Comments */}
+
+        <div
+          className="
+            flex
+            min-w-0
+            shrink-0
+            items-center
+            justify-between
+            gap-3
+            text-zinc-400
+            dark:text-zinc-500
+            sm:justify-end
+          "
+        >
+          <span
+            className="
+              flex
+              min-w-0
+              items-center
+              gap-1
+              text-[10px]
+            "
+          >
+            <CalendarDays className="h-3 w-3 shrink-0" />
+
+            <span className="truncate">
+              {task.dueDate}
+            </span>
           </span>
 
-          <span className="flex items-center gap-1 text-[10px]">
+          <span
+            className="
+              flex
+              shrink-0
+              items-center
+              gap-1
+              text-[10px]
+            "
+          >
             <MessageCircle className="h-3 w-3" />
+
             {task.comments}
           </span>
         </div>
