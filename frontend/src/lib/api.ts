@@ -57,9 +57,28 @@ export interface ApiTask {
     email: string;
     avatar?: string | null;
   } | null;
-  subtasks: unknown[];
-  comments: unknown[];
-  labels: unknown[];
+  subtasks: ApiSubtask[];
+
+comments: Array<{
+  id: string;
+  content: string;
+  createdAt: string;
+  updatedAt: string;
+  taskId: string;
+  userId: string;
+  user?: {
+    id: string;
+    name: string;
+    email: string;
+    avatar?: string | null;
+  };
+}>;
+
+labels: Array<{
+  id: string;
+  name: string;
+  color: string;
+}>;
 }
 export interface WorkspaceMember {
   id: string;
@@ -149,6 +168,63 @@ export async function updateTask(
 export async function deleteTask(id: string) {
   return request<{ message: string }>(
     `/tasks/${id}`,
+    {
+      method: "DELETE",
+    },
+  );
+  
+}
+export interface ApiSubtask {
+  id: string;
+  title: string;
+  completed: boolean;
+  createdAt: string;
+  updatedAt: string;
+  taskId: string;
+}
+
+export interface CreateSubtaskInput {
+  title: string;
+}
+
+export interface UpdateSubtaskInput {
+  title?: string;
+  completed?: boolean;
+}
+
+export async function createSubtask(
+  taskId: string,
+  subtask: CreateSubtaskInput,
+) {
+  return request<ApiSubtask>(
+    `/tasks/${taskId}/subtasks`,
+    {
+      method: "POST",
+      body: JSON.stringify(subtask),
+    },
+  );
+}
+
+export async function updateSubtask(
+  taskId: string,
+  subtaskId: string,
+  subtask: UpdateSubtaskInput,
+) {
+  return request<ApiSubtask>(
+    `/tasks/${taskId}/subtasks/${subtaskId}`,
+    {
+      method: "PATCH",
+      body: JSON.stringify(subtask),
+    },
+  );
+}
+
+export async function deleteSubtask(
+  taskId: string,
+  subtaskId: string,
+) {
+  return request<{ message: string }>(
+    `/tasks/${taskId}/subtasks/${subtaskId}`,
     {
       method: "DELETE",
     },

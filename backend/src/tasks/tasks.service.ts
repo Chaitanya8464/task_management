@@ -6,6 +6,8 @@ import {
 import { PrismaService } from "../prisma.service.js";
 import { CreateTaskDto } from "./dto/create-task.dto.js";
 import { UpdateTaskDto } from "./dto/update-task.dto.js";
+import { CreateSubtaskDto } from "./dto/create-subtask.dto.js";
+import { UpdateSubtaskDto } from "./dto/update-subtask.dto.js";
 
 @Injectable()
 export class TasksService {
@@ -13,20 +15,31 @@ export class TasksService {
     private readonly prisma: PrismaService,
   ) {}
 
-  async create(createTaskDto: CreateTaskDto) {
+  // ==========================================
+  // TASKS
+  // ==========================================
+
+  async create(
+    createTaskDto: CreateTaskDto,
+  ) {
     return this.prisma.task.create({
       data: {
         title: createTaskDto.title,
-        description: createTaskDto.description,
+        description:
+          createTaskDto.description,
         status: createTaskDto.status,
         priority: createTaskDto.priority,
         dueDate: createTaskDto.dueDate
           ? new Date(createTaskDto.dueDate)
           : undefined,
-        workspaceId: createTaskDto.workspaceId,
-        assigneeId: createTaskDto.assigneeId,
-        creatorId: createTaskDto.creatorId,
+        workspaceId:
+          createTaskDto.workspaceId,
+        assigneeId:
+          createTaskDto.assigneeId,
+        creatorId:
+          createTaskDto.creatorId,
       },
+
       include: {
         assignee: true,
         creator: true,
@@ -42,6 +55,7 @@ export class TasksService {
       orderBy: {
         createdAt: "desc",
       },
+
       include: {
         assignee: true,
         creator: true,
@@ -53,25 +67,35 @@ export class TasksService {
   }
 
   async findOne(id: string) {
-    const task = await this.prisma.task.findUnique({
-      where: {
-        id,
-      },
-      include: {
-        assignee: true,
-        creator: true,
-        subtasks: true,
-        comments: {
-          include: {
-            user: true,
-          },
-          orderBy: {
-            createdAt: "asc",
-          },
+    const task =
+      await this.prisma.task.findUnique({
+        where: {
+          id,
         },
-        labels: true,
-      },
-    });
+
+        include: {
+          assignee: true,
+          creator: true,
+
+          subtasks: {
+            orderBy: {
+              createdAt: "asc",
+            },
+          },
+
+          comments: {
+            include: {
+              user: true,
+            },
+
+            orderBy: {
+              createdAt: "asc",
+            },
+          },
+
+          labels: true,
+        },
+      });
 
     if (!task) {
       throw new NotFoundException(
@@ -92,16 +116,22 @@ export class TasksService {
       where: {
         id,
       },
+
       data: {
         title: updateTaskDto.title,
-        description: updateTaskDto.description,
+        description:
+          updateTaskDto.description,
         status: updateTaskDto.status,
         priority: updateTaskDto.priority,
+
         dueDate: updateTaskDto.dueDate
           ? new Date(updateTaskDto.dueDate)
           : undefined,
-        assigneeId: updateTaskDto.assigneeId,
+
+        assigneeId:
+          updateTaskDto.assigneeId,
       },
+
       include: {
         assignee: true,
         creator: true,
@@ -123,6 +153,88 @@ export class TasksService {
 
     return {
       message: "Task deleted successfully",
+    };
+  }
+
+  // ==========================================
+  // SUBTASKS
+  // ==========================================
+
+  async createSubtask(
+    taskId: string,
+    createSubtaskDto: CreateSubtaskDto,
+  ) {
+    // Make sure parent task exists
+    await this.findOne(taskId);
+
+    return this.prisma.subtask.create({
+      data: {
+        title: createSubtaskDto.title,
+        taskId,
+      },
+    });
+  }
+
+  async updateSubtask(
+    taskId: string,
+    subtaskId: string,
+    updateSubtaskDto: UpdateSubtaskDto,
+  ) {
+    const subtask =
+      await this.prisma.subtask.findFirst({
+        where: {
+          id: subtaskId,
+          taskId,
+        },
+      });
+
+    if (!subtask) {
+      throw new NotFoundException(
+        "Subtask not found",
+      );
+    }
+
+    return this.prisma.subtask.update({
+      where: {
+        id: subtaskId,
+      },
+
+      data: {
+        title:
+          updateSubtaskDto.title,
+        completed:
+          updateSubtaskDto.completed,
+      },
+    });
+  }
+
+  async removeSubtask(
+    taskId: string,
+    subtaskId: string,
+  ) {
+    const subtask =
+      await this.prisma.subtask.findFirst({
+        where: {
+          id: subtaskId,
+          taskId,
+        },
+      });
+
+    if (!subtask) {
+      throw new NotFoundException(
+        "Subtask not found",
+      );
+    }
+
+    await this.prisma.subtask.delete({
+      where: {
+        id: subtaskId,
+      },
+    });
+
+    return {
+      message:
+        "Subtask deleted successfully",
     };
   }
 }
