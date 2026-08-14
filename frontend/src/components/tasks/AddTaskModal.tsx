@@ -6,11 +6,13 @@ import {
   useEffect,
   useState,
 } from "react";
+
 import {
   createTask,
   getWorkspaceMembers,
   WorkspaceMember,
 } from "@/lib/api";
+
 import { Task } from "./TaskCard";
 
 interface AddTaskModalProps {
@@ -19,7 +21,13 @@ interface AddTaskModalProps {
   onAdd: (task: Task) => void;
 }
 
-function mapStatusToApi(status: Task["status"]) {
+/*
+ * Convert frontend status values
+ * to the Prisma/API enum values.
+ */
+function mapStatusToApi(
+  status: Task["status"],
+) {
   const statusMap = {
     "To Do": "TODO",
     Doing: "DOING",
@@ -30,7 +38,13 @@ function mapStatusToApi(status: Task["status"]) {
   return statusMap[status];
 }
 
-function mapPriorityToApi(priority: Task["priority"]) {
+/*
+ * Convert frontend priority values
+ * to the Prisma/API enum values.
+ */
+function mapPriorityToApi(
+  priority: Task["priority"],
+) {
   const priorityMap = {
     Urgent: "URGENT",
     High: "HIGH",
@@ -47,7 +61,9 @@ export default function AddTaskModal({
   onClose,
   onAdd,
 }: AddTaskModalProps) {
-  const [title, setTitle] = useState("");
+  const [title, setTitle] =
+    useState("");
+
   const [description, setDescription] =
     useState("");
 
@@ -57,23 +73,23 @@ export default function AddTaskModal({
   const [priority, setPriority] =
     useState<Task["priority"]>("No Priority");
 
-  // Real workspace member
   const [assigneeId, setAssigneeId] =
     useState("");
 
-  const [members, setMembers] = useState<
-    WorkspaceMember[]
-  >([]);
+  const [members, setMembers] =
+    useState<WorkspaceMember[]>([]);
 
   const [loadingMembers, setLoadingMembers] =
     useState(false);
 
-  const [dueDate, setDueDate] = useState("");
+  const [dueDate, setDueDate] =
+    useState("");
 
   const [isSubmitting, setIsSubmitting] =
     useState(false);
 
-  const [error, setError] = useState("");
+  const [error, setError] =
+    useState("");
 
   /*
    * Load workspace members whenever
@@ -116,9 +132,14 @@ export default function AddTaskModal({
 
         setMembers(data);
 
-        // Default to first workspace member
+        /*
+         * Default to the first workspace
+         * member if available.
+         */
         if (data.length > 0) {
-          setAssigneeId(data[0].userId);
+          setAssigneeId(
+            data[0].userId,
+          );
         } else {
           setAssigneeId("");
         }
@@ -146,6 +167,9 @@ export default function AddTaskModal({
     return null;
   }
 
+  /*
+   * Reset the form after successful creation.
+   */
   const resetForm = () => {
     setTitle("");
     setDescription("");
@@ -162,13 +186,18 @@ export default function AddTaskModal({
     setError("");
   };
 
+  /*
+   * Create task in PostgreSQL.
+   */
   const handleSubmit = async (
     event: FormEvent,
   ) => {
     event.preventDefault();
 
     if (!title.trim()) {
-      setError("Task title is required.");
+      setError(
+        "Task title is required.",
+      );
       return;
     }
 
@@ -207,14 +236,19 @@ export default function AddTaskModal({
       setIsSubmitting(true);
       setError("");
 
+      /*
+       * Create the task through the API.
+       */
       const createdTask =
         await createTask({
           title: title.trim(),
+
           description:
             description.trim() ||
             undefined,
 
-          status: mapStatusToApi(status),
+          status:
+            mapStatusToApi(status),
 
           priority:
             mapPriorityToApi(priority),
@@ -225,14 +259,22 @@ export default function AddTaskModal({
               ).toISOString()
             : undefined,
 
-          workspaceId: workspace.id,
+          workspaceId:
+            workspace.id,
 
-          // Send actual PostgreSQL User ID
+          /*
+           * Only send assigneeId when
+           * a real workspace member exists.
+           */
           ...(assigneeId
             ? { assigneeId }
             : {}),
         });
 
+      /*
+       * Convert the API response into
+       * the frontend Task shape.
+       */
       const newTask: Task = {
         id: createdTask.id,
 
@@ -250,16 +292,22 @@ export default function AddTaskModal({
           createdTask.assignee?.name ??
           "Unassigned",
 
-        dueDate: createdTask.dueDate
-          ? new Date(
-              createdTask.dueDate,
-            ).toLocaleDateString()
-          : "No due date",
+        dueDate:
+          createdTask.dueDate
+            ? new Date(
+                createdTask.dueDate,
+              ).toLocaleDateString()
+            : "No due date",
 
         comments:
-          createdTask.comments?.length ?? 0,
+          createdTask.comments
+            ?.length ?? 0,
       };
 
+      /*
+       * IMPORTANT:
+       * Wait for the parent to update its state.
+       */
       onAdd(newTask);
 
       resetForm();
@@ -279,7 +327,18 @@ export default function AddTaskModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 backdrop-blur-[1px] dark:bg-black/70">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 backdrop-blur-[1px] dark:bg-black/70"
+      onMouseDown={(event) => {
+        if (
+          event.target ===
+            event.currentTarget &&
+          !isSubmitting
+        ) {
+          onClose();
+        }
+      }}
+    >
       <div className="w-full max-w-lg overflow-hidden rounded-xl border border-zinc-200 bg-white text-zinc-900 shadow-xl dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100">
         {/* Header */}
         <div className="flex items-start justify-between border-b border-zinc-100 p-5 dark:border-zinc-800">
@@ -474,14 +533,20 @@ export default function AddTaskModal({
                         : "Unassigned"}
                   </option>
 
-                  {members.map((member) => (
-                    <option
-                      key={member.userId}
-                      value={member.userId}
-                    >
-                      {member.user.name}
-                    </option>
-                  ))}
+                  {members.map(
+                    (member) => (
+                      <option
+                        key={
+                          member.userId
+                        }
+                        value={
+                          member.userId
+                        }
+                      >
+                        {member.user.name}
+                      </option>
+                    ),
+                  )}
                 </select>
               </div>
 

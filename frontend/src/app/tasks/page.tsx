@@ -180,8 +180,6 @@ export default function TasksPage() {
       ...currentTasks,
       task,
     ]);
-
-    setIsAddTaskOpen(false);
   };
 
 
