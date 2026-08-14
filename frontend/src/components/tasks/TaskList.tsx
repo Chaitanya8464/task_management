@@ -1,8 +1,14 @@
+"use client";
+
 import {
   CalendarDays,
   MessageCircle,
   User,
+  MoreHorizontal,
+  Pencil,
+  Trash2,
 } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 
 import { Task } from "./TaskCard";
 import { TaskFields } from "./FieldsMenu";
@@ -10,6 +16,8 @@ import { TaskFields } from "./FieldsMenu";
 interface TaskListProps {
   tasks: Task[];
   fields: TaskFields;
+  onEdit?: (task: Task) => void;
+  onDelete?: (task: Task) => void;
 }
 
 const priorityStyles = {
@@ -24,48 +32,289 @@ const statusGroups: Task["status"][] = [
   "To Do",
   "Doing",
   "Completed",
+  "On Hold",
 ];
+
+interface TaskRowActionsProps {
+  task: Task;
+  onEdit?: (task: Task) => void;
+  onDelete?: (task: Task) => void;
+}
+
+function TaskRowActions({
+  task,
+  onEdit,
+  onDelete,
+}: TaskRowActionsProps) {
+  const [isOpen, setIsOpen] = useState(false);
+
+  const [menuPosition, setMenuPosition] = useState({
+    top: 0,
+    left: 0,
+  });
+
+  const buttonRef =
+    useRef<HTMLButtonElement>(null);
+
+  const menuRef =
+    useRef<HTMLDivElement>(null);
+
+  const updateMenuPosition = () => {
+    if (!buttonRef.current) {
+      return;
+    }
+
+    const rect =
+      buttonRef.current.getBoundingClientRect();
+
+    const menuWidth = 140;
+    const menuHeight = 90;
+    const gap = 6;
+
+    let left = rect.right - menuWidth;
+    let top = rect.bottom + gap;
+
+    // Keep menu inside the viewport horizontally.
+    if (left < 8) {
+      left = 8;
+    }
+
+    if (
+      left + menuWidth >
+      window.innerWidth - 8
+    ) {
+      left =
+        window.innerWidth -
+        menuWidth -
+        8;
+    }
+
+    // If there is not enough room below,
+    // open the menu above the button.
+    if (
+      top + menuHeight >
+      window.innerHeight - 8
+    ) {
+      top =
+        rect.top -
+        menuHeight -
+        gap;
+    }
+
+    setMenuPosition({
+      top,
+      left,
+    });
+  };
+
+  const handleToggleMenu = () => {
+    if (!isOpen) {
+      updateMenuPosition();
+    }
+
+    setIsOpen(
+      (current) => !current,
+    );
+  };
+
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    const handleOutsideClick = (
+      event: MouseEvent,
+    ) => {
+      const target =
+        event.target as Node;
+
+      if (
+        buttonRef.current?.contains(
+          target,
+        ) ||
+        menuRef.current?.contains(
+          target,
+        )
+      ) {
+        return;
+      }
+
+      setIsOpen(false);
+    };
+
+    const handleEscape = (
+      event: KeyboardEvent,
+    ) => {
+      if (event.key === "Escape") {
+        setIsOpen(false);
+      }
+    };
+
+    const handleViewportChange = () => {
+      updateMenuPosition();
+    };
+
+    document.addEventListener(
+      "mousedown",
+      handleOutsideClick,
+    );
+
+    document.addEventListener(
+      "keydown",
+      handleEscape,
+    );
+
+    window.addEventListener(
+      "resize",
+      handleViewportChange,
+    );
+
+    // Capture scrolling from the page
+    // as well as the table's scroll container.
+    window.addEventListener(
+      "scroll",
+      handleViewportChange,
+      true,
+    );
+
+    return () => {
+      document.removeEventListener(
+        "mousedown",
+        handleOutsideClick,
+      );
+
+      document.removeEventListener(
+        "keydown",
+        handleEscape,
+      );
+
+      window.removeEventListener(
+        "resize",
+        handleViewportChange,
+      );
+
+      window.removeEventListener(
+        "scroll",
+        handleViewportChange,
+        true,
+      );
+    };
+  }, [isOpen]);
+
+  const handleEdit = () => {
+    setIsOpen(false);
+    onEdit?.(task);
+  };
+
+  const handleDelete = () => {
+    setIsOpen(false);
+    onDelete?.(task);
+  };
+
+  return (
+    <>
+      {/* Three-dot button */}
+
+      <button
+        ref={buttonRef}
+        type="button"
+        aria-label={`Actions for ${task.title}`}
+        aria-expanded={isOpen}
+        onClick={handleToggleMenu}
+        className={`rounded-md p-1.5 text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700 ${
+          isOpen
+            ? "bg-zinc-100 text-zinc-700"
+            : ""
+        }`}
+      >
+        <MoreHorizontal className="h-4 w-4" />
+      </button>
+
+      {/* Floating menu */}
+
+      {isOpen && (
+        <div
+          ref={menuRef}
+          className="fixed z-[9999] w-36 rounded-md border border-zinc-200 bg-white p-1 shadow-lg"
+          style={{
+            top: menuPosition.top,
+            left: menuPosition.left,
+          }}
+        >
+          <button
+            type="button"
+            onClick={handleEdit}
+            className="flex w-full items-center gap-2 rounded px-2.5 py-2 text-left text-xs text-zinc-600 transition hover:bg-zinc-50"
+          >
+            <Pencil className="h-3.5 w-3.5" />
+            Edit
+          </button>
+
+          <button
+            type="button"
+            onClick={handleDelete}
+            className="flex w-full items-center gap-2 rounded px-2.5 py-2 text-left text-xs text-red-500 transition hover:bg-red-50"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+            Delete
+          </button>
+        </div>
+      )}
+    </>
+  );
+}
 
 export default function TaskList({
   tasks,
   fields,
+  onEdit,
+  onDelete,
 }: TaskListProps) {
   return (
-    <div className="overflow-x-auto">
-      <div className="min-w-[700px]">
-        {statusGroups.map((status) => {
-          const statusTasks = tasks.filter(
-            (task) => task.status === status
-          );
+    <div className="min-w-0">
+      {statusGroups.map((status) => {
+        const statusTasks = tasks.filter(
+          (task) => task.status === status,
+        );
 
-          return (
-            <section key={status} className="mb-6">
-              {/* Group Header */}
-              <div className="mb-2 flex items-center gap-2">
-                <span
-                  className={`h-2 w-2 rounded-full ${
-                    status === "To Do"
-                      ? "bg-zinc-400"
-                      : status === "Doing"
-                        ? "bg-blue-500"
-                        : "bg-emerald-500"
-                  }`}
-                />
+        return (
+          <section
+            key={status}
+            className="mb-6"
+          >
+            {/* Group Header */}
 
-                <h2 className="text-xs font-semibold text-zinc-700">
-                  {status}
-                </h2>
+            <div className="mb-2 flex items-center gap-2">
+              <span
+                className={`h-2 w-2 rounded-full ${
+                  status === "To Do"
+                    ? "bg-zinc-400"
+                    : status === "Doing"
+                      ? "bg-blue-500"
+                      : status === "Completed"
+                        ? "bg-emerald-500"
+                        : "bg-orange-500"
+                }`}
+              />
 
-                <span className="text-xs text-zinc-400">
-                  {statusTasks.length}
-                </span>
-              </div>
+              <h2 className="text-xs font-semibold text-zinc-700">
+                {status}
+              </h2>
 
-              {/* Table */}
-              <div className="overflow-hidden rounded-lg border border-zinc-200">
+              <span className="text-xs text-zinc-400">
+                {statusTasks.length}
+              </span>
+            </div>
+
+            {/* Responsive table wrapper */}
+
+            <div className="overflow-x-auto rounded-lg border border-zinc-200">
+              <div className="min-w-[850px]">
                 {/* Table Header */}
+
                 <div className="flex items-center border-b border-zinc-200 bg-zinc-50 px-4 py-2.5">
                   {/* Task */}
+
                   <div className="min-w-[260px] flex-1">
                     <span className="text-[10px] font-medium text-zinc-400">
                       Task
@@ -73,8 +322,9 @@ export default function TaskList({
                   </div>
 
                   {/* Priority */}
+
                   {fields.priority && (
-                    <div className="w-[120px]">
+                    <div className="w-[120px] shrink-0">
                       <span className="text-[10px] font-medium text-zinc-400">
                         Priority
                       </span>
@@ -82,8 +332,9 @@ export default function TaskList({
                   )}
 
                   {/* Members */}
+
                   {fields.members && (
-                    <div className="w-[150px]">
+                    <div className="w-[150px] shrink-0">
                       <span className="text-[10px] font-medium text-zinc-400">
                         Members
                       </span>
@@ -91,8 +342,9 @@ export default function TaskList({
                   )}
 
                   {/* Due Date */}
+
                   {fields.dueDate && (
-                    <div className="w-[130px]">
+                    <div className="w-[130px] shrink-0">
                       <span className="text-[10px] font-medium text-zinc-400">
                         Due Date
                       </span>
@@ -100,22 +352,29 @@ export default function TaskList({
                   )}
 
                   {/* Comments */}
+
                   {fields.comments && (
-                    <div className="w-[80px]">
+                    <div className="w-[80px] shrink-0">
                       <span className="text-[10px] font-medium text-zinc-400">
                         Comments
                       </span>
                     </div>
                   )}
+
+                  {/* Actions */}
+
+                  <div className="w-[48px] shrink-0" />
                 </div>
 
                 {/* Task Rows */}
+
                 {statusTasks.map((task) => (
                   <div
                     key={task.id}
                     className="flex items-center border-b border-zinc-100 px-4 py-3 last:border-b-0 hover:bg-zinc-50"
                   >
                     {/* Task */}
+
                     <div className="min-w-[260px] flex-1">
                       <p className="truncate text-xs font-medium text-zinc-800">
                         {task.title}
@@ -129,11 +388,14 @@ export default function TaskList({
                     </div>
 
                     {/* Priority */}
+
                     {fields.priority && (
-                      <div className="w-[120px]">
+                      <div className="w-[120px] shrink-0">
                         <span
                           className={`rounded-md px-2 py-1 text-[10px] font-medium ${
-                            priorityStyles[task.priority]
+                            priorityStyles[
+                              task.priority
+                            ]
                           }`}
                         >
                           {task.priority}
@@ -142,8 +404,9 @@ export default function TaskList({
                     )}
 
                     {/* Member */}
+
                     {fields.members && (
-                      <div className="flex w-[150px] items-center gap-2">
+                      <div className="flex w-[150px] shrink-0 items-center gap-2">
                         <div className="flex h-6 w-6 items-center justify-center rounded-full bg-zinc-100">
                           <User className="h-3 w-3 text-zinc-500" />
                         </div>
@@ -155,34 +418,49 @@ export default function TaskList({
                     )}
 
                     {/* Due Date */}
+
                     {fields.dueDate && (
-                      <div className="flex w-[130px] items-center gap-2 text-[10px] text-zinc-400">
+                      <div className="flex w-[130px] shrink-0 items-center gap-2 text-[10px] text-zinc-400">
                         <CalendarDays className="h-3 w-3" />
+
                         {task.dueDate}
                       </div>
                     )}
 
                     {/* Comments */}
+
                     {fields.comments && (
-                      <div className="flex w-[80px] items-center gap-2 text-[10px] text-zinc-400">
+                      <div className="flex w-[80px] shrink-0 items-center gap-2 text-[10px] text-zinc-400">
                         <MessageCircle className="h-3 w-3" />
+
                         {task.comments}
                       </div>
                     )}
+
+                    {/* Actions */}
+
+                    <div className="flex w-[48px] shrink-0 justify-end">
+                      <TaskRowActions
+                        task={task}
+                        onEdit={onEdit}
+                        onDelete={onDelete}
+                      />
+                    </div>
                   </div>
                 ))}
 
                 {/* Empty State */}
+
                 {statusTasks.length === 0 && (
                   <div className="px-4 py-6 text-center text-xs text-zinc-400">
                     No tasks
                   </div>
                 )}
               </div>
-            </section>
-          );
-        })}
-      </div>
+            </div>
+          </section>
+        );
+      })}
     </div>
   );
 }

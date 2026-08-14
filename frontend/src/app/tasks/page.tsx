@@ -441,9 +441,11 @@ export default function TasksPage() {
                 onDelete={handleDeleteTask}
             />
           ) : (
-            <TaskList
-              tasks={filteredTasks}
-              fields={fields}
+           <TaskList
+            tasks={filteredTasks}
+            fields={fields}
+            onEdit={handleEditTask}
+            onDelete={handleDeleteTask}
             />
           )}
         </div>
