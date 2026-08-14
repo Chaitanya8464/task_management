@@ -61,7 +61,27 @@ export interface ApiTask {
   comments: unknown[];
   labels: unknown[];
 }
+export interface WorkspaceMember {
+  id: string;
+  role: "OWNER" | "ADMIN" | "MEMBER";
+  joinedAt: string;
+  workspaceId: string;
+  userId: string;
+  user: {
+    id: string;
+    name: string;
+    email: string;
+    avatar?: string | null;
+  };
+}
 
+export async function getWorkspaceMembers(
+  workspaceId: string,
+) {
+  return request<WorkspaceMember[]>(
+    `/workspaces/${workspaceId}/members`,
+  );
+}
 export interface GuestLoginResponse {
   message: string;
   user: {

@@ -1,8 +1,16 @@
 "use client";
 
 import { X } from "lucide-react";
-import { FormEvent, useEffect, useState } from "react";
-import { updateTask } from "@/lib/api";
+import {
+  FormEvent,
+  useEffect,
+  useState,
+} from "react";
+import {
+  getWorkspaceMembers,
+  updateTask,
+  WorkspaceMember,
+} from "@/lib/api";
 import { Task } from "./TaskCard";
 
 interface EditTaskModalProps {
@@ -23,7 +31,9 @@ function mapStatusToApi(status: Task["status"]) {
   return statusMap[status];
 }
 
-function mapPriorityToApi(priority: Task["priority"]) {
+function mapPriorityToApi(
+  priority: Task["priority"],
+) {
   const priorityMap = {
     Urgent: "URGENT",
     High: "HIGH",
@@ -35,6 +45,22 @@ function mapPriorityToApi(priority: Task["priority"]) {
   return priorityMap[priority];
 }
 
+function getDateInputValue(
+  dueDate?: string | null,
+) {
+  if (!dueDate || dueDate === "No due date") {
+    return "";
+  }
+
+  const date = new Date(dueDate);
+
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+
+  return date.toISOString().split("T")[0];
+}
+
 export default function EditTaskModal({
   isOpen,
   task,
@@ -42,48 +68,128 @@ export default function EditTaskModal({
   onUpdated,
 }: EditTaskModalProps) {
   const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
+  const [description, setDescription] =
+    useState("");
+
   const [status, setStatus] =
     useState<Task["status"]>("To Do");
+
   const [priority, setPriority] =
     useState<Task["priority"]>("No Priority");
+
+  const [assigneeId, setAssigneeId] =
+    useState("");
+
+  const [members, setMembers] = useState<
+    WorkspaceMember[]
+  >([]);
+
+  const [loadingMembers, setLoadingMembers] =
+    useState(false);
+
   const [dueDate, setDueDate] = useState("");
 
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmitting, setIsSubmitting] =
+    useState(false);
+
   const [error, setError] = useState("");
 
+  /*
+   * Load task data whenever a task is selected.
+   */
   useEffect(() => {
     if (!task) return;
 
     setTitle(task.title);
     setDescription(task.description ?? "");
     setStatus(task.status);
-    setPriority(task.priority);
-
-    // TaskCard currently displays a localized date, so only
-    // populate the date input when we have a usable date.
-    if (task.dueDate && task.dueDate !== "No due date") {
-      const parsedDate = new Date(task.dueDate);
-
-      if (!Number.isNaN(parsedDate.getTime())) {
-        setDueDate(
-          parsedDate.toISOString().split("T")[0],
-        );
-      } else {
-        setDueDate("");
-      }
-    } else {
-      setDueDate("");
-    }
+    setPriority(priorityFromTask(task));
+    setDueDate(getDateInputValue(task.dueDate));
 
     setError("");
   }, [task]);
+
+  /*
+   * Load workspace members when modal opens.
+   */
+  useEffect(() => {
+    if (!isOpen || !task) return;
+
+    const loadMembers = async () => {
+      try {
+        setLoadingMembers(true);
+
+        const storedWorkspace =
+          localStorage.getItem(
+            "taskflow_workspace",
+          );
+
+        if (!storedWorkspace) {
+          setError(
+            "Workspace not found. Please login again.",
+          );
+          return;
+        }
+
+        const workspace =
+          JSON.parse(storedWorkspace);
+
+        if (!workspace?.id) {
+          setError(
+            "Workspace ID is missing. Please login again.",
+          );
+          return;
+        }
+
+        const data =
+          await getWorkspaceMembers(
+            workspace.id,
+          );
+
+        setMembers(data);
+
+        /*
+         * Match the current task's assignee
+         * against the actual workspace member.
+         */
+        const currentMember = data.find(
+          (member) =>
+            member.user.name === task.assignee,
+        );
+
+        if (currentMember) {
+          setAssigneeId(
+            currentMember.userId,
+          );
+        } else {
+          setAssigneeId("");
+        }
+      } catch (error) {
+        console.error(
+          "Failed to load workspace members:",
+          error,
+        );
+
+        setMembers([]);
+
+        setError(
+          "Unable to load workspace members.",
+        );
+      } finally {
+        setLoadingMembers(false);
+      }
+    };
+
+    loadMembers();
+  }, [isOpen, task]);
 
   if (!isOpen || !task) {
     return null;
   }
 
-  const handleSubmit = async (event: FormEvent) => {
+  const handleSubmit = async (
+    event: FormEvent,
+  ) => {
     event.preventDefault();
 
     if (!title.trim()) {
@@ -95,35 +201,52 @@ export default function EditTaskModal({
       setIsSubmitting(true);
       setError("");
 
-      const updatedTask = await updateTask(task.id, {
-        title: title.trim(),
-        description:
-          description.trim() || undefined,
-        status: mapStatusToApi(status),
-        priority: mapPriorityToApi(priority),
-        dueDate: dueDate
-          ? new Date(
-              `${dueDate}T00:00:00`,
-            ).toISOString()
-          : undefined,
-      });
+      const updatedTask =
+        await updateTask(task.id, {
+          title: title.trim(),
+
+          description:
+            description.trim() || undefined,
+
+          status: mapStatusToApi(status),
+
+          priority:
+            mapPriorityToApi(priority),
+
+          dueDate: dueDate
+            ? new Date(
+                `${dueDate}T00:00:00`,
+              ).toISOString()
+            : undefined,
+
+          ...(assigneeId
+            ? { assigneeId }
+            : {}),
+        });
 
       const updatedUiTask: Task = {
         id: updatedTask.id,
+
         title: updatedTask.title,
+
         description:
-          updatedTask.description ?? undefined,
+          updatedTask.description ??
+          undefined,
+
         status,
+
         priority,
+
         assignee:
           updatedTask.assignee?.name ??
-          task.assignee ??
           "Unassigned",
+
         dueDate: updatedTask.dueDate
           ? new Date(
               updatedTask.dueDate,
             ).toLocaleDateString()
           : "No due date",
+
         comments:
           updatedTask.comments?.length ?? 0,
       };
@@ -197,10 +320,12 @@ export default function EditTaskModal({
                 id="edit-task-title-input"
                 value={title}
                 onChange={(event) =>
-                  setTitle(event.target.value)
+                  setTitle(
+                    event.target.value,
+                  )
                 }
                 disabled={isSubmitting}
-                className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-xs text-zinc-900 outline-none transition placeholder:text-zinc-400 focus:border-violet-400 focus:ring-2 focus:ring-violet-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:placeholder:text-zinc-600 dark:focus:border-violet-500 dark:focus:ring-violet-500/20"
+                className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-xs text-zinc-900 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100 disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:focus:border-violet-500 dark:focus:ring-violet-500/20"
               />
             </div>
 
@@ -223,7 +348,7 @@ export default function EditTaskModal({
                 }
                 rows={3}
                 disabled={isSubmitting}
-                className="w-full resize-none rounded-md border border-zinc-200 bg-white px-3 py-2.5 text-xs text-zinc-900 outline-none transition placeholder:text-zinc-400 focus:border-violet-400 focus:ring-2 focus:ring-violet-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:placeholder:text-zinc-600 dark:focus:border-violet-500 dark:focus:ring-violet-500/20"
+                className="w-full resize-none rounded-md border border-zinc-200 bg-white px-3 py-2.5 text-xs text-zinc-900 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100 disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:focus:border-violet-500 dark:focus:ring-violet-500/20"
               />
             </div>
 
@@ -247,7 +372,7 @@ export default function EditTaskModal({
                     )
                   }
                   disabled={isSubmitting}
-                  className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-xs text-zinc-900 outline-none transition focus:border-violet-400 disabled:cursor-not-allowed disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:focus:border-violet-500"
+                  className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-xs text-zinc-900 outline-none dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
                 >
                   <option value="To Do">
                     To Do
@@ -282,7 +407,7 @@ export default function EditTaskModal({
                     )
                   }
                   disabled={isSubmitting}
-                  className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-xs text-zinc-900 outline-none transition focus:border-violet-400 disabled:cursor-not-allowed disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:focus:border-violet-500"
+                  className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-xs text-zinc-900 outline-none dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
                 >
                   <option value="No Priority">
                     No Priority
@@ -303,25 +428,70 @@ export default function EditTaskModal({
               </div>
             </div>
 
-            {/* Due Date */}
-            <div>
-              <label
-                htmlFor="edit-task-due-date"
-                className="mb-1.5 block text-xs font-medium text-zinc-700 dark:text-zinc-300"
-              >
-                Due Date
-              </label>
+            {/* Assignee + Due Date */}
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              {/* Assignee */}
+              <div>
+                <label
+                  htmlFor="edit-task-assignee"
+                  className="mb-1.5 block text-xs font-medium text-zinc-700 dark:text-zinc-300"
+                >
+                  Assignee
+                </label>
 
-              <input
-                id="edit-task-due-date"
-                type="date"
-                value={dueDate}
-                onChange={(event) =>
-                  setDueDate(event.target.value)
-                }
-                disabled={isSubmitting}
-                className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-xs text-zinc-900 outline-none transition focus:border-violet-400 disabled:cursor-not-allowed disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:focus:border-violet-500"
-              />
+                <select
+                  id="edit-task-assignee"
+                  value={assigneeId}
+                  onChange={(event) =>
+                    setAssigneeId(
+                      event.target.value,
+                    )
+                  }
+                  disabled={
+                    isSubmitting ||
+                    loadingMembers
+                  }
+                  className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-xs text-zinc-900 outline-none dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
+                >
+                  <option value="">
+                    {loadingMembers
+                      ? "Loading members..."
+                      : "Unassigned"}
+                  </option>
+
+                  {members.map((member) => (
+                    <option
+                      key={member.userId}
+                      value={member.userId}
+                    >
+                      {member.user.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Due Date */}
+              <div>
+                <label
+                  htmlFor="edit-task-due-date"
+                  className="mb-1.5 block text-xs font-medium text-zinc-700 dark:text-zinc-300"
+                >
+                  Due Date
+                </label>
+
+                <input
+                  id="edit-task-due-date"
+                  type="date"
+                  value={dueDate}
+                  onChange={(event) =>
+                    setDueDate(
+                      event.target.value,
+                    )
+                  }
+                  disabled={isSubmitting}
+                  className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-xs text-zinc-900 outline-none dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
+                />
+              </div>
             </div>
           </div>
 
@@ -347,7 +517,8 @@ export default function EditTaskModal({
               type="submit"
               disabled={
                 !title.trim() ||
-                isSubmitting
+                isSubmitting ||
+                loadingMembers
               }
               className="rounded-md bg-black px-4 py-2 text-xs font-medium text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-40 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200"
             >
@@ -360,4 +531,14 @@ export default function EditTaskModal({
       </div>
     </div>
   );
+}
+
+/*
+ * TaskCard currently exposes the assignee as a name.
+ * This helper keeps the existing Task interface intact.
+ */
+function priorityFromTask(
+  task: Task,
+): Task["priority"] {
+  return task.priority;
 }

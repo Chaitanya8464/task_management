@@ -1,8 +1,16 @@
 "use client";
 
 import { X } from "lucide-react";
-import { FormEvent, useState } from "react";
-import { createTask } from "@/lib/api";
+import {
+  FormEvent,
+  useEffect,
+  useState,
+} from "react";
+import {
+  createTask,
+  getWorkspaceMembers,
+  WorkspaceMember,
+} from "@/lib/api";
 import { Task } from "./TaskCard";
 
 interface AddTaskModalProps {
@@ -40,7 +48,8 @@ export default function AddTaskModal({
   onAdd,
 }: AddTaskModalProps) {
   const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
+  const [description, setDescription] =
+    useState("");
 
   const [status, setStatus] =
     useState<Task["status"]>("To Do");
@@ -48,13 +57,90 @@ export default function AddTaskModal({
   const [priority, setPriority] =
     useState<Task["priority"]>("No Priority");
 
-  const [assignee, setAssignee] =
-    useState("Unassigned");
+  // Real workspace member
+  const [assigneeId, setAssigneeId] =
+    useState("");
+
+  const [members, setMembers] = useState<
+    WorkspaceMember[]
+  >([]);
+
+  const [loadingMembers, setLoadingMembers] =
+    useState(false);
 
   const [dueDate, setDueDate] = useState("");
 
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmitting, setIsSubmitting] =
+    useState(false);
+
   const [error, setError] = useState("");
+
+  /*
+   * Load workspace members whenever
+   * the modal opens.
+   */
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const loadMembers = async () => {
+      try {
+        setLoadingMembers(true);
+        setError("");
+
+        const storedWorkspace =
+          localStorage.getItem(
+            "taskflow_workspace",
+          );
+
+        if (!storedWorkspace) {
+          setError(
+            "Workspace not found. Please login again.",
+          );
+          return;
+        }
+
+        const workspace =
+          JSON.parse(storedWorkspace);
+
+        if (!workspace?.id) {
+          setError(
+            "Workspace ID is missing. Please login again.",
+          );
+          return;
+        }
+
+        const data =
+          await getWorkspaceMembers(
+            workspace.id,
+          );
+
+        setMembers(data);
+
+        // Default to first workspace member
+        if (data.length > 0) {
+          setAssigneeId(data[0].userId);
+        } else {
+          setAssigneeId("");
+        }
+      } catch (error) {
+        console.error(
+          "Failed to load workspace members:",
+          error,
+        );
+
+        setMembers([]);
+        setAssigneeId("");
+
+        setError(
+          "Unable to load workspace members.",
+        );
+      } finally {
+        setLoadingMembers(false);
+      }
+    };
+
+    loadMembers();
+  }, [isOpen]);
 
   if (!isOpen) {
     return null;
@@ -65,12 +151,20 @@ export default function AddTaskModal({
     setDescription("");
     setStatus("To Do");
     setPriority("No Priority");
-    setAssignee("Unassigned");
+
+    setAssigneeId(
+      members.length > 0
+        ? members[0].userId
+        : "",
+    );
+
     setDueDate("");
     setError("");
   };
 
-  const handleSubmit = async (event: FormEvent) => {
+  const handleSubmit = async (
+    event: FormEvent,
+  ) => {
     event.preventDefault();
 
     if (!title.trim()) {
@@ -79,17 +173,22 @@ export default function AddTaskModal({
     }
 
     const storedWorkspace =
-      localStorage.getItem("taskflow_workspace");
+      localStorage.getItem(
+        "taskflow_workspace",
+      );
 
     if (!storedWorkspace) {
-      setError("Workspace not found. Please login again.");
+      setError(
+        "Workspace not found. Please login again.",
+      );
       return;
     }
 
     let workspace;
 
     try {
-      workspace = JSON.parse(storedWorkspace);
+      workspace =
+        JSON.parse(storedWorkspace);
     } catch {
       setError(
         "Invalid workspace information. Please login again.",
@@ -108,33 +207,55 @@ export default function AddTaskModal({
       setIsSubmitting(true);
       setError("");
 
-      const createdTask = await createTask({
-        title: title.trim(),
-        description: description.trim() || undefined,
-        status: mapStatusToApi(status),
-        priority: mapPriorityToApi(priority),
-        dueDate: dueDate
-          ? new Date(
-              `${dueDate}T00:00:00`,
-            ).toISOString()
-          : undefined,
-        workspaceId: workspace.id,
-      });
+      const createdTask =
+        await createTask({
+          title: title.trim(),
+          description:
+            description.trim() ||
+            undefined,
+
+          status: mapStatusToApi(status),
+
+          priority:
+            mapPriorityToApi(priority),
+
+          dueDate: dueDate
+            ? new Date(
+                `${dueDate}T00:00:00`,
+              ).toISOString()
+            : undefined,
+
+          workspaceId: workspace.id,
+
+          // Send actual PostgreSQL User ID
+          ...(assigneeId
+            ? { assigneeId }
+            : {}),
+        });
 
       const newTask: Task = {
         id: createdTask.id,
+
         title: createdTask.title,
+
         description:
-          createdTask.description ?? undefined,
+          createdTask.description ??
+          undefined,
+
         status,
+
         priority,
+
         assignee:
-          createdTask.assignee?.name ?? "Unassigned",
+          createdTask.assignee?.name ??
+          "Unassigned",
+
         dueDate: createdTask.dueDate
           ? new Date(
               createdTask.dueDate,
             ).toLocaleDateString()
           : "No due date",
+
         comments:
           createdTask.comments?.length ?? 0,
       };
@@ -144,7 +265,10 @@ export default function AddTaskModal({
       resetForm();
       onClose();
     } catch (error) {
-      console.error("Failed to create task:", error);
+      console.error(
+        "Failed to create task:",
+        error,
+      );
 
       setError(
         "Unable to create task. Please try again.",
@@ -155,7 +279,7 @@ export default function AddTaskModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 dark:bg-black/70">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 backdrop-blur-[1px] dark:bg-black/70">
       <div className="w-full max-w-lg overflow-hidden rounded-xl border border-zinc-200 bg-white text-zinc-900 shadow-xl dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100">
         {/* Header */}
         <div className="flex items-start justify-between border-b border-zinc-100 p-5 dark:border-zinc-800">
@@ -173,6 +297,7 @@ export default function AddTaskModal({
             type="button"
             onClick={onClose}
             disabled={isSubmitting}
+            aria-label="Close create task modal"
             className="rounded-md p-1.5 text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700 disabled:cursor-not-allowed disabled:opacity-50 dark:text-zinc-500 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
           >
             <X className="h-4 w-4" />
@@ -198,7 +323,9 @@ export default function AddTaskModal({
                 id="task-title"
                 value={title}
                 onChange={(event) =>
-                  setTitle(event.target.value)
+                  setTitle(
+                    event.target.value,
+                  )
                 }
                 placeholder="Enter task title"
                 autoFocus
@@ -220,7 +347,9 @@ export default function AddTaskModal({
                 id="task-description"
                 value={description}
                 onChange={(event) =>
-                  setDescription(event.target.value)
+                  setDescription(
+                    event.target.value,
+                  )
                 }
                 placeholder="Describe the task..."
                 rows={3}
@@ -251,11 +380,18 @@ export default function AddTaskModal({
                   disabled={isSubmitting}
                   className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-xs text-zinc-900 outline-none focus:border-violet-400 disabled:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:focus:border-violet-500 disabled:dark:bg-zinc-800"
                 >
-                  <option value="To Do">To Do</option>
-                  <option value="Doing">Doing</option>
+                  <option value="To Do">
+                    To Do
+                  </option>
+
+                  <option value="Doing">
+                    Doing
+                  </option>
+
                   <option value="Completed">
                     Completed
                   </option>
+
                   <option value="On Hold">
                     On Hold
                   </option>
@@ -285,16 +421,29 @@ export default function AddTaskModal({
                   <option value="No Priority">
                     No Priority
                   </option>
-                  <option value="Urgent">Urgent</option>
-                  <option value="High">High</option>
-                  <option value="Medium">Medium</option>
-                  <option value="Low">Low</option>
+
+                  <option value="Urgent">
+                    Urgent
+                  </option>
+
+                  <option value="High">
+                    High
+                  </option>
+
+                  <option value="Medium">
+                    Medium
+                  </option>
+
+                  <option value="Low">
+                    Low
+                  </option>
                 </select>
               </div>
             </div>
 
-            {/* Assignee + Due date */}
+            {/* Assignee + Due Date */}
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              {/* Assignee */}
               <div>
                 <label
                   htmlFor="task-assignee"
@@ -305,22 +454,38 @@ export default function AddTaskModal({
 
                 <select
                   id="task-assignee"
-                  value={assignee}
+                  value={assigneeId}
                   onChange={(event) =>
-                    setAssignee(event.target.value)
+                    setAssigneeId(
+                      event.target.value,
+                    )
                   }
-                  disabled={isSubmitting}
+                  disabled={
+                    isSubmitting ||
+                    loadingMembers
+                  }
                   className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-xs text-zinc-900 outline-none focus:border-violet-400 disabled:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:focus:border-violet-500 disabled:dark:bg-zinc-800"
                 >
-                  <option>Unassigned</option>
-                  <option>John</option>
-                  <option>Sarah</option>
-                  <option>Mike</option>
-                  <option>Alex</option>
-                  <option>David</option>
+                  <option value="">
+                    {loadingMembers
+                      ? "Loading members..."
+                      : members.length === 0
+                        ? "No members found"
+                        : "Unassigned"}
+                  </option>
+
+                  {members.map((member) => (
+                    <option
+                      key={member.userId}
+                      value={member.userId}
+                    >
+                      {member.user.name}
+                    </option>
+                  ))}
                 </select>
               </div>
 
+              {/* Due Date */}
               <div>
                 <label
                   htmlFor="task-due-date"
@@ -334,7 +499,9 @@ export default function AddTaskModal({
                   type="date"
                   value={dueDate}
                   onChange={(event) =>
-                    setDueDate(event.target.value)
+                    setDueDate(
+                      event.target.value,
+                    )
                   }
                   disabled={isSubmitting}
                   className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-xs text-zinc-900 outline-none focus:border-violet-400 disabled:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:focus:border-violet-500 disabled:dark:bg-zinc-800"
@@ -363,7 +530,11 @@ export default function AddTaskModal({
 
             <button
               type="submit"
-              disabled={!title.trim() || isSubmitting}
+              disabled={
+                !title.trim() ||
+                isSubmitting ||
+                loadingMembers
+              }
               className="rounded-md bg-black px-4 py-2 text-xs font-medium text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-40 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200"
             >
               {isSubmitting
