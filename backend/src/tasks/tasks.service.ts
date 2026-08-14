@@ -8,7 +8,7 @@ import { CreateTaskDto } from "./dto/create-task.dto.js";
 import { UpdateTaskDto } from "./dto/update-task.dto.js";
 import { CreateSubtaskDto } from "./dto/create-subtask.dto.js";
 import { UpdateSubtaskDto } from "./dto/update-subtask.dto.js";
-
+import { CreateCommentDto } from "./dto/create-comment.dto.js";
 @Injectable()
 export class TasksService {
   constructor(
@@ -236,5 +236,42 @@ export class TasksService {
       message:
         "Subtask deleted successfully",
     };
+  }
+    // ==========================================
+  // COMMENTS
+  // ==========================================
+
+  async createComment(
+    taskId: string,
+    createCommentDto: CreateCommentDto,
+  ) {
+    // Make sure the parent task exists
+    await this.findOne(taskId);
+
+    // Make sure the user exists
+    const user =
+      await this.prisma.user.findUnique({
+        where: {
+          id: createCommentDto.userId,
+        },
+      });
+
+    if (!user) {
+      throw new NotFoundException(
+        `User with ID ${createCommentDto.userId} not found`,
+      );
+    }
+
+    return this.prisma.comment.create({
+      data: {
+        content:
+          createCommentDto.content.trim(),
+        taskId,
+        userId: createCommentDto.userId,
+      },
+      include: {
+        user: true,
+      },
+    });
   }
 }

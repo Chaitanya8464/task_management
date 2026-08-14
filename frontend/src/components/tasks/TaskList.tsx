@@ -8,7 +8,14 @@ import {
   Pencil,
   Trash2,
 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+
+import {
+  useEffect,
+  useRef,
+  useState,
+} from "react";
+
+import { useRouter } from "next/navigation";
 
 import { Task } from "./TaskCard";
 import { TaskFields } from "./FieldsMenu";
@@ -16,16 +23,25 @@ import { TaskFields } from "./FieldsMenu";
 interface TaskListProps {
   tasks: Task[];
   fields: TaskFields;
+
   onEdit?: (task: Task) => void;
+
   onDelete?: (task: Task) => void;
 }
 
 const priorityStyles = {
-  Urgent: "bg-red-50 text-red-600 dark:bg-red-950/40 dark:text-red-400",
-  High: "bg-orange-50 text-orange-600 dark:bg-orange-950/40 dark:text-orange-400",
+  Urgent:
+    "bg-red-50 text-red-600 dark:bg-red-950/40 dark:text-red-400",
+
+  High:
+    "bg-orange-50 text-orange-600 dark:bg-orange-950/40 dark:text-orange-400",
+
   Medium:
     "bg-yellow-50 text-yellow-700 dark:bg-yellow-950/40 dark:text-yellow-400",
-  Low: "bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400",
+
+  Low:
+    "bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400",
+
   "No Priority":
     "bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400",
 };
@@ -39,7 +55,9 @@ const statusGroups: Task["status"][] = [
 
 interface TaskRowActionsProps {
   task: Task;
+
   onEdit?: (task: Task) => void;
+
   onDelete?: (task: Task) => void;
 }
 
@@ -48,40 +66,61 @@ function TaskRowActions({
   onEdit,
   onDelete,
 }: TaskRowActionsProps) {
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] =
+    useState(false);
 
-  const [menuPosition, setMenuPosition] = useState({
-    top: 0,
-    left: 0,
-  });
+  const [menuPosition, setMenuPosition] =
+    useState({
+      top: 0,
+      left: 0,
+    });
 
-  const buttonRef = useRef<HTMLButtonElement>(null);
-  const menuRef = useRef<HTMLDivElement>(null);
+  const buttonRef =
+    useRef<HTMLButtonElement>(null);
+
+  const menuRef =
+    useRef<HTMLDivElement>(null);
 
   const updateMenuPosition = () => {
     if (!buttonRef.current) {
       return;
     }
 
-    const rect = buttonRef.current.getBoundingClientRect();
+    const rect =
+      buttonRef.current.getBoundingClientRect();
 
     const menuWidth = 140;
     const menuHeight = 90;
     const gap = 6;
 
-    let left = rect.right - menuWidth;
-    let top = rect.bottom + gap;
+    let left =
+      rect.right - menuWidth;
+
+    let top =
+      rect.bottom + gap;
 
     if (left < 8) {
       left = 8;
     }
 
-    if (left + menuWidth > window.innerWidth - 8) {
-      left = window.innerWidth - menuWidth - 8;
+    if (
+      left + menuWidth >
+      window.innerWidth - 8
+    ) {
+      left =
+        window.innerWidth -
+        menuWidth -
+        8;
     }
 
-    if (top + menuHeight > window.innerHeight - 8) {
-      top = rect.top - menuHeight - gap;
+    if (
+      top + menuHeight >
+      window.innerHeight - 8
+    ) {
+      top =
+        rect.top -
+        menuHeight -
+        gap;
     }
 
     setMenuPosition({
@@ -95,7 +134,9 @@ function TaskRowActions({
       updateMenuPosition();
     }
 
-    setIsOpen((current) => !current);
+    setIsOpen(
+      (current) => !current,
+    );
   };
 
   useEffect(() => {
@@ -103,12 +144,19 @@ function TaskRowActions({
       return;
     }
 
-    const handleOutsideClick = (event: MouseEvent) => {
-      const target = event.target as Node;
+    const handleOutsideClick = (
+      event: MouseEvent,
+    ) => {
+      const target =
+        event.target as Node;
 
       if (
-        buttonRef.current?.contains(target) ||
-        menuRef.current?.contains(target)
+        buttonRef.current?.contains(
+          target,
+        ) ||
+        menuRef.current?.contains(
+          target,
+        )
       ) {
         return;
       }
@@ -116,7 +164,9 @@ function TaskRowActions({
       setIsOpen(false);
     };
 
-    const handleEscape = (event: KeyboardEvent) => {
+    const handleEscape = (
+      event: KeyboardEvent,
+    ) => {
       if (event.key === "Escape") {
         setIsOpen(false);
       }
@@ -126,18 +176,48 @@ function TaskRowActions({
       updateMenuPosition();
     };
 
-    document.addEventListener("mousedown", handleOutsideClick);
-    document.addEventListener("keydown", handleEscape);
+    document.addEventListener(
+      "mousedown",
+      handleOutsideClick,
+    );
 
-    window.addEventListener("resize", handleViewportChange);
-    window.addEventListener("scroll", handleViewportChange, true);
+    document.addEventListener(
+      "keydown",
+      handleEscape,
+    );
+
+    window.addEventListener(
+      "resize",
+      handleViewportChange,
+    );
+
+    window.addEventListener(
+      "scroll",
+      handleViewportChange,
+      true,
+    );
 
     return () => {
-      document.removeEventListener("mousedown", handleOutsideClick);
-      document.removeEventListener("keydown", handleEscape);
+      document.removeEventListener(
+        "mousedown",
+        handleOutsideClick,
+      );
 
-      window.removeEventListener("resize", handleViewportChange);
-      window.removeEventListener("scroll", handleViewportChange, true);
+      document.removeEventListener(
+        "keydown",
+        handleEscape,
+      );
+
+      window.removeEventListener(
+        "resize",
+        handleViewportChange,
+      );
+
+      window.removeEventListener(
+        "scroll",
+        handleViewportChange,
+        true,
+      );
     };
   }, [isOpen]);
 
@@ -159,7 +239,10 @@ function TaskRowActions({
         type="button"
         aria-label={`Actions for ${task.title}`}
         aria-expanded={isOpen}
-        onClick={handleToggleMenu}
+        onClick={(event) => {
+          event.stopPropagation();
+          handleToggleMenu();
+        }}
         className={`rounded-md p-1.5 text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100 ${
           isOpen
             ? "bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
@@ -178,6 +261,9 @@ function TaskRowActions({
             top: menuPosition.top,
             left: menuPosition.left,
           }}
+          onClick={(event) =>
+            event.stopPropagation()
+          }
         >
           <button
             type="button"
@@ -208,15 +294,72 @@ export default function TaskList({
   onEdit,
   onDelete,
 }: TaskListProps) {
+  const router = useRouter();
+
+  const handleTaskRowClick = (
+    event: React.MouseEvent<HTMLDivElement>,
+    taskId: string,
+  ) => {
+    const target =
+      event.target as HTMLElement;
+
+    // Don't navigate when clicking actions.
+    if (
+      target.closest(
+        "button, select, a, input, textarea",
+      )
+    ) {
+      return;
+    }
+
+    router.push(
+      `/tasks/${taskId}`,
+    );
+  };
+
+  const handleTaskRowKeyDown = (
+    event: React.KeyboardEvent<HTMLDivElement>,
+    taskId: string,
+  ) => {
+    if (
+      event.key !== "Enter" &&
+      event.key !== " "
+    ) {
+      return;
+    }
+
+    const target =
+      event.target as HTMLElement;
+
+    if (
+      target.closest(
+        "button, select, a, input, textarea",
+      )
+    ) {
+      return;
+    }
+
+    event.preventDefault();
+
+    router.push(
+      `/tasks/${taskId}`,
+    );
+  };
+
   return (
     <div className="min-w-0">
       {statusGroups.map((status) => {
-        const statusTasks = tasks.filter(
-          (task) => task.status === status,
-        );
+        const statusTasks =
+          tasks.filter(
+            (task) =>
+              task.status === status,
+          );
 
         return (
-          <section key={status} className="mb-6">
+          <section
+            key={status}
+            className="mb-6"
+          >
             {/* Group Header */}
             <div className="mb-2 flex items-center gap-2">
               <span
@@ -293,83 +436,99 @@ export default function TaskList({
                 </div>
 
                 {/* Task Rows */}
-                {statusTasks.map((task) => (
-                  <div
-                    key={task.id}
-                    className="flex items-center border-b border-zinc-100 bg-white px-4 py-3 last:border-b-0 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950 dark:hover:bg-zinc-900"
-                  >
-                    {/* Task */}
-                    <div className="min-w-[260px] flex-1">
-                      <p className="truncate text-xs font-medium text-zinc-800 dark:text-zinc-100">
-                        {task.title}
-                      </p>
-
-                      {task.description && (
-                        <p className="mt-0.5 truncate text-[10px] text-zinc-400 dark:text-zinc-500">
-                          {task.description}
+                {statusTasks.map(
+                  (task) => (
+                    <div
+                      key={task.id}
+                      onClick={(event) =>
+                        handleTaskRowClick(
+                          event,
+                          task.id,
+                        )
+                      }
+                      onKeyDown={(event) =>
+                        handleTaskRowKeyDown(
+                          event,
+                          task.id,
+                        )
+                      }
+                      role="link"
+                      tabIndex={0}
+                      aria-label={`Open task ${task.title}`}
+                      className="flex cursor-pointer items-center border-b border-zinc-100 bg-white px-4 py-3 last:border-b-0 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950 dark:hover:bg-zinc-900"
+                    >
+                      {/* Task */}
+                      <div className="min-w-[260px] flex-1">
+                        <p className="truncate text-xs font-medium text-zinc-800 dark:text-zinc-100">
+                          {task.title}
                         </p>
-                      )}
-                    </div>
 
-                    {/* Priority */}
-                    {fields.priority && (
-                      <div className="w-[120px] shrink-0">
-                        <span
-                          className={`rounded-md px-2 py-1 text-[10px] font-medium ${
-                            priorityStyles[task.priority]
-                          }`}
-                        >
-                          {task.priority}
-                        </span>
+                        {task.description && (
+                          <p className="mt-0.5 truncate text-[10px] text-zinc-400 dark:text-zinc-500">
+                            {task.description}
+                          </p>
+                        )}
                       </div>
-                    )}
 
-                    {/* Member */}
-                    {fields.members && (
-                      <div className="flex w-[150px] shrink-0 items-center gap-2">
-                        <div className="flex h-6 w-6 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800">
-                          <User className="h-3 w-3 text-zinc-500 dark:text-zinc-400" />
+                      {/* Priority */}
+                      {fields.priority && (
+                        <div className="w-[120px] shrink-0">
+                          <span
+                            className={`rounded-md px-2 py-1 text-[10px] font-medium ${priorityStyles[task.priority]}`}
+                          >
+                            {task.priority}
+                          </span>
                         </div>
+                      )}
 
-                        <span className="truncate text-[10px] text-zinc-500 dark:text-zinc-400">
-                          {task.assignee}
-                        </span>
+                      {/* Member */}
+                      {fields.members && (
+                        <div className="flex w-[150px] shrink-0 items-center gap-2">
+                          <div className="flex h-6 w-6 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800">
+                            <User className="h-3 w-3 text-zinc-500 dark:text-zinc-400" />
+                          </div>
+
+                          <span className="truncate text-[10px] text-zinc-500 dark:text-zinc-400">
+                            {task.assignee}
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Due Date */}
+                      {fields.dueDate && (
+                        <div className="flex w-[130px] shrink-0 items-center gap-2 text-[10px] text-zinc-400 dark:text-zinc-500">
+                          <CalendarDays className="h-3 w-3" />
+                          {task.dueDate}
+                        </div>
+                      )}
+
+                      {/* Comments */}
+                      {fields.comments && (
+                        <div className="flex w-[80px] shrink-0 items-center gap-2 text-[10px] text-zinc-400 dark:text-zinc-500">
+                          <MessageCircle className="h-3 w-3" />
+                          {task.comments}
+                        </div>
+                      )}
+
+                      {/* Actions */}
+                      <div className="flex w-[48px] shrink-0 justify-end">
+                        <TaskRowActions
+                          task={task}
+                          onEdit={onEdit}
+                          onDelete={onDelete}
+                        />
                       </div>
-                    )}
-
-                    {/* Due Date */}
-                    {fields.dueDate && (
-                      <div className="flex w-[130px] shrink-0 items-center gap-2 text-[10px] text-zinc-400 dark:text-zinc-500">
-                        <CalendarDays className="h-3 w-3" />
-                        {task.dueDate}
-                      </div>
-                    )}
-
-                    {/* Comments */}
-                    {fields.comments && (
-                      <div className="flex w-[80px] shrink-0 items-center gap-2 text-[10px] text-zinc-400 dark:text-zinc-500">
-                        <MessageCircle className="h-3 w-3" />
-                        {task.comments}
-                      </div>
-                    )}
-
-                    {/* Actions */}
-                    <div className="flex w-[48px] shrink-0 justify-end">
-                      <TaskRowActions
-                        task={task}
-                        onEdit={onEdit}
-                        onDelete={onDelete}
-                      />
                     </div>
-                  </div>
-                ))}
+                  ),
+                )}
 
                 {/* Empty State */}
-                {statusTasks.length === 0 && (
-                  <div className="bg-white px-4 py-6 text-center text-xs text-zinc-400 dark:bg-zinc-950 dark:text-zinc-500">
-                    No tasks
-                  </div>
-                )}
+                {statusTasks.length ===
+                  0 && (
+                    <div className="bg-white px-4 py-6 text-center text-xs text-zinc-400 dark:bg-zinc-950 dark:text-zinc-500">
+                      No tasks
+                    </div>
+                  )}
               </div>
             </div>
           </section>

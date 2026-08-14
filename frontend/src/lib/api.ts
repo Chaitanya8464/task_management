@@ -2,6 +2,10 @@ const API_URL =
   process.env.NEXT_PUBLIC_API_URL ||
   "http://localhost:3001";
 
+// =====================================================
+// Base API Request
+// =====================================================
+
 async function request<T>(
   endpoint: string,
   options?: RequestInit,
@@ -30,7 +34,32 @@ async function request<T>(
 }
 
 // =====================================================
-// Subtask
+// Comment Types
+// =====================================================
+
+export interface ApiComment {
+  id: string;
+  content: string;
+  createdAt: string;
+  updatedAt: string;
+  taskId: string;
+  userId: string;
+
+  user?: {
+    id: string;
+    name: string;
+    email: string;
+    avatar?: string | null;
+  };
+}
+
+export interface CreateCommentInput {
+  content: string;
+  userId: string;
+}
+
+// =====================================================
+// Subtask Types
 // =====================================================
 
 export interface ApiSubtask {
@@ -52,26 +81,7 @@ export interface UpdateSubtaskInput {
 }
 
 // =====================================================
-// Comment
-// =====================================================
-
-export interface ApiComment {
-  id: string;
-  content: string;
-  createdAt: string;
-  updatedAt: string;
-  taskId: string;
-  userId: string;
-  user?: {
-    id: string;
-    name: string;
-    email: string;
-    avatar?: string | null;
-  };
-}
-
-// =====================================================
-// Label
+// Label Types
 // =====================================================
 
 export interface ApiLabel {
@@ -81,7 +91,7 @@ export interface ApiLabel {
 }
 
 // =====================================================
-// Task
+// Task Types
 // =====================================================
 
 export interface ApiTask {
@@ -136,7 +146,7 @@ export interface ApiTask {
 export type ApiTaskDetails = ApiTask;
 
 // =====================================================
-// Workspace
+// Workspace Types
 // =====================================================
 
 export interface WorkspaceMember {
@@ -161,7 +171,7 @@ export interface WorkspaceMember {
 }
 
 // =====================================================
-// Authentication
+// Authentication Types
 // =====================================================
 
 export interface GuestLoginResponse {
@@ -320,6 +330,23 @@ export async function deleteSubtask(
     `/tasks/${taskId}/subtasks/${subtaskId}`,
     {
       method: "DELETE",
+    },
+  );
+}
+
+// =====================================================
+// Comment API
+// =====================================================
+
+export async function createComment(
+  taskId: string,
+  comment: CreateCommentInput,
+) {
+  return request<ApiComment>(
+    `/tasks/${taskId}/comments`,
+    {
+      method: "POST",
+      body: JSON.stringify(comment),
     },
   );
 }

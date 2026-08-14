@@ -8,6 +8,7 @@ import {
   Post,
 } from "@nestjs/common";
 
+import { CreateCommentDto } from "./dto/create-comment.dto.js";
 import { CreateTaskDto } from "./dto/create-task.dto.js";
 import { UpdateTaskDto } from "./dto/update-task.dto.js";
 import { CreateSubtaskDto } from "./dto/create-subtask.dto.js";
@@ -109,4 +110,20 @@ export class TasksController {
       subtaskId,
     );
   }
+  // ==========================================
+  // COMMENT ROUTES
+  // ==========================================
+
+  @Post(":taskId/comments")
+  createComment(
+    @Param("taskId") taskId: string,
+    @Body()
+    createCommentDto: CreateCommentDto,
+  ) {
+    return this.tasksService.createComment(
+      taskId,
+      createCommentDto,
+    );
+  }
+  
 }

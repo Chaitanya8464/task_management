@@ -8,29 +8,35 @@ import {
   Pencil,
   Trash2,
 } from "lucide-react";
+
 import {
   DragEvent,
   useEffect,
   useRef,
   useState,
 } from "react";
+
+import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
 
 export interface Task {
   id: string;
   title: string;
   description?: string;
+
   priority:
     | "Urgent"
     | "High"
     | "Medium"
     | "Low"
     | "No Priority";
+
   status:
     | "To Do"
     | "Doing"
     | "Completed"
     | "On Hold";
+
   assignee: string;
   dueDate: string;
   comments: number;
@@ -38,8 +44,11 @@ export interface Task {
 
 interface TaskCardProps {
   task: Task;
+
   onEdit?: (task: Task) => void;
+
   onDelete?: (task: Task) => void;
+
   onStatusChange?: (
     task: Task,
     status: Task["status"],
@@ -69,6 +78,8 @@ export default function TaskCard({
   onDelete,
   onStatusChange,
 }: TaskCardProps) {
+  const router = useRouter();
+
   const [isMenuOpen, setIsMenuOpen] =
     useState(false);
 
@@ -83,6 +94,10 @@ export default function TaskCard({
 
   const menuRef =
     useRef<HTMLDivElement | null>(null);
+
+  // Used to prevent a drag from opening the task.
+  const isDraggingRef =
+    useRef(false);
 
   /*
    * ----------------------------------------
@@ -123,8 +138,8 @@ export default function TaskCard({
         8;
     }
 
-    // If there isn't enough space below,
-    // display menu above the button.
+    // Show above button if there isn't enough
+    // space below it.
     if (
       top + menuHeight >
       window.innerHeight - 8
@@ -263,6 +278,37 @@ export default function TaskCard({
 
   /*
    * ----------------------------------------
+   * Open Task Details
+   * ----------------------------------------
+   */
+
+  const handleCardClick = (
+    event: React.MouseEvent<HTMLElement>,
+  ) => {
+    const target =
+      event.target as HTMLElement;
+
+    // Don't navigate when clicking controls.
+    if (
+      target.closest(
+        "button, select, a, input, textarea",
+      )
+    ) {
+      return;
+    }
+
+    // Don't navigate after dragging.
+    if (isDraggingRef.current) {
+      return;
+    }
+
+    router.push(
+      `/tasks/${task.id}`,
+    );
+  };
+
+  /*
+   * ----------------------------------------
    * Drag and Drop
    * ----------------------------------------
    */
@@ -270,9 +316,11 @@ export default function TaskCard({
   const handleDragStart = (
     event: DragEvent<HTMLElement>,
   ) => {
+    isDraggingRef.current = true;
+
     /*
-     * Don't start dragging if the user
-     * is interacting with the menu.
+     * Don't start dragging when the user
+     * interacts with a button or select.
      */
     if (
       (event.target as HTMLElement).closest(
@@ -280,6 +328,9 @@ export default function TaskCard({
       )
     ) {
       event.preventDefault();
+
+      isDraggingRef.current = false;
+
       return;
     }
 
@@ -307,6 +358,46 @@ export default function TaskCard({
     event.currentTarget.classList.remove(
       "opacity-50",
     );
+
+    // Prevent the click generated immediately
+    // after dragend from opening the task.
+    window.setTimeout(() => {
+      isDraggingRef.current = false;
+    }, 100);
+  };
+
+  /*
+   * ----------------------------------------
+   * Keyboard
+   * ----------------------------------------
+   */
+
+  const handleCardKeyDown = (
+    event: React.KeyboardEvent<HTMLElement>,
+  ) => {
+    if (
+      event.key !== "Enter" &&
+      event.key !== " "
+    ) {
+      return;
+    }
+
+    const target =
+      event.target as HTMLElement;
+
+    if (
+      target.closest(
+        "button, select, a, input, textarea",
+      )
+    ) {
+      return;
+    }
+
+    event.preventDefault();
+
+    router.push(
+      `/tasks/${task.id}`,
+    );
   };
 
   /*
@@ -320,7 +411,12 @@ export default function TaskCard({
       draggable
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
-      className="cursor-grab rounded-lg border border-zinc-200 bg-white p-3 shadow-sm transition hover:shadow-md active:cursor-grabbing dark:border-zinc-800 dark:bg-zinc-900 dark:shadow-none"
+      onClick={handleCardClick}
+      onKeyDown={handleCardKeyDown}
+      role="link"
+      tabIndex={0}
+      aria-label={`Open task ${task.title}`}
+      className="cursor-pointer rounded-lg border border-zinc-200 bg-white p-3 shadow-sm transition hover:shadow-md active:cursor-grabbing dark:border-zinc-800 dark:bg-zinc-900 dark:shadow-none"
     >
       {/* Top */}
       <div className="flex items-start justify-between gap-2">
@@ -334,7 +430,10 @@ export default function TaskCard({
           type="button"
           aria-label={`Task actions for ${task.title}`}
           aria-expanded={isMenuOpen}
-          onClick={handleMenuToggle}
+          onClick={(event) => {
+            event.stopPropagation();
+            handleMenuToggle();
+          }}
           className={`shrink-0 rounded-md p-1 text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700 dark:text-zinc-500 dark:hover:bg-zinc-800 dark:hover:text-zinc-100 ${
             isMenuOpen
               ? "bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
@@ -356,6 +455,9 @@ export default function TaskCard({
                 top: menuPosition.top,
                 left: menuPosition.left,
               }}
+              onClick={(event) =>
+                event.stopPropagation()
+              }
             >
               <button
                 type="button"
@@ -399,13 +501,14 @@ export default function TaskCard({
       <div className="mt-2">
         <select
           value={task.status}
-          onChange={(event) =>
+          onChange={(event) => {
+            event.stopPropagation();
+
             onStatusChange?.(
               task,
-              event.target
-                .value as Task["status"],
-            )
-          }
+              event.target.value as Task["status"],
+            );
+          }}
           onClick={(event) =>
             event.stopPropagation()
           }
