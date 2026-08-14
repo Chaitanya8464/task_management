@@ -7,6 +7,10 @@ interface TaskColumnProps {
   color: string;
   onEdit?: (task: Task) => void;
   onDelete?: (task: Task) => void;
+  onStatusChange?: (
+  task: Task,
+  status: Task["status"],
+) => void;
 }
 
 export default function TaskColumn({
@@ -15,6 +19,7 @@ export default function TaskColumn({
   color,
   onEdit,
   onDelete,
+  onStatusChange,
 }: TaskColumnProps) {
   return (
     <section className="min-w-0">
@@ -52,6 +57,7 @@ export default function TaskColumn({
               task={task}
               onEdit={onEdit}
               onDelete={onDelete}
+              onStatusChange={onStatusChange}
             />
           ))
         ) : (

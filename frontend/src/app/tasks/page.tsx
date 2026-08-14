@@ -7,7 +7,7 @@ import {
   Search,
   LayoutGrid,
 } from "lucide-react";
-
+import { updateTask } from "@/lib/api";
 import AppShell from "@/components/layout/AppShell";
 import TaskBoard from "@/components/tasks/TaskBoard";
 import TaskList from "@/components/tasks/TaskList";
@@ -296,7 +296,51 @@ export default function TasksPage() {
   }
 
   // -----------------------------
-  // Error
+  const handleStatusChange = async (
+  task: Task,
+  newStatus: Task["status"],
+) => {
+  if (task.status === newStatus) {
+    return;
+  }
+
+  const statusMap = {
+    "To Do": "TODO",
+    Doing: "DOING",
+    Completed: "COMPLETED",
+    "On Hold": "ON_HOLD",
+  } as const;
+
+  try {
+    const updatedTask = await updateTask(
+      task.id,
+      {
+        status: statusMap[newStatus],
+      },
+    );
+
+    setTaskList((currentTasks) =>
+      currentTasks.map((currentTask) =>
+        currentTask.id === task.id
+          ? {
+              ...currentTask,
+              status: newStatus,
+            }
+          : currentTask,
+      ),
+    );
+
+    console.log(
+      "Task status updated:",
+      updatedTask,
+    );
+  } catch (error) {
+    console.error(
+      "Failed to update task status:",
+      error,
+    );
+  }
+};
   // -----------------------------
 
   if (error) {
@@ -439,6 +483,7 @@ export default function TasksPage() {
                 tasks={filteredTasks}
                 onEdit={handleEditTask}
                 onDelete={handleDeleteTask}
+                onStatusChange={handleStatusChange}
             />
           ) : (
            <TaskList

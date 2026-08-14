@@ -5,12 +5,17 @@ interface TaskBoardProps {
   tasks: Task[];
   onEdit?: (task: Task) => void;
   onDelete?: (task: Task) => void;
+  onStatusChange?: (
+    task: Task,
+    status: Task["status"],
+  ) => void;
 }
 
 export default function TaskBoard({
   tasks,
   onEdit,
   onDelete,
+  onStatusChange,
 }: TaskBoardProps) {
   const todo = tasks.filter(
     (task) => task.status === "To Do",
@@ -36,6 +41,7 @@ export default function TaskBoard({
         color="bg-zinc-400"
         onEdit={onEdit}
         onDelete={onDelete}
+        onStatusChange={onStatusChange}
       />
 
       <TaskColumn
@@ -44,6 +50,7 @@ export default function TaskBoard({
         color="bg-blue-500"
         onEdit={onEdit}
         onDelete={onDelete}
+        onStatusChange={onStatusChange}
       />
 
       <TaskColumn
@@ -52,6 +59,7 @@ export default function TaskBoard({
         color="bg-emerald-500"
         onEdit={onEdit}
         onDelete={onDelete}
+        onStatusChange={onStatusChange}
       />
 
       <TaskColumn
@@ -60,6 +68,7 @@ export default function TaskBoard({
         color="bg-orange-500"
         onEdit={onEdit}
         onDelete={onDelete}
+        onStatusChange={onStatusChange}
       />
     </div>
   );

@@ -39,6 +39,10 @@ interface TaskCardProps {
   task: Task;
   onEdit?: (task: Task) => void;
   onDelete?: (task: Task) => void;
+  onStatusChange?: (
+  task: Task,
+  status: Task["status"],
+) => void;
 }
 
 const priorityStyles = {
@@ -58,6 +62,7 @@ export default function TaskCard({
   task,
   onEdit,
   onDelete,
+    onStatusChange,
 }: TaskCardProps) {
   const [isMenuOpen, setIsMenuOpen] =
     useState(false);
@@ -300,15 +305,23 @@ export default function TaskCard({
       )}
 
       {/* Priority */}
-      <div className="mt-3">
-        <span
-          className={`inline-flex rounded-md px-2 py-1 text-[10px] font-medium ${
-            priorityStyles[task.priority]
-          }`}
-        >
-          {task.priority}
-        </span>
-      </div>
+     <div className="mt-2">
+  <select
+    value={task.status}
+    onChange={(event) =>
+      onStatusChange?.(
+        task,
+        event.target.value as Task["status"],
+      )
+    }
+    className="h-7 rounded-md border border-zinc-200 bg-white px-2 text-[10px] text-zinc-600 outline-none dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-300"
+  >
+    <option value="To Do">To Do</option>
+    <option value="Doing">Doing</option>
+    <option value="Completed">Completed</option>
+    <option value="On Hold">On Hold</option>
+  </select>
+</div>
 
       {/* Bottom metadata */}
       <div className="mt-4 flex items-center justify-between border-t border-zinc-100 pt-3 dark:border-zinc-800">
