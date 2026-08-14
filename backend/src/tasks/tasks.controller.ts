@@ -9,10 +9,13 @@ import {
 } from "@nestjs/common";
 
 import { CreateCommentDto } from "./dto/create-comment.dto.js";
+import { CreateLabelDto } from "./dto/create-label.dto.js";
+import { AssignLabelDto } from "./dto/assign-label.dto.js";
 import { CreateTaskDto } from "./dto/create-task.dto.js";
 import { UpdateTaskDto } from "./dto/update-task.dto.js";
 import { CreateSubtaskDto } from "./dto/create-subtask.dto.js";
 import { UpdateSubtaskDto } from "./dto/update-subtask.dto.js";
+
 import { TasksService } from "./tasks.service.js";
 
 @Controller("tasks")
@@ -110,6 +113,7 @@ export class TasksController {
       subtaskId,
     );
   }
+
   // ==========================================
   // COMMENT ROUTES
   // ==========================================
@@ -125,5 +129,64 @@ export class TasksController {
       createCommentDto,
     );
   }
-  
+
+  // ==========================================
+  // LABEL ROUTES
+  // ==========================================
+
+  // Create a label for a workspace
+  @Post(
+    "workspace/:workspaceId/labels",
+  )
+  createLabel(
+    @Param("workspaceId")
+    workspaceId: string,
+    @Body()
+    createLabelDto: CreateLabelDto,
+  ) {
+    return this.tasksService.createLabel(
+      workspaceId,
+      createLabelDto,
+    );
+  }
+
+  // Get all labels for a workspace
+  @Get(
+    "workspace/:workspaceId/labels",
+  )
+  getWorkspaceLabels(
+    @Param("workspaceId")
+    workspaceId: string,
+  ) {
+    return this.tasksService.getWorkspaceLabels(
+      workspaceId,
+    );
+  }
+
+  // Assign label to task
+  @Post(":taskId/labels")
+  assignLabel(
+    @Param("taskId") taskId: string,
+    @Body()
+    assignLabelDto: AssignLabelDto,
+  ) {
+    return this.tasksService.assignLabel(
+      taskId,
+      assignLabelDto,
+    );
+  }
+
+  // Remove label from task
+  @Delete(
+    ":taskId/labels/:labelId",
+  )
+  removeLabel(
+    @Param("taskId") taskId: string,
+    @Param("labelId") labelId: string,
+  ) {
+    return this.tasksService.removeLabel(
+      taskId,
+      labelId,
+    );
+  }
 }

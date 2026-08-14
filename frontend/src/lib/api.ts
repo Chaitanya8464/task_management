@@ -34,6 +34,17 @@ async function request<T>(
 }
 
 // =====================================================
+// User
+// =====================================================
+
+export interface ApiUser {
+  id: string;
+  name: string;
+  email: string;
+  avatar?: string | null;
+}
+
+// =====================================================
 // Comment Types
 // =====================================================
 
@@ -45,12 +56,7 @@ export interface ApiComment {
   taskId: string;
   userId: string;
 
-  user?: {
-    id: string;
-    name: string;
-    email: string;
-    avatar?: string | null;
-  };
+  user?: ApiUser;
 }
 
 export interface CreateCommentInput {
@@ -90,51 +96,58 @@ export interface ApiLabel {
   color: string;
 }
 
+export interface CreateLabelInput {
+  name: string;
+  color: string;
+}
+
+export interface AssignLabelInput {
+  labelId: string;
+}
+
 // =====================================================
 // Task Types
 // =====================================================
 
+export type TaskStatus =
+  | "TODO"
+  | "DOING"
+  | "COMPLETED"
+  | "ON_HOLD";
+
+export type TaskPriority =
+  | "URGENT"
+  | "HIGH"
+  | "MEDIUM"
+  | "LOW"
+  | "NO_PRIORITY";
+
 export interface ApiTask {
   id: string;
+
   title: string;
+
   description?: string | null;
 
-  status:
-    | "TODO"
-    | "DOING"
-    | "COMPLETED"
-    | "ON_HOLD";
+  status: TaskStatus;
 
-  priority:
-    | "URGENT"
-    | "HIGH"
-    | "MEDIUM"
-    | "LOW"
-    | "NO_PRIORITY";
+  priority: TaskPriority;
 
   dueDate?: string | null;
 
   createdAt: string;
+
   updatedAt: string;
 
   workspaceId: string;
 
   assigneeId?: string | null;
+
   creatorId?: string | null;
 
-  assignee?: {
-    id: string;
-    name: string;
-    email: string;
-    avatar?: string | null;
-  } | null;
+  assignee?: ApiUser | null;
 
-  creator?: {
-    id: string;
-    name: string;
-    email: string;
-    avatar?: string | null;
-  } | null;
+  creator?: ApiUser | null;
 
   subtasks: ApiSubtask[];
 
@@ -160,14 +173,10 @@ export interface WorkspaceMember {
   joinedAt: string;
 
   workspaceId: string;
+
   userId: string;
 
-  user: {
-    id: string;
-    name: string;
-    email: string;
-    avatar?: string | null;
-  };
+  user: ApiUser;
 }
 
 // =====================================================
@@ -177,12 +186,7 @@ export interface WorkspaceMember {
 export interface GuestLoginResponse {
   message: string;
 
-  user: {
-    id: string;
-    name: string;
-    email: string;
-    avatar?: string | null;
-  };
+  user: ApiUser;
 
   workspace: {
     id: string;
@@ -200,24 +204,16 @@ export interface CreateTaskInput {
 
   description?: string;
 
-  priority?:
-    | "URGENT"
-    | "HIGH"
-    | "MEDIUM"
-    | "LOW"
-    | "NO_PRIORITY";
+  priority?: TaskPriority;
 
-  status?:
-    | "TODO"
-    | "DOING"
-    | "COMPLETED"
-    | "ON_HOLD";
+  status?: TaskStatus;
 
   dueDate?: string;
 
   workspaceId: string;
 
   assigneeId?: string;
+
   creatorId?: string;
 }
 
@@ -261,10 +257,13 @@ export async function getTaskDetails(
 export async function createTask(
   task: CreateTaskInput,
 ) {
-  return request<ApiTask>("/tasks", {
-    method: "POST",
-    body: JSON.stringify(task),
-  });
+  return request<ApiTask>(
+    "/tasks",
+    {
+      method: "POST",
+      body: JSON.stringify(task),
+    },
+  );
 }
 
 export async function updateTask(
@@ -347,6 +346,62 @@ export async function createComment(
     {
       method: "POST",
       body: JSON.stringify(comment),
+    },
+  );
+}
+
+// =====================================================
+// Label API
+// =====================================================
+
+// Create a label inside a workspace
+export async function createLabel(
+  workspaceId: string,
+  label: CreateLabelInput,
+) {
+  return request<ApiLabel>(
+    `/tasks/workspace/${workspaceId}/labels`,
+    {
+      method: "POST",
+      body: JSON.stringify(label),
+    },
+  );
+}
+
+// Get all labels belonging to a workspace
+export async function getWorkspaceLabels(
+  workspaceId: string,
+) {
+  return request<ApiLabel[]>(
+    `/tasks/workspace/${workspaceId}/labels`,
+  );
+}
+
+// Assign an existing label to a task
+export async function assignLabel(
+  taskId: string,
+  labelId: string,
+) {
+  return request<ApiTask>(
+    `/tasks/${taskId}/labels`,
+    {
+      method: "POST",
+      body: JSON.stringify({
+        labelId,
+      }),
+    },
+  );
+}
+
+// Remove a label from a task
+export async function removeLabel(
+  taskId: string,
+  labelId: string,
+) {
+  return request<ApiTask>(
+    `/tasks/${taskId}/labels/${labelId}`,
+    {
+      method: "DELETE",
     },
   );
 }
