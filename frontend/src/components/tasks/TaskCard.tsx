@@ -124,11 +124,11 @@ export default function TaskCard({
   };
 
   return (
-    <article className="group rounded-lg border border-zinc-200 bg-white p-3 shadow-sm transition hover:border-zinc-300 hover:shadow">
+    <article className="group rounded-lg border border-zinc-200 bg-white dark:bg-zinc-900 p-3 shadow-sm transition hover:border-zinc-300 dark:border-zinc-800 hover:shadow">
       {/* Top */}
 
       <div className="flex items-start justify-between gap-2">
-        <h3 className="text-sm font-medium leading-5 text-zinc-900">
+        <h3 className="text-sm font-medium leading-5 text-zinc-900 dark:text-zinc-100">
           {task.title}
         </h3>
 

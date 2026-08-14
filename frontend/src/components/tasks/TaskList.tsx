@@ -21,11 +21,13 @@ interface TaskListProps {
 }
 
 const priorityStyles = {
-  Urgent: "bg-red-50 text-red-600",
-  High: "bg-orange-50 text-orange-600",
-  Medium: "bg-yellow-50 text-yellow-700",
-  Low: "bg-blue-50 text-blue-600",
-  "No Priority": "bg-zinc-100 text-zinc-500",
+  Urgent: "bg-red-50 text-red-600 dark:bg-red-950/40 dark:text-red-400",
+  High: "bg-orange-50 text-orange-600 dark:bg-orange-950/40 dark:text-orange-400",
+  Medium:
+    "bg-yellow-50 text-yellow-700 dark:bg-yellow-950/40 dark:text-yellow-400",
+  Low: "bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400",
+  "No Priority":
+    "bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400",
 };
 
 const statusGroups: Task["status"][] = [
@@ -53,19 +55,15 @@ function TaskRowActions({
     left: 0,
   });
 
-  const buttonRef =
-    useRef<HTMLButtonElement>(null);
-
-  const menuRef =
-    useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   const updateMenuPosition = () => {
     if (!buttonRef.current) {
       return;
     }
 
-    const rect =
-      buttonRef.current.getBoundingClientRect();
+    const rect = buttonRef.current.getBoundingClientRect();
 
     const menuWidth = 140;
     const menuHeight = 90;
@@ -74,31 +72,16 @@ function TaskRowActions({
     let left = rect.right - menuWidth;
     let top = rect.bottom + gap;
 
-    // Keep menu inside the viewport horizontally.
     if (left < 8) {
       left = 8;
     }
 
-    if (
-      left + menuWidth >
-      window.innerWidth - 8
-    ) {
-      left =
-        window.innerWidth -
-        menuWidth -
-        8;
+    if (left + menuWidth > window.innerWidth - 8) {
+      left = window.innerWidth - menuWidth - 8;
     }
 
-    // If there is not enough room below,
-    // open the menu above the button.
-    if (
-      top + menuHeight >
-      window.innerHeight - 8
-    ) {
-      top =
-        rect.top -
-        menuHeight -
-        gap;
+    if (top + menuHeight > window.innerHeight - 8) {
+      top = rect.top - menuHeight - gap;
     }
 
     setMenuPosition({
@@ -112,9 +95,7 @@ function TaskRowActions({
       updateMenuPosition();
     }
 
-    setIsOpen(
-      (current) => !current,
-    );
+    setIsOpen((current) => !current);
   };
 
   useEffect(() => {
@@ -122,19 +103,12 @@ function TaskRowActions({
       return;
     }
 
-    const handleOutsideClick = (
-      event: MouseEvent,
-    ) => {
-      const target =
-        event.target as Node;
+    const handleOutsideClick = (event: MouseEvent) => {
+      const target = event.target as Node;
 
       if (
-        buttonRef.current?.contains(
-          target,
-        ) ||
-        menuRef.current?.contains(
-          target,
-        )
+        buttonRef.current?.contains(target) ||
+        menuRef.current?.contains(target)
       ) {
         return;
       }
@@ -142,9 +116,7 @@ function TaskRowActions({
       setIsOpen(false);
     };
 
-    const handleEscape = (
-      event: KeyboardEvent,
-    ) => {
+    const handleEscape = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         setIsOpen(false);
       }
@@ -154,50 +126,18 @@ function TaskRowActions({
       updateMenuPosition();
     };
 
-    document.addEventListener(
-      "mousedown",
-      handleOutsideClick,
-    );
+    document.addEventListener("mousedown", handleOutsideClick);
+    document.addEventListener("keydown", handleEscape);
 
-    document.addEventListener(
-      "keydown",
-      handleEscape,
-    );
-
-    window.addEventListener(
-      "resize",
-      handleViewportChange,
-    );
-
-    // Capture scrolling from the page
-    // as well as the table's scroll container.
-    window.addEventListener(
-      "scroll",
-      handleViewportChange,
-      true,
-    );
+    window.addEventListener("resize", handleViewportChange);
+    window.addEventListener("scroll", handleViewportChange, true);
 
     return () => {
-      document.removeEventListener(
-        "mousedown",
-        handleOutsideClick,
-      );
+      document.removeEventListener("mousedown", handleOutsideClick);
+      document.removeEventListener("keydown", handleEscape);
 
-      document.removeEventListener(
-        "keydown",
-        handleEscape,
-      );
-
-      window.removeEventListener(
-        "resize",
-        handleViewportChange,
-      );
-
-      window.removeEventListener(
-        "scroll",
-        handleViewportChange,
-        true,
-      );
+      window.removeEventListener("resize", handleViewportChange);
+      window.removeEventListener("scroll", handleViewportChange, true);
     };
   }, [isOpen]);
 
@@ -214,16 +154,15 @@ function TaskRowActions({
   return (
     <>
       {/* Three-dot button */}
-
       <button
         ref={buttonRef}
         type="button"
         aria-label={`Actions for ${task.title}`}
         aria-expanded={isOpen}
         onClick={handleToggleMenu}
-        className={`rounded-md p-1.5 text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700 ${
+        className={`rounded-md p-1.5 text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100 ${
           isOpen
-            ? "bg-zinc-100 text-zinc-700"
+            ? "bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
             : ""
         }`}
       >
@@ -231,11 +170,10 @@ function TaskRowActions({
       </button>
 
       {/* Floating menu */}
-
       {isOpen && (
         <div
           ref={menuRef}
-          className="fixed z-[9999] w-36 rounded-md border border-zinc-200 bg-white p-1 shadow-lg"
+          className="fixed z-[9999] w-36 rounded-md border border-zinc-200 bg-white p-1 shadow-lg dark:border-zinc-700 dark:bg-zinc-900"
           style={{
             top: menuPosition.top,
             left: menuPosition.left,
@@ -244,7 +182,7 @@ function TaskRowActions({
           <button
             type="button"
             onClick={handleEdit}
-            className="flex w-full items-center gap-2 rounded px-2.5 py-2 text-left text-xs text-zinc-600 transition hover:bg-zinc-50"
+            className="flex w-full items-center gap-2 rounded px-2.5 py-2 text-left text-xs text-zinc-600 transition hover:bg-zinc-50 dark:text-zinc-300 dark:hover:bg-zinc-800"
           >
             <Pencil className="h-3.5 w-3.5" />
             Edit
@@ -253,7 +191,7 @@ function TaskRowActions({
           <button
             type="button"
             onClick={handleDelete}
-            className="flex w-full items-center gap-2 rounded px-2.5 py-2 text-left text-xs text-red-500 transition hover:bg-red-50"
+            className="flex w-full items-center gap-2 rounded px-2.5 py-2 text-left text-xs text-red-500 transition hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/40"
           >
             <Trash2 className="h-3.5 w-3.5" />
             Delete
@@ -278,12 +216,8 @@ export default function TaskList({
         );
 
         return (
-          <section
-            key={status}
-            className="mb-6"
-          >
+          <section key={status} className="mb-6">
             {/* Group Header */}
-
             <div className="mb-2 flex items-center gap-2">
               <span
                 className={`h-2 w-2 rounded-full ${
@@ -297,105 +231,92 @@ export default function TaskList({
                 }`}
               />
 
-              <h2 className="text-xs font-semibold text-zinc-700">
+              <h2 className="text-xs font-semibold text-zinc-700 dark:text-zinc-200">
                 {status}
               </h2>
 
-              <span className="text-xs text-zinc-400">
+              <span className="text-xs text-zinc-400 dark:text-zinc-500">
                 {statusTasks.length}
               </span>
             </div>
 
             {/* Responsive table wrapper */}
-
-            <div className="overflow-x-auto rounded-lg border border-zinc-200">
+            <div className="overflow-x-auto rounded-lg border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
               <div className="min-w-[850px]">
                 {/* Table Header */}
-
-                <div className="flex items-center border-b border-zinc-200 bg-zinc-50 px-4 py-2.5">
+                <div className="flex items-center border-b border-zinc-200 bg-zinc-50 px-4 py-2.5 dark:border-zinc-800 dark:bg-zinc-900">
                   {/* Task */}
-
                   <div className="min-w-[260px] flex-1">
-                    <span className="text-[10px] font-medium text-zinc-400">
+                    <span className="text-[10px] font-medium text-zinc-400 dark:text-zinc-500">
                       Task
                     </span>
                   </div>
 
                   {/* Priority */}
-
                   {fields.priority && (
                     <div className="w-[120px] shrink-0">
-                      <span className="text-[10px] font-medium text-zinc-400">
+                      <span className="text-[10px] font-medium text-zinc-400 dark:text-zinc-500">
                         Priority
                       </span>
                     </div>
                   )}
 
                   {/* Members */}
-
                   {fields.members && (
                     <div className="w-[150px] shrink-0">
-                      <span className="text-[10px] font-medium text-zinc-400">
+                      <span className="text-[10px] font-medium text-zinc-400 dark:text-zinc-500">
                         Members
                       </span>
                     </div>
                   )}
 
                   {/* Due Date */}
-
                   {fields.dueDate && (
                     <div className="w-[130px] shrink-0">
-                      <span className="text-[10px] font-medium text-zinc-400">
+                      <span className="text-[10px] font-medium text-zinc-400 dark:text-zinc-500">
                         Due Date
                       </span>
                     </div>
                   )}
 
                   {/* Comments */}
-
                   {fields.comments && (
                     <div className="w-[80px] shrink-0">
-                      <span className="text-[10px] font-medium text-zinc-400">
+                      <span className="text-[10px] font-medium text-zinc-400 dark:text-zinc-500">
                         Comments
                       </span>
                     </div>
                   )}
 
                   {/* Actions */}
-
                   <div className="w-[48px] shrink-0" />
                 </div>
 
                 {/* Task Rows */}
-
                 {statusTasks.map((task) => (
                   <div
                     key={task.id}
-                    className="flex items-center border-b border-zinc-100 px-4 py-3 last:border-b-0 hover:bg-zinc-50"
+                    className="flex items-center border-b border-zinc-100 bg-white px-4 py-3 last:border-b-0 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950 dark:hover:bg-zinc-900"
                   >
                     {/* Task */}
-
                     <div className="min-w-[260px] flex-1">
-                      <p className="truncate text-xs font-medium text-zinc-800">
+                      <p className="truncate text-xs font-medium text-zinc-800 dark:text-zinc-100">
                         {task.title}
                       </p>
 
                       {task.description && (
-                        <p className="mt-0.5 truncate text-[10px] text-zinc-400">
+                        <p className="mt-0.5 truncate text-[10px] text-zinc-400 dark:text-zinc-500">
                           {task.description}
                         </p>
                       )}
                     </div>
 
                     {/* Priority */}
-
                     {fields.priority && (
                       <div className="w-[120px] shrink-0">
                         <span
                           className={`rounded-md px-2 py-1 text-[10px] font-medium ${
-                            priorityStyles[
-                              task.priority
-                            ]
+                            priorityStyles[task.priority]
                           }`}
                         >
                           {task.priority}
@@ -404,41 +325,35 @@ export default function TaskList({
                     )}
 
                     {/* Member */}
-
                     {fields.members && (
                       <div className="flex w-[150px] shrink-0 items-center gap-2">
-                        <div className="flex h-6 w-6 items-center justify-center rounded-full bg-zinc-100">
-                          <User className="h-3 w-3 text-zinc-500" />
+                        <div className="flex h-6 w-6 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800">
+                          <User className="h-3 w-3 text-zinc-500 dark:text-zinc-400" />
                         </div>
 
-                        <span className="truncate text-[10px] text-zinc-500">
+                        <span className="truncate text-[10px] text-zinc-500 dark:text-zinc-400">
                           {task.assignee}
                         </span>
                       </div>
                     )}
 
                     {/* Due Date */}
-
                     {fields.dueDate && (
-                      <div className="flex w-[130px] shrink-0 items-center gap-2 text-[10px] text-zinc-400">
+                      <div className="flex w-[130px] shrink-0 items-center gap-2 text-[10px] text-zinc-400 dark:text-zinc-500">
                         <CalendarDays className="h-3 w-3" />
-
                         {task.dueDate}
                       </div>
                     )}
 
                     {/* Comments */}
-
                     {fields.comments && (
-                      <div className="flex w-[80px] shrink-0 items-center gap-2 text-[10px] text-zinc-400">
+                      <div className="flex w-[80px] shrink-0 items-center gap-2 text-[10px] text-zinc-400 dark:text-zinc-500">
                         <MessageCircle className="h-3 w-3" />
-
                         {task.comments}
                       </div>
                     )}
 
                     {/* Actions */}
-
                     <div className="flex w-[48px] shrink-0 justify-end">
                       <TaskRowActions
                         task={task}
@@ -450,9 +365,8 @@ export default function TaskList({
                 ))}
 
                 {/* Empty State */}
-
                 {statusTasks.length === 0 && (
-                  <div className="px-4 py-6 text-center text-xs text-zinc-400">
+                  <div className="bg-white px-4 py-6 text-center text-xs text-zinc-400 dark:bg-zinc-950 dark:text-zinc-500">
                     No tasks
                   </div>
                 )}

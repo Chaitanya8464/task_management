@@ -330,11 +330,11 @@ export default function TasksPage() {
 
         <header className="flex min-h-16 items-center justify-between border-b border-zinc-200 px-4 sm:px-6">
           <div>
-            <h1 className="text-lg font-semibold text-zinc-900">
+            <h1 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
               Tasks
             </h1>
 
-            <p className="mt-0.5 text-xs text-zinc-400">
+            <p className="mt-0.5 text-xs text-zinc-400 dark:text-zinc-500">
               Manage your workspace tasks
             </p>
           </div>
@@ -369,7 +369,7 @@ export default function TasksPage() {
                     event.target.value,
                   )
                 }
-                className="h-9 w-full rounded-md border border-zinc-200 bg-white pl-9 pr-3 text-xs outline-none transition placeholder:text-zinc-400 focus:border-zinc-400"
+                className="h-9 w-full rounded-md border border-zinc-200 bg-white dark:bg-zinc-950 pl-9 pr-3 text-xs outline-none transition placeholder:text-zinc-400 focus:border-zinc-400"
               />
             </div>
 
