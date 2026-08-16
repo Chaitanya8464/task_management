@@ -8,23 +8,9 @@ import { AppModule } from "./app.module.js";
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  const allowedOrigins = [
-    "http://localhost:3000",
-    "https://task-management-tau-rust.vercel.app",
-    process.env.FRONTEND_URL,
-  ].filter(Boolean) as string[];
-
   app.enableCors({
-    origin: (origin, callback) => {
-      // Allow requests with no origin (e.g., mobile apps, curl, or server-to-server)
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error("Blocked by CORS"));
-      }
-    },
+    origin: "http://localhost:3000",
     credentials: true,
-    methods: "GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS",
   });
 
   app.useGlobalPipes(
@@ -34,10 +20,11 @@ async function bootstrap() {
     }),
   );
 
-  const port = process.env.PORT || 3001;
-  await app.listen(port, "0.0.0.0");
+  await app.listen(3001);
 
-  console.log(`TaskFlow API running on port ${port}`);
+  console.log(
+    "TaskFlow API running on http://localhost:3001",
+  );
 }
 
 bootstrap();
