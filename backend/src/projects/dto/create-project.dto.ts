@@ -7,24 +7,16 @@ import {
   MinLength,
 } from "class-validator";
 
-import {
-  TaskPriority,
-  TaskStatus,
-} from "../../generated/prisma/client.js";
+import { TaskPriority } from "../../generated/prisma/enums.js";
 
-export class UpdateTaskDto {
-  @IsOptional()
+export class CreateProjectDto {
   @IsString()
   @MinLength(1)
-  title?: string;
+  name!: string;
 
   @IsOptional()
   @IsString()
   description?: string;
-
-  @IsOptional()
-  @IsEnum(TaskStatus)
-  status?: TaskStatus;
 
   @IsOptional()
   @IsEnum(TaskPriority)
@@ -34,11 +26,10 @@ export class UpdateTaskDto {
   @IsDateString()
   dueDate?: string;
 
-  @IsOptional()
   @IsUUID()
-  assigneeId?: string | null;
+  workspaceId!: string;
 
   @IsOptional()
   @IsUUID()
-  projectId?: string | null;
+  leadId?: string;
 }

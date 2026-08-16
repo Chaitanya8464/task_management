@@ -22,8 +22,7 @@ async function request<T>(
   );
 
   if (!response.ok) {
-    const errorText =
-      await response.text();
+    const errorText = await response.text();
 
     throw new Error(
       errorText ||
@@ -54,6 +53,7 @@ export interface ApiComment {
   content: string;
   createdAt: string;
   updatedAt: string;
+
   taskId: string;
   userId: string;
 
@@ -92,6 +92,7 @@ export interface ApiSubtask {
   completed: boolean;
 
   priority: TaskPriority;
+
   dueDate?: string | null;
 
   assigneeId?: string | null;
@@ -99,23 +100,32 @@ export interface ApiSubtask {
 
   createdAt: string;
   updatedAt: string;
+
   taskId: string;
 }
 
 export interface CreateSubtaskInput {
   title: string;
+
   priority?: TaskPriority;
+
   dueDate?: string;
+
   assigneeId?: string;
 }
 
 export interface UpdateSubtaskInput {
   title?: string;
+
   completed?: boolean;
+
   priority?: TaskPriority;
+
   dueDate?: string;
+
   assigneeId?: string | null;
 }
+
 // =====================================================
 // Label Types
 // =====================================================
@@ -157,6 +167,9 @@ export interface ApiTask {
   updatedAt: string;
 
   workspaceId: string;
+
+  // Project relationship
+  projectId?: string | null;
 
   assigneeId?: string | null;
 
@@ -229,9 +242,83 @@ export interface CreateTaskInput {
 
   workspaceId: string;
 
+  // Optional project relationship
+  projectId?: string;
+
   assigneeId?: string;
 
   creatorId?: string;
+}
+
+// =====================================================
+// Project Types
+// =====================================================
+
+/*
+ * Project data used by the Projects screen.
+ *
+ * These fields correspond to the information
+ * represented in the assessment/Figma:
+ *
+ * Project
+ * Priority
+ * Lead
+ * Due Date
+ * Tasks
+ */
+
+export interface ApiProject {
+  id: string;
+
+  name: string;
+
+  description?: string | null;
+
+  priority: TaskPriority;
+
+  dueDate?: string | null;
+
+  createdAt: string;
+
+  updatedAt: string;
+
+  workspaceId: string;
+
+  leadId?: string | null;
+
+  lead?: ApiUser | null;
+
+  tasks?: ApiTask[];
+
+  _count?: {
+    tasks: number;
+  };
+}
+
+export interface CreateProjectInput {
+  name: string;
+
+  description?: string;
+
+  priority?: TaskPriority;
+
+  dueDate?: string;
+
+  workspaceId: string;
+
+  leadId?: string;
+}
+
+export interface UpdateProjectInput {
+  name?: string;
+
+  description?: string | null;
+
+  priority?: TaskPriority;
+
+  dueDate?: string | null;
+
+  leadId?: string | null;
 }
 
 // =====================================================
@@ -252,7 +339,9 @@ export async function guestLogin() {
 // =====================================================
 
 export async function getTasks() {
-  return request<ApiTask[]>("/tasks");
+  return request<ApiTask[]>(
+    "/tasks",
+  );
 }
 
 export async function getTask(
@@ -308,6 +397,101 @@ export async function deleteTask(
 }
 
 // =====================================================
+// Project API
+// =====================================================
+
+/*
+ * Get all projects.
+ *
+ * Optional workspaceId allows the Projects screen
+ * to show projects belonging to the current workspace.
+ */
+
+export async function getProjects(
+  workspaceId?: string,
+) {
+  const query = workspaceId
+    ? `?workspaceId=${encodeURIComponent(
+        workspaceId,
+      )}`
+    : "";
+
+  return request<ApiProject[]>(
+    `/projects${query}`,
+  );
+}
+
+/*
+ * Get one project.
+ *
+ * Backend returns:
+ *
+ * - project information
+ * - lead
+ * - tasks
+ * - task count
+ */
+
+export async function getProject(
+  id: string,
+) {
+  return request<ApiProject>(
+    `/projects/${id}`,
+  );
+}
+
+/*
+ * Create project.
+ */
+
+export async function createProject(
+  project: CreateProjectInput,
+) {
+  return request<ApiProject>(
+    "/projects",
+    {
+      method: "POST",
+      body: JSON.stringify(project),
+    },
+  );
+}
+
+/*
+ * Update project.
+ */
+
+export async function updateProject(
+  id: string,
+  project: UpdateProjectInput,
+) {
+  return request<ApiProject>(
+    `/projects/${id}`,
+    {
+      method: "PATCH",
+      body: JSON.stringify(project),
+    },
+  );
+}
+
+/*
+ * Delete project.
+ */
+
+export async function deleteProject(
+  id: string,
+) {
+  return request<{
+    message: string;
+    id: string;
+  }>(
+    `/projects/${id}`,
+    {
+      method: "DELETE",
+    },
+  );
+}
+
+// =====================================================
 // Subtask API
 // =====================================================
 
@@ -342,7 +526,9 @@ export async function deleteSubtask(
   taskId: string,
   subtaskId: string,
 ) {
-  return request<{ message: string }>(
+  return request<{
+    message: string;
+  }>(
     `/tasks/${taskId}/subtasks/${subtaskId}`,
     {
       method: "DELETE",
@@ -371,7 +557,6 @@ export async function createComment(
 // Label API
 // =====================================================
 
-// Create a label inside a workspace
 export async function createLabel(
   workspaceId: string,
   label: CreateLabelInput,
@@ -385,7 +570,6 @@ export async function createLabel(
   );
 }
 
-// Get all labels belonging to a workspace
 export async function getWorkspaceLabels(
   workspaceId: string,
 ) {
@@ -394,7 +578,6 @@ export async function getWorkspaceLabels(
   );
 }
 
-// Assign an existing label to a task
 export async function assignLabel(
   taskId: string,
   labelId: string,
@@ -410,7 +593,6 @@ export async function assignLabel(
   );
 }
 
-// Remove a label from a task
 export async function removeLabel(
   taskId: string,
   labelId: string,

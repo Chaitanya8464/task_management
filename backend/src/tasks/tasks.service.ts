@@ -28,173 +28,313 @@ export class TasksService {
   // ==========================================
 
   async create(
-    createTaskDto: CreateTaskDto,
-  ) {
-    return this.prisma.task.create({
-      data: {
-        title: createTaskDto.title,
+  createTaskDto: CreateTaskDto,
+) {
+  // ==========================================
+  // Check workspace
+  // ==========================================
 
-        description:
-          createTaskDto.description,
-
-        status:
-          createTaskDto.status,
-
-        priority:
-          createTaskDto.priority,
-
-        dueDate:
-          createTaskDto.dueDate
-            ? new Date(
-                createTaskDto.dueDate,
-              )
-            : undefined,
-
-        workspaceId:
-          createTaskDto.workspaceId,
-
-        assigneeId:
-          createTaskDto.assigneeId,
-
-        creatorId:
-          createTaskDto.creatorId,
-      },
-
-      include: {
-        assignee: true,
-        creator: true,
-
-        subtasks: {
-          include: {
-            assignee: true,
-          },
-        },
-
-        comments: true,
-        labels: true,
+  const workspace =
+    await this.prisma.workspace.findUnique({
+      where: {
+        id: createTaskDto.workspaceId,
       },
     });
+
+  if (!workspace) {
+    throw new NotFoundException(
+      `Workspace with ID ${createTaskDto.workspaceId} not found`,
+    );
   }
 
-  async findAll() {
-    return this.prisma.task.findMany({
-      orderBy: {
-        createdAt: "desc",
-      },
+  // ==========================================
+  // Check project
+  // ==========================================
 
-      include: {
-        assignee: true,
-        creator: true,
-
-        subtasks: {
-          include: {
-            assignee: true,
-          },
-        },
-
-        comments: true,
-        labels: true,
-      },
-    });
-  }
-
-  async findOne(
-    id: string,
-  ) {
-    const task =
-      await this.prisma.task.findUnique({
+  if (createTaskDto.projectId) {
+    const project =
+      await this.prisma.project.findUnique({
         where: {
-          id,
-        },
-
-        include: {
-          assignee: true,
-
-          creator: true,
-
-          subtasks: {
-            include: {
-            assignee: true,
-            },
-            orderBy: {
-            createdAt: "asc",
-            },
-        },
-
-          comments: {
-            include: {
-              user: true,
-            },
-
-            orderBy: {
-              createdAt: "asc",
-            },
-          },
-
-          labels: true,
+          id: createTaskDto.projectId,
         },
       });
 
-    if (!task) {
+    if (!project) {
       throw new NotFoundException(
-        `Task with ID ${id} not found`,
+        `Project with ID ${createTaskDto.projectId} not found`,
       );
     }
 
-    return task;
+    if (
+      project.workspaceId !==
+      createTaskDto.workspaceId
+    ) {
+      throw new BadRequestException(
+        "Project does not belong to the task workspace",
+      );
+    }
   }
 
-  async update(
-    id: string,
-    updateTaskDto: UpdateTaskDto,
-  ) {
-    await this.findOne(id);
+  // ==========================================
+  // Create task
+  // ==========================================
 
-    return this.prisma.task.update({
+  return this.prisma.task.create({
+    data: {
+      title:
+        createTaskDto.title.trim(),
+
+      description:
+        createTaskDto.description,
+
+      status:
+        createTaskDto.status,
+
+      priority:
+        createTaskDto.priority,
+
+      dueDate:
+        createTaskDto.dueDate
+          ? new Date(
+              createTaskDto.dueDate,
+            )
+          : undefined,
+
+      workspaceId:
+        createTaskDto.workspaceId,
+
+      assigneeId:
+        createTaskDto.assigneeId,
+
+      creatorId:
+        createTaskDto.creatorId,
+
+      projectId:
+        createTaskDto.projectId,
+    },
+
+    include: {
+      project: true,
+
+      assignee: true,
+
+      creator: true,
+
+      subtasks: {
+        include: {
+          assignee: true,
+        },
+      },
+
+      comments: true,
+
+      labels: true,
+    },
+  });
+}
+
+  async findAll() {
+  return this.prisma.task.findMany({
+    orderBy: {
+      createdAt: "desc",
+    },
+
+    include: {
+      project: true,
+
+      assignee: true,
+
+      creator: true,
+
+      subtasks: {
+        include: {
+          assignee: true,
+        },
+      },
+
+      comments: true,
+
+      labels: true,
+    },
+  });
+}
+
+ async findOne(
+  id: string,
+) {
+  const task =
+    await this.prisma.task.findUnique({
       where: {
         id,
       },
 
-      data: {
-        title:
-          updateTaskDto.title,
+      include: {
+        project: true,
 
+        assignee: true,
+
+        creator: true,
+
+        subtasks: {
+          include: {
+            assignee: true,
+          },
+
+          orderBy: {
+            createdAt: "asc",
+          },
+        },
+
+        comments: {
+          include: {
+            user: true,
+          },
+
+          orderBy: {
+            createdAt: "asc",
+          },
+        },
+
+        labels: true,
+      },
+    });
+
+  if (!task) {
+    throw new NotFoundException(
+      `Task with ID ${id} not found`,
+    );
+  }
+
+  return task;
+}
+ async update(
+  id: string,
+  updateTaskDto: UpdateTaskDto,
+) {
+  // ==========================================
+  // Find existing task
+  // ==========================================
+
+  const existingTask =
+    await this.prisma.task.findUnique({
+      where: {
+        id,
+      },
+    });
+
+  if (!existingTask) {
+    throw new NotFoundException(
+      `Task with ID ${id} not found`,
+    );
+  }
+
+  // ==========================================
+  // Validate project
+  // ==========================================
+
+  if (
+    updateTaskDto.projectId !== undefined &&
+    updateTaskDto.projectId !== null
+  ) {
+    const project =
+      await this.prisma.project.findUnique({
+        where: {
+          id: updateTaskDto.projectId,
+        },
+      });
+
+    if (!project) {
+      throw new NotFoundException(
+        `Project with ID ${updateTaskDto.projectId} not found`,
+      );
+    }
+
+    if (
+      project.workspaceId !==
+      existingTask.workspaceId
+    ) {
+      throw new BadRequestException(
+        "Project does not belong to the task workspace",
+      );
+    }
+  }
+
+  // ==========================================
+  // Update task
+  // ==========================================
+
+  return this.prisma.task.update({
+    where: {
+      id,
+    },
+
+    data: {
+      ...(updateTaskDto.title !==
+        undefined && {
+        title:
+          updateTaskDto.title.trim(),
+      }),
+
+      ...(updateTaskDto.description !==
+        undefined && {
         description:
           updateTaskDto.description,
+      }),
 
+      ...(updateTaskDto.status !==
+        undefined && {
         status:
           updateTaskDto.status,
+      }),
 
+      ...(updateTaskDto.priority !==
+        undefined && {
         priority:
           updateTaskDto.priority,
+      }),
 
+      ...(updateTaskDto.dueDate !==
+        undefined && {
         dueDate:
           updateTaskDto.dueDate
             ? new Date(
                 updateTaskDto.dueDate,
               )
-            : undefined,
+            : null,
+      }),
 
+      ...(updateTaskDto.assigneeId !==
+        undefined && {
         assigneeId:
           updateTaskDto.assigneeId,
-      },
+      }),
 
-      include: {
-        assignee: true,
-        creator: true,
+      ...(updateTaskDto.projectId !==
+        undefined && {
+        projectId:
+          updateTaskDto.projectId,
+      }),
+    },
 
-        subtasks: {
-          include: {
-            assignee: true,
-          },
+    include: {
+      project: true,
+
+      assignee: true,
+
+      creator: true,
+
+      subtasks: {
+        include: {
+          assignee: true,
         },
-
-        comments: true,
-        labels: true,
       },
-    });
-  }
 
+      comments: true,
+
+      labels: true,
+    },
+  });
+}
   async remove(
     id: string,
   ) {
@@ -269,6 +409,8 @@ export class TasksService {
 
           assigneeId:
             createSubtaskDto.assigneeId,
+
+            
 
           taskId,
         },

@@ -1,4 +1,5 @@
 import { Module } from "@nestjs/common";
+import { ProjectsModule } from "./projects/projects.module.js";
 
 import { AppController } from "./app.controller.js";
 import { AppService } from "./app.service.js";
@@ -11,6 +12,7 @@ import { WorkspaceModule } from "./workspace/workspace.module.js";
     PrismaModule,
     TasksModule,
     AuthModule,
+     ProjectsModule,
     WorkspaceModule,
   ],
   controllers: [AppController],

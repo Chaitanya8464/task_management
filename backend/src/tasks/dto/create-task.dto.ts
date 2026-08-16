@@ -7,7 +7,10 @@ import {
   MinLength,
 } from "class-validator";
 
-import { TaskPriority, TaskStatus } from "../../generated/prisma/client.js";
+import {
+  TaskPriority,
+  TaskStatus,
+} from "../../generated/prisma/client.js";
 
 export class CreateTaskDto {
   @IsString()
@@ -40,4 +43,8 @@ export class CreateTaskDto {
   @IsOptional()
   @IsUUID()
   creatorId?: string;
+
+  @IsOptional()
+  @IsUUID()
+  projectId?: string;
 }
