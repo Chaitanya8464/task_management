@@ -15,7 +15,12 @@ import {
   Trash2,
 } from "lucide-react";
 
-import { useEffect, useRef, useState } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+} from "react";
+
 import { useRouter } from "next/navigation";
 
 import AppShell from "@/components/layout/AppShell";
@@ -24,8 +29,15 @@ import {
   ApiProject,
   TaskPriority,
   getProjects,
-  deleteProject,
 } from "@/lib/api";
+
+import AddProjectModal from "./AddProjectModal";
+import EditProjectModal from "./EditProjectModal";
+import DeleteProjectDialog from "./DeleteProjectDialog";
+
+// =====================================================
+// Types
+// =====================================================
 
 type PriorityFilter =
   | TaskPriority
@@ -36,6 +48,15 @@ interface VisibleFields {
   lead: boolean;
   dueDate: boolean;
 }
+
+interface MenuPosition {
+  top: number;
+  right: number;
+}
+
+// =====================================================
+// Priority Config
+// =====================================================
 
 const priorityConfig: Record<
   TaskPriority,
@@ -70,8 +91,16 @@ const priorityConfig: Record<
   },
 };
 
+// =====================================================
+// Page
+// =====================================================
+
 export default function ProjectsPage() {
   const router = useRouter();
+
+  // =====================================================
+  // Projects
+  // =====================================================
 
   const [projects, setProjects] =
     useState<ApiProject[]>([]);
@@ -82,11 +111,19 @@ export default function ProjectsPage() {
   const [error, setError] =
     useState("");
 
+  // =====================================================
+  // Search / Filter
+  // =====================================================
+
   const [search, setSearch] =
     useState("");
 
   const [priorityFilter, setPriorityFilter] =
     useState<PriorityFilter>("ALL");
+
+  // =====================================================
+  // Dropdowns
+  // =====================================================
 
   const [fieldsOpen, setFieldsOpen] =
     useState(false);
@@ -97,8 +134,32 @@ export default function ProjectsPage() {
   const [sortOpen, setSortOpen] =
     useState(false);
 
+  // =====================================================
+  // Project Action Menu
+  // =====================================================
+
   const [menuProject, setMenuProject] =
     useState<string | null>(null);
+
+  const [menuPosition, setMenuPosition] =
+    useState<MenuPosition | null>(null);
+
+  // =====================================================
+  // Project Modals
+  // =====================================================
+
+  const [addProjectOpen, setAddProjectOpen] =
+    useState(false);
+
+  const [editProject, setEditProject] =
+    useState<ApiProject | null>(null);
+
+  const [deleteProjectTarget, setDeleteProjectTarget] =
+    useState<ApiProject | null>(null);
+
+  // =====================================================
+  // Visible Fields
+  // =====================================================
 
   const [visibleFields, setVisibleFields] =
     useState<VisibleFields>({
@@ -106,6 +167,10 @@ export default function ProjectsPage() {
       lead: true,
       dueDate: true,
     });
+
+  // =====================================================
+  // Refs
+  // =====================================================
 
   const fieldsRef =
     useRef<HTMLDivElement>(null);
@@ -115,6 +180,39 @@ export default function ProjectsPage() {
 
   const sortRef =
     useRef<HTMLDivElement>(null);
+
+  // =====================================================
+  // Workspace ID
+  // =====================================================
+
+  const getWorkspaceId = () => {
+    if (
+      typeof window ===
+      "undefined"
+    ) {
+      return "";
+    }
+
+    try {
+      const storedWorkspace =
+        localStorage.getItem(
+          "taskflow_workspace",
+        );
+
+      if (!storedWorkspace) {
+        return "";
+      }
+
+      const workspace =
+        JSON.parse(
+          storedWorkspace,
+        );
+
+      return workspace?.id || "";
+    } catch {
+      return "";
+    }
+  };
 
   // =====================================================
   // Load Projects
@@ -128,34 +226,13 @@ export default function ProjectsPage() {
         setLoading(true);
         setError("");
 
-        const storedWorkspace =
-          localStorage.getItem(
-            "taskflow_workspace",
-          );
-
-        let workspaceId:
-          | string
-          | undefined;
-
-        if (storedWorkspace) {
-          try {
-            const workspace =
-              JSON.parse(
-                storedWorkspace,
-              );
-
-            workspaceId =
-              workspace?.id;
-          } catch {
-            console.error(
-              "Invalid workspace data",
-            );
-          }
-        }
+        const workspaceId =
+          getWorkspaceId();
 
         const data =
           await getProjects(
-            workspaceId,
+            workspaceId ||
+              undefined,
           );
 
         if (!cancelled) {
@@ -187,7 +264,7 @@ export default function ProjectsPage() {
   }, []);
 
   // =====================================================
-  // Close menus when clicking outside
+  // Close toolbar dropdowns
   // =====================================================
 
   useEffect(() => {
@@ -197,6 +274,7 @@ export default function ProjectsPage() {
       const target =
         event.target as Node;
 
+      // Fields
       if (
         fieldsRef.current &&
         !fieldsRef.current.contains(
@@ -206,6 +284,7 @@ export default function ProjectsPage() {
         setFieldsOpen(false);
       }
 
+      // Filter
       if (
         filterRef.current &&
         !filterRef.current.contains(
@@ -215,6 +294,7 @@ export default function ProjectsPage() {
         setFilterOpen(false);
       }
 
+      // Sort
       if (
         sortRef.current &&
         !sortRef.current.contains(
@@ -224,7 +304,21 @@ export default function ProjectsPage() {
         setSortOpen(false);
       }
 
+      // Project menu
+      const projectMenu =
+        document.querySelector(
+          "[data-project-menu]",
+        );
+
+      if (
+        projectMenu &&
+        projectMenu.contains(target)
+      ) {
+        return;
+      }
+
       setMenuProject(null);
+      setMenuPosition(null);
     };
 
     document.addEventListener(
@@ -241,17 +335,76 @@ export default function ProjectsPage() {
   }, []);
 
   // =====================================================
+  // Close project menu on scroll
+  // =====================================================
+
+  useEffect(() => {
+    if (!menuProject) {
+      return;
+    }
+
+    const handleScroll = () => {
+      setMenuProject(null);
+      setMenuPosition(null);
+    };
+
+    window.addEventListener(
+      "scroll",
+      handleScroll,
+      true,
+    );
+
+    return () => {
+      window.removeEventListener(
+        "scroll",
+        handleScroll,
+        true,
+      );
+    };
+  }, [menuProject]);
+
+  // =====================================================
+  // Close project menu on resize
+  // =====================================================
+
+  useEffect(() => {
+    if (!menuProject) {
+      return;
+    }
+
+    const handleResize = () => {
+      setMenuProject(null);
+      setMenuPosition(null);
+    };
+
+    window.addEventListener(
+      "resize",
+      handleResize,
+    );
+
+    return () => {
+      window.removeEventListener(
+        "resize",
+        handleResize,
+      );
+    };
+  }, [menuProject]);
+
+  // =====================================================
   // Search + Filter
   // =====================================================
 
   const filteredProjects =
     projects.filter((project) => {
+      const searchValue =
+        search
+          .trim()
+          .toLowerCase();
+
       const matchesSearch =
         project.name
           .toLowerCase()
-          .includes(
-            search.toLowerCase(),
-          );
+          .includes(searchValue);
 
       const matchesPriority =
         priorityFilter === "ALL" ||
@@ -272,16 +425,19 @@ export default function ProjectsPage() {
     direction: "asc" | "desc",
   ) => {
     setProjects((current) =>
-      [...current].sort((a, b) => {
-        const comparison =
-          a.name.localeCompare(
-            b.name,
-          );
+      [...current].sort(
+        (a, b) => {
+          const comparison =
+            a.name.localeCompare(
+              b.name,
+            );
 
-        return direction === "asc"
-          ? comparison
-          : -comparison;
-      }),
+          return direction ===
+            "asc"
+            ? comparison
+            : -comparison;
+        },
+      ),
     );
 
     setSortOpen(false);
@@ -297,50 +453,10 @@ export default function ProjectsPage() {
     setVisibleFields(
       (current) => ({
         ...current,
-        [field]: !current[field],
+        [field]:
+          !current[field],
       }),
     );
-  };
-
-  // =====================================================
-  // Delete Project
-  // =====================================================
-
-  const handleDeleteProject = async (
-    project: ApiProject,
-  ) => {
-    const confirmed =
-      window.confirm(
-        `Delete "${project.name}"?`,
-      );
-
-    if (!confirmed) {
-      return;
-    }
-
-    try {
-      await deleteProject(
-        project.id,
-      );
-
-      setProjects((current) =>
-        current.filter(
-          (item) =>
-            item.id !== project.id,
-        ),
-      );
-
-      setMenuProject(null);
-    } catch (err) {
-      console.error(
-        "Failed to delete project:",
-        err,
-      );
-
-      setError(
-        "Unable to delete project.",
-      );
-    }
   };
 
   // =====================================================
@@ -355,15 +471,176 @@ export default function ProjectsPage() {
     );
   };
 
+  // =====================================================
+  // Open Project Action Menu
+  // =====================================================
+
+  const toggleProjectMenu = (
+    event: React.MouseEvent<HTMLButtonElement>,
+    projectId: string,
+  ) => {
+    event.stopPropagation();
+
+    // Close if already open
+    if (
+      menuProject === projectId
+    ) {
+      setMenuProject(null);
+      setMenuPosition(null);
+      return;
+    }
+
+    const rect =
+      event.currentTarget.getBoundingClientRect();
+
+    const menuWidth = 176;
+    const menuHeight = 128;
+    const gap = 6;
+    const viewportPadding = 8;
+
+    // Default: below button
+    let top =
+      rect.bottom + gap;
+
+    // Right aligned with button
+    let right =
+      window.innerWidth -
+      rect.right;
+
+    // -------------------------------------------------
+    // Keep menu inside horizontal viewport
+    // -------------------------------------------------
+
+    if (
+      right +
+        menuWidth >
+      window.innerWidth -
+        viewportPadding
+    ) {
+      right =
+        viewportPadding;
+    }
+
+    // Prevent menu from going outside
+    // the left side.
+    const calculatedLeft =
+      window.innerWidth -
+      right -
+      menuWidth;
+
+    if (
+      calculatedLeft <
+      viewportPadding
+    ) {
+      right =
+        window.innerWidth -
+        menuWidth -
+        viewportPadding;
+    }
+
+    // -------------------------------------------------
+    // If there is not enough space below,
+    // open above the button.
+    // -------------------------------------------------
+
+    if (
+      top +
+        menuHeight >
+      window.innerHeight -
+        viewportPadding
+    ) {
+      top =
+        rect.top -
+        menuHeight -
+        gap;
+    }
+
+    // -------------------------------------------------
+    // Final top safety check
+    // -------------------------------------------------
+
+    if (
+      top <
+      viewportPadding
+    ) {
+      top =
+        viewportPadding;
+    }
+
+    setMenuProject(projectId);
+
+    setMenuPosition({
+      top,
+      right,
+    });
+  };
+
+  // =====================================================
+  // Close Project Menu
+  // =====================================================
+
+  const closeProjectMenu = () => {
+    setMenuProject(null);
+    setMenuPosition(null);
+  };
+
+  // =====================================================
+  // Get Selected Project
+  // =====================================================
+
+  const getSelectedProject = () => {
+    if (!menuProject) {
+      return null;
+    }
+
+    return (
+      projects.find(
+        (project) =>
+          project.id ===
+          menuProject,
+      ) || null
+    );
+  };
+
+  // =====================================================
+  // Selected project for menu
+  // =====================================================
+
+  const selectedMenuProject =
+    getSelectedProject();
+
+  // =====================================================
+  // Render
+  // =====================================================
+
   return (
     <AppShell>
-      <div className="min-h-screen bg-white text-zinc-900 transition-colors dark:bg-zinc-950 dark:text-zinc-100">
+      <div
+        className="
+          min-h-screen
+          bg-white
+          text-zinc-900
+          transition-colors
+          dark:bg-zinc-950
+          dark:text-zinc-100
+        "
+      >
         {/* =================================================
             Header
         ================================================= */}
 
         <div className="border-b border-zinc-200 dark:border-zinc-800">
-          <div className="flex min-h-[72px] items-center justify-between gap-4 px-4 sm:px-6">
+          <div
+            className="
+              flex
+              min-h-[72px]
+              items-center
+              justify-between
+              gap-4
+              px-4
+              sm:px-6
+            "
+          >
             <div className="min-w-0">
               <h1 className="text-xl font-semibold tracking-tight">
                 Projects
@@ -375,8 +652,15 @@ export default function ProjectsPage() {
               </p>
             </div>
 
+            {/* Add Project */}
+
             <button
               type="button"
+              onClick={() =>
+                setAddProjectOpen(
+                  true,
+                )
+              }
               className="
                 flex
                 h-9
@@ -391,6 +675,7 @@ export default function ProjectsPage() {
                 text-white
                 transition
                 hover:bg-zinc-800
+                active:scale-[0.98]
                 dark:bg-white
                 dark:text-black
                 dark:hover:bg-zinc-200
@@ -468,7 +753,9 @@ export default function ProjectsPage() {
                 }}
               >
                 <SlidersHorizontal className="h-3.5 w-3.5" />
+
                 Fields
+
                 <ChevronDown className="h-3 w-3" />
               </ToolbarButton>
 
@@ -536,7 +823,9 @@ export default function ProjectsPage() {
                 }}
               >
                 <Filter className="h-3.5 w-3.5" />
+
                 Filter
+
                 <ChevronDown className="h-3 w-3" />
               </ToolbarButton>
 
@@ -556,7 +845,10 @@ export default function ProjectsPage() {
                       setPriorityFilter(
                         "ALL",
                       );
-                      setFilterOpen(false);
+
+                      setFilterOpen(
+                        false,
+                      );
                     }}
                   />
 
@@ -571,7 +863,9 @@ export default function ProjectsPage() {
                   ).map(
                     (priority) => (
                       <FilterOption
-                        key={priority}
+                        key={
+                          priority
+                        }
                         label={
                           priorityConfig[
                             priority
@@ -616,7 +910,9 @@ export default function ProjectsPage() {
                 }}
               >
                 <ArrowUp className="h-3.5 w-3.5" />
+
                 Sort
+
                 <ChevronDown className="h-3 w-3" />
               </ToolbarButton>
 
@@ -625,7 +921,9 @@ export default function ProjectsPage() {
                   <button
                     type="button"
                     onClick={() =>
-                      sortProjects("asc")
+                      sortProjects(
+                        "asc",
+                      )
                     }
                     className="
                       flex
@@ -642,13 +940,16 @@ export default function ProjectsPage() {
                     "
                   >
                     <ArrowUp className="h-3.5 w-3.5" />
+
                     Name A–Z
                   </button>
 
                   <button
                     type="button"
                     onClick={() =>
-                      sortProjects("desc")
+                      sortProjects(
+                        "desc",
+                      )
                     }
                     className="
                       flex
@@ -665,6 +966,7 @@ export default function ProjectsPage() {
                     "
                   >
                     <ArrowDown className="h-3.5 w-3.5" />
+
                     Name Z–A
                   </button>
                 </Dropdown>
@@ -678,13 +980,30 @@ export default function ProjectsPage() {
         ================================================= */}
 
         {error && (
-          <div className="mx-4 mt-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-600 dark:border-red-900/50 dark:bg-red-950/20 dark:text-red-400 sm:mx-6">
+          <div
+            className="
+              mx-4
+              mt-4
+              rounded-md
+              border
+              border-red-200
+              bg-red-50
+              px-3
+              py-2
+              text-xs
+              text-red-600
+              dark:border-red-900/50
+              dark:bg-red-950/20
+              dark:text-red-400
+              sm:mx-6
+            "
+          >
             {error}
           </div>
         )}
 
         {/* =================================================
-            Content
+            Projects Table
         ================================================= */}
 
         <div className="px-4 py-4 sm:px-6">
@@ -692,6 +1011,7 @@ export default function ProjectsPage() {
             {loading ? (
               <div className="flex min-h-[240px] items-center justify-center gap-2 text-sm text-zinc-400">
                 <Loader2 className="h-4 w-4 animate-spin" />
+
                 Loading projects...
               </div>
             ) : (
@@ -824,15 +1144,15 @@ export default function ProjectsPage() {
 
                         {/* Actions */}
 
-                        <td className="relative px-3 py-3.5 text-right">
+                        <td className="px-3 py-3.5 text-right">
                           <button
                             type="button"
-                            onClick={() =>
-                              setMenuProject(
-                                menuProject ===
-                                  project.id
-                                  ? null
-                                  : project.id,
+                            onClick={(
+                              event,
+                            ) =>
+                              toggleProjectMenu(
+                                event,
+                                project.id,
                               )
                             }
                             className="
@@ -849,82 +1169,12 @@ export default function ProjectsPage() {
                           >
                             <MoreHorizontal className="h-4 w-4" />
                           </button>
-
-                          {menuProject ===
-                            project.id && (
-                            <div
-                              className="
-                                absolute
-                                right-2
-                                top-11
-                                z-50
-                                w-40
-                                rounded-lg
-                                border
-                                border-zinc-200
-                                bg-white
-                                p-1
-                                shadow-xl
-                                dark:border-zinc-800
-                                dark:bg-zinc-900
-                              "
-                            >
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  openProject(
-                                    project.id,
-                                  )
-                                }
-                                className="
-                                  flex
-                                  w-full
-                                  items-center
-                                  gap-2
-                                  rounded-md
-                                  px-2.5
-                                  py-2
-                                  text-left
-                                  text-xs
-                                  hover:bg-zinc-100
-                                  dark:hover:bg-zinc-800
-                                "
-                              >
-                                <Pencil className="h-3.5 w-3.5" />
-                                Open project
-                              </button>
-
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  handleDeleteProject(
-                                    project,
-                                  )
-                                }
-                                className="
-                                  flex
-                                  w-full
-                                  items-center
-                                  gap-2
-                                  rounded-md
-                                  px-2.5
-                                  py-2
-                                  text-left
-                                  text-xs
-                                  text-red-500
-                                  hover:bg-red-50
-                                  dark:hover:bg-red-950/30
-                                "
-                              >
-                                <Trash2 className="h-3.5 w-3.5" />
-                                Delete project
-                              </button>
-                            </div>
-                          )}
                         </td>
                       </tr>
                     ),
                   )}
+
+                  {/* Empty */}
 
                   {!loading &&
                     filteredProjects.length ===
@@ -966,6 +1216,233 @@ export default function ProjectsPage() {
           </div>
         </div>
       </div>
+
+      {/* ===================================================
+          PROJECT ACTION MENU
+      =================================================== */}
+
+      {menuProject &&
+        menuPosition && (
+          <div
+            data-project-menu
+            className="
+              fixed
+              z-[200]
+              w-44
+              rounded-lg
+              border
+              border-zinc-200
+              bg-white
+              p-1
+              shadow-2xl
+              dark:border-zinc-800
+              dark:bg-zinc-900
+            "
+            style={{
+              top: menuPosition.top,
+              right: menuPosition.right,
+            }}
+            onMouseDown={(event) =>
+              event.stopPropagation()
+            }
+          >
+            {/* Open Project */}
+
+            <button
+              type="button"
+              onClick={() => {
+                if (
+                  !selectedMenuProject
+                ) {
+                  return;
+                }
+
+                const projectId =
+                  selectedMenuProject.id;
+
+                closeProjectMenu();
+
+                openProject(
+                  projectId,
+                );
+              }}
+              className="
+                flex
+                w-full
+                items-center
+                gap-2
+                rounded-md
+                px-2.5
+                py-2
+                text-left
+                text-xs
+                text-zinc-700
+                hover:bg-zinc-100
+                dark:text-zinc-300
+                dark:hover:bg-zinc-800
+              "
+            >
+              <Pencil className="h-3.5 w-3.5" />
+
+              Open project
+            </button>
+
+            {/* Edit Project */}
+
+            <button
+              type="button"
+              onClick={() => {
+                if (
+                  !selectedMenuProject
+                ) {
+                  return;
+                }
+
+                setEditProject(
+                  selectedMenuProject,
+                );
+
+                closeProjectMenu();
+              }}
+              className="
+                flex
+                w-full
+                items-center
+                gap-2
+                rounded-md
+                px-2.5
+                py-2
+                text-left
+                text-xs
+                text-zinc-700
+                hover:bg-zinc-100
+                dark:text-zinc-300
+                dark:hover:bg-zinc-800
+              "
+            >
+              <Pencil className="h-3.5 w-3.5" />
+
+              Edit project
+            </button>
+
+            {/* Delete Project */}
+
+            <button
+              type="button"
+              onClick={() => {
+                if (
+                  !selectedMenuProject
+                ) {
+                  return;
+                }
+
+                setDeleteProjectTarget(
+                  selectedMenuProject,
+                );
+
+                closeProjectMenu();
+              }}
+              className="
+                flex
+                w-full
+                items-center
+                gap-2
+                rounded-md
+                px-2.5
+                py-2
+                text-left
+                text-xs
+                text-red-500
+                hover:bg-red-50
+                dark:hover:bg-red-950/30
+              "
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+
+              Delete project
+            </button>
+          </div>
+        )}
+
+      {/* ===================================================
+          ADD PROJECT MODAL
+      =================================================== */}
+
+      <AddProjectModal
+        open={addProjectOpen}
+        onClose={() =>
+          setAddProjectOpen(false)
+        }
+        workspaceId={getWorkspaceId()}
+        onCreated={(project) => {
+          setProjects((current) => [
+            project,
+            ...current,
+          ]);
+
+          setAddProjectOpen(false);
+        }}
+      />
+
+      {/* ===================================================
+          EDIT PROJECT MODAL
+      =================================================== */}
+
+      <EditProjectModal
+        open={Boolean(editProject)}
+        project={editProject}
+        workspaceId={getWorkspaceId()}
+        onClose={() =>
+          setEditProject(null)
+        }
+        onUpdated={(updatedProject) => {
+          setProjects((current) =>
+            current.map(
+              (project) =>
+                project.id ===
+                updatedProject.id
+                  ? {
+                      ...project,
+                      ...updatedProject,
+                    }
+                  : project,
+            ),
+          );
+
+          setEditProject(null);
+        }}
+      />
+
+      {/* ===================================================
+          DELETE PROJECT DIALOG
+      =================================================== */}
+
+      <DeleteProjectDialog
+        open={Boolean(
+          deleteProjectTarget,
+        )}
+        project={
+          deleteProjectTarget
+        }
+        onClose={() =>
+          setDeleteProjectTarget(
+            null,
+          )
+        }
+        onDeleted={(projectId) => {
+          setProjects((current) =>
+            current.filter(
+              (project) =>
+                project.id !==
+                projectId,
+            ),
+          );
+
+          setDeleteProjectTarget(
+            null,
+          );
+        }}
+      />
     </AppShell>
   );
 }
@@ -1040,6 +1517,10 @@ function Dropdown({
     </div>
   );
 }
+
+// =====================================================
+// Dropdown Title
+// =====================================================
 
 function DropdownTitle({
   children,
@@ -1248,7 +1729,11 @@ function formatDate(
   const parsed =
     new Date(date);
 
-  if (Number.isNaN(parsed.getTime())) {
+  if (
+    Number.isNaN(
+      parsed.getTime(),
+    )
+  ) {
     return "—";
   }
 

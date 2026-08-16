@@ -22,7 +22,8 @@ async function request<T>(
   );
 
   if (!response.ok) {
-    const errorText = await response.text();
+    const errorText =
+      await response.text();
 
     throw new Error(
       errorText ||
@@ -45,6 +46,23 @@ export interface ApiUser {
 }
 
 // =====================================================
+// Task Status & Priority
+// =====================================================
+
+export type TaskStatus =
+  | "TODO"
+  | "DOING"
+  | "COMPLETED"
+  | "ON_HOLD";
+
+export type TaskPriority =
+  | "URGENT"
+  | "HIGH"
+  | "MEDIUM"
+  | "LOW"
+  | "NO_PRIORITY";
+
+// =====================================================
 // Comment Types
 // =====================================================
 
@@ -64,23 +82,6 @@ export interface CreateCommentInput {
   content: string;
   userId: string;
 }
-
-// =====================================================
-// Task Status & Priority
-// =====================================================
-
-export type TaskStatus =
-  | "TODO"
-  | "DOING"
-  | "COMPLETED"
-  | "ON_HOLD";
-
-export type TaskPriority =
-  | "URGENT"
-  | "HIGH"
-  | "MEDIUM"
-  | "LOW"
-  | "NO_PRIORITY";
 
 // =====================================================
 // Subtask Types
@@ -210,62 +211,8 @@ export interface WorkspaceMember {
 }
 
 // =====================================================
-// Authentication Types
-// =====================================================
-
-export interface GuestLoginResponse {
-  message: string;
-
-  user: ApiUser;
-
-  workspace: {
-    id: string;
-    name: string;
-    ownerId: string;
-  };
-}
-
-// =====================================================
-// Task Input
-// =====================================================
-
-export interface CreateTaskInput {
-  title: string;
-
-  description?: string;
-
-  priority?: TaskPriority;
-
-  status?: TaskStatus;
-
-  dueDate?: string;
-
-  workspaceId: string;
-
-  // Optional project relationship
-  projectId?: string;
-
-  assigneeId?: string;
-
-  creatorId?: string;
-}
-
-// =====================================================
 // Project Types
 // =====================================================
-
-/*
- * Project data used by the Projects screen.
- *
- * These fields correspond to the information
- * represented in the assessment/Figma:
- *
- * Project
- * Priority
- * Lead
- * Due Date
- * Tasks
- */
 
 export interface ApiProject {
   id: string;
@@ -319,6 +266,47 @@ export interface UpdateProjectInput {
   dueDate?: string | null;
 
   leadId?: string | null;
+}
+
+// =====================================================
+// Authentication Types
+// =====================================================
+
+export interface GuestLoginResponse {
+  message: string;
+
+  user: ApiUser;
+
+  workspace: {
+    id: string;
+    name: string;
+    ownerId: string;
+  };
+}
+
+// =====================================================
+// Task Input
+// =====================================================
+
+export interface CreateTaskInput {
+  title: string;
+
+  description?: string;
+
+  priority?: TaskPriority;
+
+  status?: TaskStatus;
+
+  dueDate?: string;
+
+  workspaceId: string;
+
+  // Optional project relationship
+  projectId?: string;
+
+  assigneeId?: string;
+
+  creatorId?: string;
 }
 
 // =====================================================
@@ -388,7 +376,9 @@ export async function updateTask(
 export async function deleteTask(
   id: string,
 ) {
-  return request<{ message: string }>(
+  return request<{
+    message: string;
+  }>(
     `/tasks/${id}`,
     {
       method: "DELETE",
@@ -399,13 +389,6 @@ export async function deleteTask(
 // =====================================================
 // Project API
 // =====================================================
-
-/*
- * Get all projects.
- *
- * Optional workspaceId allows the Projects screen
- * to show projects belonging to the current workspace.
- */
 
 export async function getProjects(
   workspaceId?: string,
@@ -421,17 +404,6 @@ export async function getProjects(
   );
 }
 
-/*
- * Get one project.
- *
- * Backend returns:
- *
- * - project information
- * - lead
- * - tasks
- * - task count
- */
-
 export async function getProject(
   id: string,
 ) {
@@ -439,10 +411,6 @@ export async function getProject(
     `/projects/${id}`,
   );
 }
-
-/*
- * Create project.
- */
 
 export async function createProject(
   project: CreateProjectInput,
@@ -456,10 +424,6 @@ export async function createProject(
   );
 }
 
-/*
- * Update project.
- */
-
 export async function updateProject(
   id: string,
   project: UpdateProjectInput,
@@ -472,10 +436,6 @@ export async function updateProject(
     },
   );
 }
-
-/*
- * Delete project.
- */
 
 export async function deleteProject(
   id: string,

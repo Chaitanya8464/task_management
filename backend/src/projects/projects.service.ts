@@ -98,43 +98,49 @@ export class ProjectsService {
     );
 
     return this.prisma.project.create({
-      data: {
-        name,
-        description,
-        priority,
-        dueDate: dueDate
-          ? new Date(dueDate)
-          : undefined,
-        workspace: {
+  data: {
+    name: name.trim(),
+
+    description:
+      description?.trim() || undefined,
+
+    priority,
+
+    dueDate: dueDate
+      ? new Date(dueDate)
+      : undefined,
+
+    workspace: {
+      connect: {
+        id: workspaceId,
+      },
+    },
+
+    lead: leadId
+      ? {
           connect: {
-            id: workspaceId,
+            id: leadId,
           },
-        },
-        lead: leadId
-          ? {
-              connect: {
-                id: leadId,
-              },
-            }
-          : undefined,
+        }
+      : undefined,
+  },
+
+  include: {
+    lead: true,
+
+    tasks: {
+      orderBy: {
+        createdAt: "desc",
       },
+    },
 
-      include: {
-        lead: true,
-
-        tasks: {
-          orderBy: {
-            createdAt: "desc",
-          },
-        },
-
-        _count: {
-          select: {
-            tasks: true,
-          },
-        },
+    _count: {
+      select: {
+        tasks: true,
       },
-    });
+    },
+  },
+});
   }
 
   // =====================================================
