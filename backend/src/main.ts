@@ -12,19 +12,36 @@ async function bootstrap() {
     "http://localhost:3000",
     "https://task-management-tau-rust.vercel.app",
     process.env.FRONTEND_URL,
-  ].filter(Boolean) as string[];
+  ].filter(Boolean);
 
   app.enableCors({
     origin: (origin, callback) => {
-      // Allow requests with no origin (e.g., mobile apps, curl, or server-to-server)
+      // Allow requests without an Origin header
+      // such as curl or server-to-server requests.
       if (!origin || allowedOrigins.includes(origin)) {
         callback(null, true);
-      } else {
-        callback(new Error("Blocked by CORS"));
+        return;
       }
+
+      callback(new Error("Blocked by CORS"));
     },
+
     credentials: true,
-    methods: "GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS",
+
+    methods: [
+      "GET",
+      "HEAD",
+      "PUT",
+      "PATCH",
+      "POST",
+      "DELETE",
+      "OPTIONS",
+    ],
+
+    allowedHeaders: [
+      "Content-Type",
+      "Authorization",
+    ],
   });
 
   app.useGlobalPipes(
@@ -34,10 +51,13 @@ async function bootstrap() {
     }),
   );
 
-  const port = process.env.PORT || 3001;
+  const port = Number(process.env.PORT) || 3001;
+
   await app.listen(port, "0.0.0.0");
 
-  console.log(`TaskFlow API running on port ${port}`);
+  console.log(
+    `TaskFlow API running on port ${port}`,
+  );
 }
 
 bootstrap();
