@@ -15,34 +15,22 @@ async function bootstrap() {
   ].filter(Boolean);
 
   app.enableCors({
-    origin: (origin, callback) => {
-      // Allow requests without an Origin header
-      // such as curl or server-to-server requests.
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-        return;
-      }
-
-      callback(new Error("Blocked by CORS"));
-    },
-
-    credentials: true,
-
-    methods: [
-      "GET",
-      "HEAD",
-      "PUT",
-      "PATCH",
-      "POST",
-      "DELETE",
-      "OPTIONS",
-    ],
-
-    allowedHeaders: [
-      "Content-Type",
-      "Authorization",
-    ],
-  });
+  origin: true,
+  credentials: true,
+  methods: [
+    "GET",
+    "HEAD",
+    "PUT",
+    "PATCH",
+    "POST",
+    "DELETE",
+    "OPTIONS",
+  ],
+  allowedHeaders: [
+    "Content-Type",
+    "Authorization",
+  ],
+});
 
   app.useGlobalPipes(
     new ValidationPipe({
