@@ -133,8 +133,15 @@ export class TasksService {
   });
 }
 
-  async findAll() {
+ 
+async findAll(workspaceId?: string) {
   return this.prisma.task.findMany({
+    where: workspaceId
+      ? {
+          workspaceId,
+        }
+      : undefined,
+
     orderBy: {
       createdAt: "desc",
     },
@@ -152,7 +159,11 @@ export class TasksService {
         },
       },
 
-      comments: true,
+      comments: {
+        include: {
+          user: true,
+        },
+      },
 
       labels: true,
     },

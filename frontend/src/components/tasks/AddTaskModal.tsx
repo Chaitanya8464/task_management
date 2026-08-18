@@ -115,8 +115,17 @@ export default function AddTaskModal({
           return;
         }
 
-        const workspace =
-          JSON.parse(storedWorkspace);
+        let workspace;
+
+        try {
+          workspace =
+            JSON.parse(storedWorkspace);
+        } catch {
+          setError(
+            "Invalid workspace information. Please login again.",
+          );
+          return;
+        }
 
         if (!workspace?.id) {
           setError(
@@ -201,6 +210,9 @@ export default function AddTaskModal({
       return;
     }
 
+    /*
+     * Get the active workspace.
+     */
     const storedWorkspace =
       localStorage.getItem(
         "taskflow_workspace",
@@ -213,14 +225,33 @@ export default function AddTaskModal({
       return;
     }
 
+    /*
+     * Get the currently logged-in user.
+     */
+    const storedUser =
+      localStorage.getItem(
+        "taskflow_user",
+      );
+
+    if (!storedUser) {
+      setError(
+        "User session not found. Please login again.",
+      );
+      return;
+    }
+
     let workspace;
+    let user;
 
     try {
       workspace =
         JSON.parse(storedWorkspace);
+
+      user =
+        JSON.parse(storedUser);
     } catch {
       setError(
-        "Invalid workspace information. Please login again.",
+        "Invalid login information. Please login again.",
       );
       return;
     }
@@ -232,12 +263,23 @@ export default function AddTaskModal({
       return;
     }
 
+    if (!user?.id) {
+      setError(
+        "User ID is missing. Please login again.",
+      );
+      return;
+    }
+
     try {
       setIsSubmitting(true);
       setError("");
 
       /*
        * Create the task through the API.
+       *
+       * IMPORTANT:
+       * workspaceId identifies the user's workspace.
+       * creatorId identifies the user who created it.
        */
       const createdTask =
         await createTask({
@@ -262,6 +304,9 @@ export default function AddTaskModal({
           workspaceId:
             workspace.id,
 
+          creatorId:
+            user.id,
+
           /*
            * Only send assigneeId when
            * a real workspace member exists.
@@ -272,13 +317,14 @@ export default function AddTaskModal({
         });
 
       /*
-       * Convert the API response into
-       * the frontend Task shape.
+       * Convert API response into
+       * frontend Task shape.
        */
       const newTask: Task = {
         id: createdTask.id,
 
-        title: createdTask.title,
+        title:
+          createdTask.title,
 
         description:
           createdTask.description ??
@@ -305,11 +351,13 @@ export default function AddTaskModal({
       };
 
       /*
-       * IMPORTANT:
-       * Wait for the parent to update its state.
+       * Update parent task list.
        */
       onAdd(newTask);
 
+      /*
+       * Reset form and close modal.
+       */
       resetForm();
       onClose();
     } catch (error) {
@@ -340,7 +388,9 @@ export default function AddTaskModal({
       }}
     >
       <div className="w-full max-w-lg overflow-hidden rounded-xl border border-zinc-200 bg-white text-zinc-900 shadow-xl dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100">
+
         {/* Header */}
+
         <div className="flex items-start justify-between border-b border-zinc-100 p-5 dark:border-zinc-800">
           <div>
             <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
@@ -364,12 +414,15 @@ export default function AddTaskModal({
         </div>
 
         {/* Form */}
+
         <form
           onSubmit={handleSubmit}
           className="p-5"
         >
           <div className="space-y-4">
+
             {/* Title */}
+
             <div>
               <label
                 htmlFor="task-title"
@@ -394,6 +447,7 @@ export default function AddTaskModal({
             </div>
 
             {/* Description */}
+
             <div>
               <label
                 htmlFor="task-description"
@@ -418,7 +472,11 @@ export default function AddTaskModal({
             </div>
 
             {/* Status + Priority */}
+
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+
+              {/* Status */}
+
               <div>
                 <label
                   htmlFor="task-status"
@@ -456,6 +514,8 @@ export default function AddTaskModal({
                   </option>
                 </select>
               </div>
+
+              {/* Priority */}
 
               <div>
                 <label
@@ -501,8 +561,11 @@ export default function AddTaskModal({
             </div>
 
             {/* Assignee + Due Date */}
+
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+
               {/* Assignee */}
+
               <div>
                 <label
                   htmlFor="task-assignee"
@@ -543,7 +606,9 @@ export default function AddTaskModal({
                           member.userId
                         }
                       >
-                        {member.user.name}
+                        {
+                          member.user.name
+                        }
                       </option>
                     ),
                   )}
@@ -551,6 +616,7 @@ export default function AddTaskModal({
               </div>
 
               {/* Due Date */}
+
               <div>
                 <label
                   htmlFor="task-due-date"
@@ -576,6 +642,7 @@ export default function AddTaskModal({
           </div>
 
           {/* Error */}
+
           {error && (
             <p className="mt-4 rounded-md bg-red-50 px-3 py-2 text-xs text-red-600 dark:bg-red-950/40 dark:text-red-400">
               {error}
@@ -583,6 +650,7 @@ export default function AddTaskModal({
           )}
 
           {/* Actions */}
+
           <div className="mt-6 flex justify-end gap-2">
             <button
               type="button"

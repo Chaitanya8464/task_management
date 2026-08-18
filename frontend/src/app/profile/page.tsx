@@ -129,7 +129,7 @@ export default function ProfilePage() {
       "taskflow_workspace",
     );
 
-    router.push("/tasks");
+    router.push("/");
   };
 
   // =====================================================

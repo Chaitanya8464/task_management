@@ -166,7 +166,23 @@ export default function TasksPage() {
         setLoading(true);
         setError("");
 
-        const data = await getTasks();
+        const storedWorkspace =
+  localStorage.getItem(
+    "taskflow_workspace",
+  );
+
+if (!storedWorkspace) {
+  throw new Error(
+    "Workspace session not found.",
+  );
+}
+
+const workspace =
+  JSON.parse(storedWorkspace);
+
+const data = await getTasks(
+  workspace.id,
+);
 
         setTaskList(
           data.map(mapApiTaskToUiTask),

@@ -6,6 +6,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
 } from "@nestjs/common";
 
 import { CreateCommentDto } from "./dto/create-comment.dto.js";
@@ -39,8 +40,13 @@ export class TasksController {
   }
 
   @Get()
-  findAll() {
-    return this.tasksService.findAll();
+  findAll(
+    @Query("workspaceId")
+    workspaceId?: string,
+  ) {
+    return this.tasksService.findAll(
+      workspaceId,
+    );
   }
 
   @Get(":id")
@@ -134,7 +140,6 @@ export class TasksController {
   // LABEL ROUTES
   // ==========================================
 
-  // Create a label for a workspace
   @Post(
     "workspace/:workspaceId/labels",
   )
@@ -150,7 +155,6 @@ export class TasksController {
     );
   }
 
-  // Get all labels for a workspace
   @Get(
     "workspace/:workspaceId/labels",
   )
@@ -163,7 +167,6 @@ export class TasksController {
     );
   }
 
-  // Assign label to task
   @Post(":taskId/labels")
   assignLabel(
     @Param("taskId") taskId: string,
@@ -176,7 +179,6 @@ export class TasksController {
     );
   }
 
-  // Remove label from task
   @Delete(
     ":taskId/labels/:labelId",
   )

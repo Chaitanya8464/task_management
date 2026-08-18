@@ -355,10 +355,17 @@ export async function googleLogin(
 // =====================================================
 // Task API
 // =====================================================
+export async function getTasks(
+  workspaceId?: string,
+) {
+  const query = workspaceId
+    ? `?workspaceId=${encodeURIComponent(
+        workspaceId,
+      )}`
+    : "";
 
-export async function getTasks() {
   return request<ApiTask[]>(
-    "/tasks",
+    `/tasks${query}`,
   );
 }
 
