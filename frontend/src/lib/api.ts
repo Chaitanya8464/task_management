@@ -321,6 +321,36 @@ export async function guestLogin() {
     },
   );
 }
+// =====================================================
+// Google Authentication
+// =====================================================
+
+export interface GoogleLoginResponse {
+  message: string;
+
+  user: ApiUser;
+
+  workspace: {
+    id: string;
+    name: string;
+    ownerId: string;
+  };
+}
+
+export async function googleLogin(
+  credential: string,
+) {
+  return request<GoogleLoginResponse>(
+    "/auth/google",
+    {
+      method: "POST",
+
+      body: JSON.stringify({
+        credential,
+      }),
+    },
+  );
+}
 
 // =====================================================
 // Task API

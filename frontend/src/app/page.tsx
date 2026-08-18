@@ -1,5 +1,12 @@
 "use client";
 
+import {
+  GoogleLogin,
+} from "@react-oauth/google";
+
+import {
+  googleLogin,
+} from "@/lib/api";
 
 import { CheckCircle2 } from "lucide-react";
 import { useState } from "react";
@@ -97,15 +104,70 @@ export default function Home() {
                 </button>
 
                 {/* Google Login */}
-                <button
-                  type="button"
-                  onClick={handleGoogleLogin}
-                  disabled={isLoggingIn}
-                  className="flex h-9 w-full items-center justify-center gap-2 rounded-full border border-zinc-200 bg-white px-4 text-xs font-medium text-zinc-700 transition hover:bg-zinc-50 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  <span className="font-semibold">G</span>
-                  <span>Login with Google</span>
-                </button>
+               <GoogleLogin
+  onSuccess={async (credentialResponse) => {
+    if (
+      !credentialResponse.credential
+    ) {
+      setError(
+        "Google login failed. No credential received.",
+      );
+
+      return;
+    }
+
+    try {
+      setIsLoggingIn(true);
+      setError("");
+
+      const data =
+        await googleLogin(
+          credentialResponse.credential,
+        );
+
+      console.log(
+        "Google login successful:",
+        data,
+      );
+
+      localStorage.setItem(
+        "taskflow_user",
+        JSON.stringify(
+          data.user,
+        ),
+      );
+
+      localStorage.setItem(
+        "taskflow_workspace",
+        JSON.stringify(
+          data.workspace,
+        ),
+      );
+
+      router.push(
+        "/dashboard",
+      );
+    } catch (error) {
+      console.error(
+        "Google login failed:",
+        error,
+      );
+
+      setError(
+        "Unable to login with Google. Please try again.",
+      );
+    } finally {
+      setIsLoggingIn(false);
+    }
+  }}
+  onError={() => {
+    setError(
+      "Google login failed. Please try again.",
+    );
+  }}
+  useOneTap={false}
+/>
+                  
               </div>
 
               {/* Error */}

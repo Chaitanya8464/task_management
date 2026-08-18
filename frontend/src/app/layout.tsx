@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 import { ThemeProvider } from "@/providers/ThemeProvider";
+import GoogleProvider from "./GoogleProvider";
 
 export const metadata: Metadata = {
   title: "TaskFlow",
@@ -20,9 +21,11 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body>
-        <ThemeProvider>
-          {children}
-        </ThemeProvider>
+       <ThemeProvider>
+  <GoogleProvider>
+    {children}
+  </GoogleProvider>
+</ThemeProvider>
       </body>
     </html>
   );
