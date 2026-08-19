@@ -182,11 +182,13 @@ export default function TaskFilters({
     <div
       ref={containerRef}
       className="
-        flex
-        flex-wrap
-        items-center
-        gap-1.5
-      "
+        
+       contents
+      sm:flex
+      sm:flex-wrap
+      sm:items-center
+      sm:gap-1.5
+    "
     >
       {/* =================================================
           STATUS

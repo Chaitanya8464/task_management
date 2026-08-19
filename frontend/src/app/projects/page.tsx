@@ -618,420 +618,411 @@ export default function ProjectsPage() {
     <div
       className="
         min-h-full
-        bg-white
-        text-zinc-900
-        dark:bg-zinc-950
-        dark:text-zinc-100
+    min-w-0
+    max-w-full
+    overflow-x-hidden
+    bg-white
+    text-zinc-900
+    dark:bg-zinc-950
+    dark:text-zinc-100
+      "
+    >
+     {/* =================================================
+    PROJECT HEADER + TOOLBAR
+================================================= */}
+
+<div
+  className="
+    border-b
+    border-zinc-200
+    dark:border-zinc-800
+  "
+>
+  {/* =================================================
+      DESKTOP / MOBILE HEADER
+  ================================================= */}
+
+  <div
+    className="
+      flex
+      flex-col
+      gap-3
+      px-4
+      py-3
+      sm:flex-row
+      sm:items-center
+      sm:justify-between
+      sm:px-5
+      sm:py-4
+    "
+  >
+    {/* =================================================
+        TITLE
+    ================================================= */}
+
+    <div className="min-w-0 shrink-0">
+      <h1
+        className="
+          text-sm
+          font-semibold
+          tracking-tight
+          text-zinc-900
+          dark:text-zinc-100
+          sm:text-base
+        "
+      >
+        Projects
+      </h1>
+    </div>
+
+    {/* =================================================
+        ACTION AREA
+    ================================================= */}
+
+    <div
+      className="
+        flex
+        min-w-0
+        flex-1
+        flex-col
+        gap-2
+        sm:flex-row
+        sm:items-center
+        sm:justify-end
       "
     >
       {/* =================================================
-          PROJECT HEADER + TOOLBAR
+          SEARCH
       ================================================= */}
 
       <div
         className="
-          border-b
-          border-zinc-200
-          dark:border-zinc-800
+          relative
+          w-full
+          sm:w-[220px]
         "
       >
+        <Search
+          className="
+            pointer-events-none
+            absolute
+            left-2.5
+            top-1/2
+            h-3.5
+            w-3.5
+            -translate-y-1/2
+            text-zinc-400
+          "
+        />
+
+        <input
+          value={search}
+          onChange={(event) =>
+            setSearch(event.target.value)
+          }
+          placeholder="Search projects..."
+          className="
+            h-8
+            w-full
+            rounded-md
+            border
+            border-zinc-200
+            bg-white
+            pl-8
+            pr-2.5
+            text-[11px]
+            text-zinc-800
+            outline-none
+            placeholder:text-zinc-400
+            transition
+            focus:border-zinc-400
+
+            dark:border-zinc-700
+            dark:bg-zinc-900
+            dark:text-zinc-100
+            dark:focus:border-zinc-600
+          "
+        />
+      </div>
+
+      {/* =================================================
+          TOOLBAR
+      ================================================= */}
+
+      <div
+        className="
+          flex
+          min-w-0
+          flex-wrap
+          items-center
+          gap-1.5
+          sm:flex-nowrap
+        "
+      >
+        {/* =================================================
+            FIELDS
+        ================================================= */}
+
         <div
+          ref={fieldsRef}
+          className="relative shrink-0"
+        >
+          <ToolbarButton
+            active={fieldsOpen}
+            onClick={() => {
+              setFieldsOpen(
+                (current) => !current,
+              );
+
+              setFilterOpen(false);
+              setSortOpen(false);
+            }}
+          >
+            <SlidersHorizontal className="h-3 w-3" />
+
+            <span>Fields</span>
+
+            <ChevronDown className="h-3 w-3" />
+          </ToolbarButton>
+
+          {fieldsOpen && (
+            <Dropdown>
+              <DropdownTitle>
+                Visible fields
+              </DropdownTitle>
+
+              <FieldOption
+                label="Priority"
+                checked={
+                  visibleFields.priority
+                }
+                onClick={() =>
+                  toggleField("priority")
+                }
+              />
+
+              <FieldOption
+                label="Lead"
+                checked={
+                  visibleFields.lead
+                }
+                onClick={() =>
+                  toggleField("lead")
+                }
+              />
+
+              <FieldOption
+                label="Due Date"
+                checked={
+                  visibleFields.dueDate
+                }
+                onClick={() =>
+                  toggleField("dueDate")
+                }
+              />
+            </Dropdown>
+          )}
+        </div>
+
+        {/* =================================================
+            FILTER
+        ================================================= */}
+
+        <div
+          ref={filterRef}
+          className="relative shrink-0"
+        >
+          <ToolbarButton
+            active={filterOpen}
+            onClick={() => {
+              setFilterOpen(
+                (current) => !current,
+              );
+
+              setFieldsOpen(false);
+              setSortOpen(false);
+            }}
+          >
+            <Filter className="h-3 w-3" />
+
+            <span>Filter</span>
+
+            <ChevronDown className="h-3 w-3" />
+          </ToolbarButton>
+
+          {filterOpen && (
+            <Dropdown>
+              <DropdownTitle>
+                Priority
+              </DropdownTitle>
+
+              <FilterOption
+                label="All"
+                selected={
+                  priorityFilter === "ALL"
+                }
+                onClick={() => {
+                  setPriorityFilter("ALL");
+                  setFilterOpen(false);
+                }}
+              />
+
+              {(
+                [
+                  "URGENT",
+                  "HIGH",
+                  "MEDIUM",
+                  "LOW",
+                  "NO_PRIORITY",
+                ] as TaskPriority[]
+              ).map((priority) => (
+                <FilterOption
+                  key={priority}
+                  label={
+                    priorityConfig[
+                      priority
+                    ].label
+                  }
+                  selected={
+                    priorityFilter ===
+                    priority
+                  }
+                  onClick={() => {
+                    setPriorityFilter(
+                      priority,
+                    );
+
+                    setFilterOpen(false);
+                  }}
+                />
+              ))}
+            </Dropdown>
+          )}
+        </div>
+
+        {/* =================================================
+            SORT
+        ================================================= */}
+
+        <div
+          ref={sortRef}
+          className="relative shrink-0"
+        >
+          <ToolbarButton
+            active={sortOpen}
+            onClick={() => {
+              setSortOpen(
+                (current) => !current,
+              );
+
+              setFieldsOpen(false);
+              setFilterOpen(false);
+            }}
+          >
+            <ArrowUp className="h-3 w-3" />
+
+            <span>Sort</span>
+
+            <ChevronDown className="h-3 w-3" />
+          </ToolbarButton>
+
+          {sortOpen && (
+            <Dropdown>
+              <button
+                type="button"
+                onClick={() =>
+                  sortProjects("asc")
+                }
+                className="
+                  flex
+                  w-full
+                  items-center
+                  gap-2
+                  rounded-md
+                  px-2.5
+                  py-2
+                  text-left
+                  text-xs
+                  hover:bg-zinc-100
+                  dark:hover:bg-zinc-800
+                "
+              >
+                <ArrowUp className="h-3.5 w-3.5" />
+
+                Name A–Z
+              </button>
+
+              <button
+                type="button"
+                onClick={() =>
+                  sortProjects("desc")
+                }
+                className="
+                  flex
+                  w-full
+                  items-center
+                  gap-2
+                  rounded-md
+                  px-2.5
+                  py-2
+                  text-left
+                  text-xs
+                  hover:bg-zinc-100
+                  dark:hover:bg-zinc-800
+                "
+              >
+                <ArrowDown className="h-3.5 w-3.5" />
+
+                Name Z–A
+              </button>
+            </Dropdown>
+          )}
+        </div>
+
+        {/* =================================================
+            ADD PROJECT
+        ================================================= */}
+
+        <button
+          type="button"
+          onClick={() =>
+            setAddProjectOpen(true)
+          }
           className="
             flex
-            min-h-[72px]
+            h-8
+            shrink-0
             items-center
-            justify-between
-            gap-4
-            px-5
+            gap-1.5
+            rounded-md
+            bg-zinc-900
+            px-3
+            text-[11px]
+            font-medium
+            text-white
+            transition
+            hover:bg-zinc-800
+            active:scale-[0.99]
+
+            dark:bg-white
+            dark:text-black
+            dark:hover:bg-zinc-200
           "
         >
-          {/* Title */}
+          <Plus className="h-3 w-3" />
 
-          <div className="min-w-0">
-            <h1
-              className="
-                text-base
-                font-semibold
-                tracking-tight
-              "
-            >
-              Projects
-            </h1>
-          </div>
+          <span className="hidden xs:inline sm:inline">
+            Add Project
+          </span>
 
-          {/* Actions */}
-
-          <div
-            className="
-              flex
-              shrink-0
-              items-center
-              gap-2
-            "
-          >
-            {/* Search */}
-
-            <div
-              className="
-                relative
-                hidden
-                w-[220px]
-                sm:block
-              "
-            >
-              <Search
-                className="
-                  pointer-events-none
-                  absolute
-                  left-2.5
-                  top-1/2
-                  h-3.5
-                  w-3.5
-                  -translate-y-1/2
-                  text-zinc-400
-                "
-              />
-
-              <input
-                value={search}
-                onChange={(event) =>
-                  setSearch(
-                    event.target.value,
-                  )
-                }
-                placeholder="Search projects..."
-                className="
-                  h-8
-                  w-full
-                  rounded-md
-                  border
-                  border-zinc-200
-                  bg-white
-                  pl-8
-                  pr-2.5
-                  text-[11px]
-                  outline-none
-                  placeholder:text-zinc-400
-                  focus:border-zinc-400
-                  dark:border-zinc-700
-                  dark:bg-zinc-900
-                  dark:focus:border-zinc-600
-                "
-              />
-            </div>
-
-            {/* Fields */}
-
-            <div
-              ref={fieldsRef}
-              className="relative"
-            >
-              <ToolbarButton
-                active={fieldsOpen}
-                onClick={() => {
-                  setFieldsOpen(
-                    (current) =>
-                      !current,
-                  );
-
-                  setFilterOpen(false);
-                  setSortOpen(false);
-                }}
-              >
-                <SlidersHorizontal className="h-3 w-3" />
-
-                Fields
-
-                <ChevronDown className="h-3 w-3" />
-              </ToolbarButton>
-
-              {fieldsOpen && (
-                <Dropdown>
-                  <DropdownTitle>
-                    Visible fields
-                  </DropdownTitle>
-
-                  <FieldOption
-                    label="Priority"
-                    checked={
-                      visibleFields.priority
-                    }
-                    onClick={() =>
-                      toggleField(
-                        "priority",
-                      )
-                    }
-                  />
-
-                  <FieldOption
-                    label="Lead"
-                    checked={
-                      visibleFields.lead
-                    }
-                    onClick={() =>
-                      toggleField(
-                        "lead",
-                      )
-                    }
-                  />
-
-                  <FieldOption
-                    label="Due Date"
-                    checked={
-                      visibleFields.dueDate
-                    }
-                    onClick={() =>
-                      toggleField(
-                        "dueDate",
-                      )
-                    }
-                  />
-                </Dropdown>
-              )}
-            </div>
-
-            {/* Filter */}
-
-            <div
-              ref={filterRef}
-              className="relative"
-            >
-              <ToolbarButton
-                active={filterOpen}
-                onClick={() => {
-                  setFilterOpen(
-                    (current) =>
-                      !current,
-                  );
-
-                  setFieldsOpen(false);
-                  setSortOpen(false);
-                }}
-              >
-                <Filter className="h-3 w-3" />
-
-                Filter
-
-                <ChevronDown className="h-3 w-3" />
-              </ToolbarButton>
-
-              {filterOpen && (
-                <Dropdown>
-                  <DropdownTitle>
-                    Priority
-                  </DropdownTitle>
-
-                  <FilterOption
-                    label="All"
-                    selected={
-                      priorityFilter ===
-                      "ALL"
-                    }
-                    onClick={() => {
-                      setPriorityFilter(
-                        "ALL",
-                      );
-
-                      setFilterOpen(
-                        false,
-                      );
-                    }}
-                  />
-
-                  {(
-                    [
-                      "URGENT",
-                      "HIGH",
-                      "MEDIUM",
-                      "LOW",
-                      "NO_PRIORITY",
-                    ] as TaskPriority[]
-                  ).map(
-                    (priority) => (
-                      <FilterOption
-                        key={priority}
-                        label={
-                          priorityConfig[
-                            priority
-                          ].label
-                        }
-                        selected={
-                          priorityFilter ===
-                          priority
-                        }
-                        onClick={() => {
-                          setPriorityFilter(
-                            priority,
-                          );
-
-                          setFilterOpen(
-                            false,
-                          );
-                        }}
-                      />
-                    ),
-                  )}
-                </Dropdown>
-              )}
-            </div>
-
-            {/* Sort */}
-
-            <div
-              ref={sortRef}
-              className="relative"
-            >
-              <ToolbarButton
-                active={sortOpen}
-                onClick={() => {
-                  setSortOpen(
-                    (current) =>
-                      !current,
-                  );
-
-                  setFieldsOpen(false);
-                  setFilterOpen(false);
-                }}
-              >
-                <ArrowUp className="h-3 w-3" />
-
-                Sort
-
-                <ChevronDown className="h-3 w-3" />
-              </ToolbarButton>
-
-              {sortOpen && (
-                <Dropdown>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      sortProjects(
-                        "asc",
-                      )
-                    }
-                    className="
-                      flex
-                      w-full
-                      items-center
-                      gap-2
-                      rounded-md
-                      px-2.5
-                      py-2
-                      text-left
-                      text-xs
-                      hover:bg-zinc-100
-                      dark:hover:bg-zinc-800
-                    "
-                  >
-                    <ArrowUp className="h-3.5 w-3.5" />
-
-                    Name A–Z
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() =>
-                      sortProjects(
-                        "desc",
-                      )
-                    }
-                    className="
-                      flex
-                      w-full
-                      items-center
-                      gap-2
-                      rounded-md
-                      px-2.5
-                      py-2
-                      text-left
-                      text-xs
-                      hover:bg-zinc-100
-                      dark:hover:bg-zinc-800
-                    "
-                  >
-                    <ArrowDown className="h-3.5 w-3.5" />
-
-                    Name Z–A
-                  </button>
-                </Dropdown>
-              )}
-            </div>
-
-            {/* Add Project */}
-
-            <button
-              type="button"
-              onClick={() =>
-                setAddProjectOpen(true)
-              }
-              className="
-                flex
-                h-8
-                items-center
-                gap-1.5
-                rounded-md
-                bg-zinc-900
-                px-3
-                text-[11px]
-                font-medium
-                text-white
-                transition
-                hover:bg-zinc-800
-                dark:bg-white
-                dark:text-black
-                dark:hover:bg-zinc-200
-              "
-            >
-              <Plus className="h-3 w-3" />
-
-              <span>Add Project</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Mobile Search */}
-
-        <div className="px-5 pb-3 sm:hidden">
-          <div className="relative">
-            <Search
-              className="
-                pointer-events-none
-                absolute
-                left-2.5
-                top-1/2
-                h-3.5
-                w-3.5
-                -translate-y-1/2
-                text-zinc-400
-              "
-            />
-
-            <input
-              value={search}
-              onChange={(event) =>
-                setSearch(
-                  event.target.value,
-                )
-              }
-              placeholder="Search projects..."
-              className="
-                h-8
-                w-full
-                rounded-md
-                border
-                border-zinc-200
-                bg-white
-                pl-8
-                pr-2.5
-                text-[11px]
-                outline-none
-                dark:border-zinc-700
-                dark:bg-zinc-900
-              "
-            />
-          </div>
-        </div>
+          <span className="sm:hidden">
+            Add
+          </span>
+        </button>
       </div>
+    </div>
+  </div>
+</div>
 
       {/* Error */}
 
@@ -1629,18 +1620,30 @@ function Dropdown({
     <div
       className="
         absolute
-        right-0
-        top-9
-        z-50
-        w-48
+        left-0
+        top-[calc(100%+6px)]
+        z-[200]
+
+        w-[190px]
+        max-w-[calc(100vw-24px)]
+
+        overflow-hidden
         rounded-lg
+
         border
         border-zinc-200
         bg-white
+
         p-1.5
-        shadow-xl
+
+        shadow-[0_8px_24px_rgba(0,0,0,0.10)]
+
         dark:border-zinc-700
         dark:bg-zinc-900
+        dark:shadow-[0_8px_24px_rgba(0,0,0,0.35)]
+
+        sm:left-auto
+        sm:right-0
       "
     >
       {children}

@@ -862,483 +862,462 @@ export default function TasksPage() {
             TASK HEADER
         ================================================= */}
 
-        <header
+       <header
+  className="
+    border-b
+    border-zinc-200
+    dark:border-zinc-800
+  "
+>
+  <div
+    className="
+      flex
+      min-h-[72px]
+      flex-col
+      gap-3
+      px-4
+      py-3
+      sm:flex-row
+      sm:items-center
+      sm:justify-between
+      sm:px-5
+      sm:py-2
+    "
+  >
+    {/* =================================================
+        TITLE
+    ================================================= */}
+
+    <div className="shrink-0">
+      <h1
+        className="
+          text-[14px]
+          font-semibold
+          tracking-tight
+          text-zinc-900
+          dark:text-zinc-100
+        "
+      >
+        Tasks
+      </h1>
+    </div>
+
+    {/* =================================================
+        TOOLBAR
+    ================================================= */}
+
+    <div
+      className="
+         flex
+    w-full
+    flex-wrap
+    items-center
+    justify-start
+    gap-2
+    px-1
+    sm:w-auto
+    sm:px-0
+    sm:justify-end
+  "
+    >
+      {/* =================================================
+          SEARCH
+      ================================================= */}
+
+      {searchOpen ? (
+        <div
           className="
-            flex
-            min-h-[52px]
-            shrink-0
-            flex-wrap
-            items-center
-            justify-between
-            gap-3
-            border-b
-            border-zinc-200
-            px-4
-            py-2
-            dark:border-zinc-800
-            sm:px-5
+            relative
+            h-8
+            w-full
+            sm:w-[180px]
           "
         >
-          {/* Title */}
-
-          <h1
+          <Search
             className="
-              text-[14px]
-              font-semibold
-              text-zinc-900
+              pointer-events-none
+              absolute
+              left-2.5
+              top-1/2
+              h-3.5
+              w-3.5
+              -translate-y-1/2
+              text-zinc-400
+            "
+          />
+
+          <input
+            autoFocus
+            type="text"
+            value={search}
+            onChange={(event) =>
+              setSearch(event.target.value)
+            }
+            placeholder="Search tasks..."
+            className="
+              h-full
+              w-full
+              rounded-md
+              border
+              border-zinc-200
+              bg-white
+              pl-8
+              pr-8
+              text-[11px]
+              text-zinc-800
+              outline-none
+              placeholder:text-zinc-400
+              focus:border-zinc-400
+              dark:border-zinc-800
+              dark:bg-zinc-950
               dark:text-zinc-100
             "
-          >
-            Tasks
-          </h1>
+          />
 
-          {/* =================================================
-              FIGMA-STYLE TOOLBAR
-          ================================================= */}
-
-          <div
+          <button
+            type="button"
+            onClick={() => {
+              setSearch("");
+              setSearchOpen(false);
+            }}
+            aria-label="Close search"
             className="
+              absolute
+              right-2
+              top-1/2
               flex
+              h-5
+              w-5
+              -translate-y-1/2
               items-center
-              gap-1.5
+              justify-center
+              rounded
+              text-zinc-400
+              hover:bg-zinc-100
+              hover:text-zinc-700
+              dark:hover:bg-zinc-800
             "
           >
-            {/* Search */}
+            <X className="h-3 w-3" />
+          </button>
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() =>
+            setSearchOpen(true)
+          }
+          aria-label="Search tasks"
+          className="
+            flex
+            h-8
+            w-8
+            shrink-0
+            items-center
+            justify-center
+            rounded-md
+            border
+            border-zinc-200
+            bg-white
+            text-zinc-500
+            transition
+            hover:bg-zinc-50
+            hover:text-zinc-900
+            dark:border-zinc-800
+            dark:bg-zinc-950
+            dark:text-zinc-400
+            dark:hover:bg-zinc-900
+            dark:hover:text-zinc-100
+          "
+        >
+          <Search className="h-3.5 w-3.5" />
+        </button>
+      )}
 
-            {searchOpen ? (
-              <div
-                className="
-                  relative
-                  flex
-                  h-8
-                  w-[180px]
-                  items-center
-                "
-              >
-                <Search
-                  className="
-                    pointer-events-none
-                    absolute
-                    left-2.5
-                    h-3.5
-                    w-3.5
-                    text-zinc-400
-                  "
-                />
+      {/* =================================================
+          FIELDS
+      ================================================= */}
 
-                <input
-                  autoFocus
-                  type="text"
-                  value={search}
-                  onChange={(event) =>
-                    setSearch(
-                      event.target.value,
-                    )
-                  }
-                  placeholder="Search tasks..."
-                  className="
-                    h-full
-                    w-full
-                    rounded-md
-                    border
-                    border-zinc-200
-                    bg-white
-                    pl-8
-                    pr-8
-                    text-[11px]
-                    text-zinc-800
-                    outline-none
-                    transition
-                    placeholder:text-zinc-400
-                    focus:border-zinc-400
-                    dark:border-zinc-800
-                    dark:bg-zinc-950
-                    dark:text-zinc-100
-                  "
-                />
+      <FieldsMenu
+        fields={fields}
+        onChange={setFields}
+      />
 
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSearch("");
-                    setSearchOpen(false);
-                  }}
-                  aria-label="Close search"
-                  className="
-                    absolute
-                    right-2
-                    flex
-                    h-5
-                    w-5
-                    items-center
-                    justify-center
-                    rounded
-                    text-zinc-400
-                    hover:bg-zinc-100
-                    hover:text-zinc-700
-                    dark:hover:bg-zinc-800
-                  "
-                >
-                  <X className="h-3 w-3" />
-                </button>
-              </div>
-            ) : (
-              <button
-                type="button"
-                onClick={() =>
-                  setSearchOpen(true)
-                }
-                aria-label="Search tasks"
-                className="
-                  flex
-                  h-8
-                  w-8
-                  items-center
-                  justify-center
-                  rounded-md
-                  border
-                  border-zinc-200
-                  bg-white
-                  text-zinc-500
-                  transition
-                  hover:bg-zinc-50
-                  hover:text-zinc-900
-                  dark:border-zinc-800
-                  dark:bg-zinc-950
-                  dark:text-zinc-400
-                  dark:hover:bg-zinc-900
-                  dark:hover:text-zinc-100
-                "
-              >
-                <Search className="h-3.5 w-3.5" />
-              </button>
-            )}
+      {/* =================================================
+          FILTERS
+      ================================================= */}
 
-            {/* Fields */}
+      <TaskFilters
+        filters={filters}
+        onChange={setFilters}
+      />
 
-            <FieldsMenu
-              fields={fields}
-              onChange={setFields}
-            />
+      {/* =================================================
+          SORT
+      ================================================= */}
 
-            {/* Filters */}
+      <div
+        className="relative shrink-0"
+        ref={sortMenuRef}
+      >
+        <button
+          type="button"
+          onClick={() =>
+            setSortMenuOpen(
+              (current) => !current,
+            )
+          }
+          aria-label="Sort tasks"
+          aria-expanded={sortMenuOpen}
+          className="
+            flex
+            h-8
+            w-8
+            items-center
+            justify-center
+            rounded-md
+            border
+            border-zinc-200
+            bg-white
+            text-zinc-500
+            transition
+            hover:bg-zinc-50
+            hover:text-zinc-900
+            dark:border-zinc-800
+            dark:bg-zinc-950
+            dark:text-zinc-400
+            dark:hover:bg-zinc-900
+            dark:hover:text-zinc-100
+          "
+          title={getSortLabel(sortBy)}
+        >
+          <ArrowUpDown className="h-3.5 w-3.5" />
+        </button>
 
-            <TaskFilters
-              filters={filters}
-              onChange={setFilters}
-            />
-
-            {/* =================================================
-                CUSTOM SORT DROPDOWN
-            ================================================= */}
-
-            <div className="relative" ref={sortMenuRef} >
-              <button
-                type="button"
-                onClick={() =>
-                  setSortMenuOpen(
-                    (current) =>
-                      !current,
-                  )
-                }
-                aria-label="Sort tasks"
-                aria-expanded={
-                  sortMenuOpen
-                }
-                className="
-                  flex
-                  h-8
-                  w-8
-                  items-center
-                  justify-center
-                  rounded-md
-                  border
-                  border-zinc-200
-                  bg-white
-                  text-zinc-500
-                  transition
-                  hover:bg-zinc-50
-                  hover:text-zinc-900
-                  focus:outline-none
-                  focus:ring-1
-                  focus:ring-zinc-300
-                  dark:border-zinc-800
-                  dark:bg-zinc-950
-                  dark:text-zinc-400
-                  dark:hover:bg-zinc-900
-                  dark:hover:text-zinc-100
-                  dark:focus:ring-zinc-700
-                "
-                title={
-                  getSortLabel(
-                    sortBy,
-                  )
-                }
-              >
-                <ArrowUpDown className="h-3.5 w-3.5" />
-              </button>
-
-              {/* =================================================
-                  SORT MENU
-              ================================================= */}
-
-              {sortMenuOpen && (
-                <div
-                  className="
-                    absolute
-                    right-0
-                    top-[calc(100%+6px)]
-                    z-[100]
-                    w-[200px]
-                    overflow-hidden
-                    rounded-md
-                    border
-                    border-zinc-200
-                    bg-white
-                    p-1
-                    shadow-lg
-                    shadow-zinc-900/10
-                    dark:border-zinc-700
-                    dark:bg-zinc-900
-                    dark:shadow-black/30
-                  "
-                >
-                  {/* Menu Header */}
-
-                  <div
-                    className="
-                      flex
-                      items-center
-                      justify-between
-                      px-2.5
-                      py-2
-                    "
-                  >
-                    <span
-                      className="
-                        text-[10px]
-                        font-medium
-                        uppercase
-                        tracking-wide
-                        text-zinc-400
-                        dark:text-zinc-500
-                      "
-                    >
-                      Sort by
-                    </span>
-
-                    <ChevronDown
-                      className="
-                        h-3
-                        w-3
-                        text-zinc-400
-                      "
-                    />
-                  </div>
-
-                  <div
-                    className="
-                      my-1
-                      border-t
-                      border-zinc-100
-                      dark:border-zinc-800
-                    "
-                  />
-
-                  {/* Sort Options */}
-
-                  {sortOptions.map(
-                    (option) => {
-                      const selected =
-                        sortBy ===
-                        option.value;
-
-                      return (
-                        <button
-                          key={
-                            option.value
-                          }
-                          type="button"
-                          onClick={() => {
-                            setSortBy(
-                              option.value,
-                            );
-
-                            setSortMenuOpen(
-                              false,
-                            );
-                          }}
-                          className={`
-                            flex
-                            w-full
-                            items-center
-                            justify-between
-                            rounded
-                            px-2.5
-                            py-2
-                            text-left
-                            text-xs
-                            transition
-                            ${
-                              selected
-                                ? `
-                                  bg-zinc-100
-                                  font-medium
-                                  text-zinc-900
-                                  dark:bg-zinc-800
-                                  dark:text-zinc-100
-                                `
-                                : `
-                                  text-zinc-600
-                                  hover:bg-zinc-50
-                                  hover:text-zinc-900
-                                  dark:text-zinc-300
-                                  dark:hover:bg-zinc-800
-                                  dark:hover:text-zinc-100
-                                `
-                            }
-                          `}
-                        >
-                          <span className="truncate pr-3">
-                            {
-                              option.label
-                            }
-                          </span>
-
-                          {selected && (
-                            <Check
-                              className="
-                                h-3.5
-                                w-3.5
-                                shrink-0
-                                text-zinc-700
-                                dark:text-zinc-200
-                              "
-                            />
-                          )}
-                        </button>
-                      );
-                    },
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* Board/List */}
-
+        {sortMenuOpen && (
+          <div
+            className="
+              absolute
+              right-0
+              top-[calc(100%+6px)]
+              z-[100]
+              w-[200px]
+              overflow-hidden
+              rounded-md
+              border
+              border-zinc-200
+              bg-white
+              p-1
+              shadow-lg
+              dark:border-zinc-700
+              dark:bg-zinc-900
+            "
+          >
             <div
               className="
-                hidden
-                items-center
-                rounded-md
-                border
-                border-zinc-200
-                p-0.5
-                dark:border-zinc-800
-                sm:flex
+                px-2.5
+                py-2
+                text-[10px]
+                font-medium
+                uppercase
+                tracking-wide
+                text-zinc-400
               "
             >
-              <button
-                type="button"
-                onClick={() =>
-                  setView("list")
-                }
-                aria-label="List view"
-                className={`
-                  flex
-                  h-7
-                  w-7
-                  items-center
-                  justify-center
-                  rounded
-                  transition
-                  ${
-                    view === "list"
-                      ? `
-                        bg-zinc-100
-                        text-zinc-900
-                        dark:bg-zinc-800
-                        dark:text-zinc-100
-                      `
-                      : `
-                        text-zinc-400
-                        hover:bg-zinc-50
-                        dark:hover:bg-zinc-900
-                      `
-                  }
-                `}
-              >
-                <List className="h-3.5 w-3.5" />
-              </button>
-
-              <button
-                type="button"
-                onClick={() =>
-                  setView("board")
-                }
-                aria-label="Board view"
-                className={`
-                  flex
-                  h-7
-                  w-7
-                  items-center
-                  justify-center
-                  rounded
-                  transition
-                  ${
-                    view === "board"
-                      ? `
-                        bg-zinc-100
-                        text-zinc-900
-                        dark:bg-zinc-800
-                        dark:text-zinc-100
-                      `
-                      : `
-                        text-zinc-400
-                        hover:bg-zinc-50
-                        dark:hover:bg-zinc-900
-                      `
-                  }
-                `}
-              >
-                <LayoutGrid className="h-3.5 w-3.5" />
-              </button>
+              Sort by
             </div>
 
-            {/* Add Task */}
+            <div className="border-t border-zinc-100 dark:border-zinc-800" />
 
-            <button
-              type="button"
-              onClick={() =>
-                setIsAddTaskOpen(true)
-              }
-              className="
-                flex
-                h-8
-                items-center
-                gap-1.5
-                rounded-md
-                bg-black
-                px-3
-                text-[11px]
-                font-medium
-                text-white
-                transition
-                hover:bg-zinc-800
-                active:scale-[0.99]
-                dark:bg-white
-                dark:text-black
-                dark:hover:bg-zinc-200
-              "
-            >
-              <Plus className="h-3.5 w-3.5" />
+            {sortOptions.map((option) => {
+              const selected =
+                sortBy === option.value;
 
-              <span>
-                Add Task
-              </span>
-            </button>
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => {
+                    setSortBy(
+                      option.value,
+                    );
+                    setSortMenuOpen(false);
+                  }}
+                  className={`
+                    flex
+                    w-full
+                    items-center
+                    justify-between
+                    rounded
+                    px-2.5
+                    py-2
+                    text-left
+                    text-xs
+                    ${
+                      selected
+                        ? `
+                          bg-zinc-100
+                          font-medium
+                          text-zinc-900
+                          dark:bg-zinc-800
+                          dark:text-zinc-100
+                        `
+                        : `
+                          text-zinc-600
+                          hover:bg-zinc-50
+                          hover:text-zinc-900
+                          dark:text-zinc-300
+                          dark:hover:bg-zinc-800
+                        `
+                    }
+                  `}
+                >
+                  <span className="truncate pr-2">
+                    {option.label}
+                  </span>
+
+                  {selected && (
+                    <Check className="h-3.5 w-3.5 shrink-0" />
+                  )}
+                </button>
+              );
+            })}
           </div>
-        </header>
+        )}
+      </div>
+
+      {/* =================================================
+          BOARD / LIST TOGGLE
+      ================================================= */}
+
+      <div
+        className="
+          flex
+          h-8
+          shrink-0
+          items-center
+          rounded-md
+          border
+          border-zinc-200
+          bg-white
+          p-0.5
+          dark:border-zinc-800
+          dark:bg-zinc-950
+        "
+      >
+        {/* LIST */}
+
+        <button
+          type="button"
+          onClick={() =>
+            setView("list")
+          }
+          aria-label="List view"
+          aria-pressed={view === "list"}
+          className={`
+            flex
+            h-7
+            w-7
+            items-center
+            justify-center
+            rounded
+            transition
+            ${
+              view === "list"
+                ? `
+                  bg-zinc-100
+                  text-zinc-900
+                  dark:bg-zinc-800
+                  dark:text-zinc-100
+                `
+                : `
+                  text-zinc-400
+                  hover:bg-zinc-50
+                  hover:text-zinc-700
+                  dark:hover:bg-zinc-900
+                  dark:hover:text-zinc-200
+                `
+            }
+          `}
+        >
+          <List className="h-3.5 w-3.5" />
+        </button>
+
+        {/* BOARD */}
+
+        <button
+          type="button"
+          onClick={() =>
+            setView("board")
+          }
+          aria-label="Board view"
+          aria-pressed={view === "board"}
+          className={`
+            flex
+            h-7
+            w-7
+            items-center
+            justify-center
+            rounded
+            transition
+            ${
+              view === "board"
+                ? `
+                  bg-zinc-100
+                  text-zinc-900
+                  dark:bg-zinc-800
+                  dark:text-zinc-100
+                `
+                : `
+                  text-zinc-400
+                  hover:bg-zinc-50
+                  hover:text-zinc-700
+                  dark:hover:bg-zinc-900
+                  dark:hover:text-zinc-200
+                `
+            }
+          `}
+        >
+          <LayoutGrid className="h-3.5 w-3.5" />
+        </button>
+      </div>
+
+      {/* =================================================
+          ADD TASK
+      ================================================= */}
+
+      <button
+        type="button"
+        onClick={() =>
+          setIsAddTaskOpen(true)
+        }
+        className="
+          flex
+          h-8
+          shrink-0
+          items-center
+          gap-1.5
+          rounded-md
+          bg-black
+          px-3
+          text-[11px]
+          font-medium
+          text-white
+          transition
+          hover:bg-zinc-800
+          active:scale-[0.99]
+          dark:bg-white
+          dark:text-black
+          dark:hover:bg-zinc-200
+        "
+      >
+        <Plus className="h-3.5 w-3.5" />
+
+        <span>Add Task</span>
+      </button>
+    </div>
+  </div>
+</header>
 
         {/* =================================================
             ACTIVE FILTER BAR
@@ -1403,14 +1382,14 @@ export default function TasksPage() {
         ================================================= */}
 
         <div
-          className="
-            min-w-0
-            flex-1
-            overflow-x-auto
-            overflow-y-auto
-            p-4
-            sm:p-5
-          "
+         className="
+          min-w-0
+          flex-1
+          overflow-x-hidden
+          overflow-y-auto
+          p-3
+          sm:p-5
+  "
         >
           {sortedTasks.length ===
           0 ? (

@@ -243,32 +243,34 @@ export default function FieldsMenu({
 
       {open && (
         <div
-          role="menu"
-          className="
-            absolute
-            left-0
-            top-[calc(100%+6px)]
-            z-[100]
+  role="menu"
+  className="
+    absolute
+    left-0
+    top-[calc(100%+6px)]
+    z-[200]
 
-            w-[190px]
+    w-[190px]
+    max-w-[calc(100vw-24px)]
 
-            overflow-hidden
-            rounded-md
+    overflow-hidden
+    rounded-md
 
-            border
-            border-zinc-200
+    border
+    border-zinc-200
+    bg-white
 
-            bg-white
+    p-1
 
-            p-1
+    shadow-[0_8px_24px_rgba(0,0,0,0.10)]
 
-            shadow-[0_8px_24px_rgba(0,0,0,0.10)]
+    dark:border-zinc-700
+    dark:bg-zinc-900
+    dark:shadow-[0_8px_24px_rgba(0,0,0,0.35)]
 
-            dark:border-zinc-700
-            dark:bg-zinc-900
-            dark:shadow-[0_8px_24px_rgba(0,0,0,0.35)]
-          "
-        >
+    sm:left-0
+  "
+>
           {/* =================================================
               HEADER
           ================================================= */}
