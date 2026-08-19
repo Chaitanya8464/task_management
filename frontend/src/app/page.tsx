@@ -16,8 +16,7 @@ export default function Home() {
   const [isLoggingIn, setIsLoggingIn] =
     useState(false);
 
-  const [error, setError] =
-    useState("");
+  const [error, setError] = useState("");
 
   // =====================================================
   // Guest Login
@@ -127,31 +126,38 @@ export default function Home() {
     }
   };
 
+  // =====================================================
+  // UI
+  // =====================================================
+
   return (
     <main className="min-h-screen bg-white text-zinc-900">
       <div className="flex min-h-screen flex-col">
+
         {/* =================================================
             Main Content
         ================================================= */}
 
         <div className="flex flex-1 items-center justify-center px-4">
-          <div className="flex w-full max-w-[384px] flex-col items-center">
+          <div className="flex w-full max-w-[336px] flex-col items-center">
+
             {/* =================================================
                 Logo
             ================================================= */}
 
-            <div className="mb-6 flex items-center justify-center">
+            <div className="mb-7 flex items-center justify-center">
               <div className="flex items-center gap-2">
+
                 <div
                   className="
                     flex
-                    h-7
-                    w-7
+                    h-8
+                    w-8
                     items-center
                     justify-center
-                    rounded-md
+                    rounded-lg
                     bg-violet-600
-                    text-xs
+                    text-sm
                     font-semibold
                     text-white
                   "
@@ -169,6 +175,7 @@ export default function Home() {
                 >
                   TaskFlow
                 </span>
+
               </div>
             </div>
 
@@ -179,23 +186,27 @@ export default function Home() {
             <div
               className="
                 w-full
-                rounded-[16px]
+                rounded-xl
                 border
-                border-[#E5E5E5]
+                border-zinc-200
                 bg-white
-                px-4
-                py-4
+                px-5
+                py-5
                 shadow-[0_1px_2px_rgba(0,0,0,0.05)]
               "
             >
-              {/* Heading */}
+
+              {/* =================================================
+                  Heading
+              ================================================= */}
 
               <div className="text-center">
+
                 <h1
                   className="
-                    text-[16px]
+                    text-[17px]
                     font-semibold
-                    leading-5
+                    leading-6
                     text-zinc-900
                   "
                 >
@@ -206,21 +217,27 @@ export default function Home() {
                   className="
                     mt-1
                     text-[11px]
-                    leading-4
-                    text-zinc-500
+                    leading-5
+                    text-zinc-400
                   "
                 >
                   Enter your email below to login
                   to your account.
                 </p>
+
               </div>
 
               {/* =================================================
                   Login Buttons
               ================================================= */}
 
-              <div className="mt-5 space-y-2">
-                {/* Guest Login */}
+              <div className="mt-4 space-y-2">
+
+                {/* =================================================
+                    Guest Login
+
+                    Authentication preserved
+                ================================================= */}
 
                 <button
                   type="button"
@@ -228,7 +245,7 @@ export default function Home() {
                   disabled={isLoggingIn}
                   className="
                     flex
-                    h-9
+                    h-8
                     w-full
                     items-center
                     justify-center
@@ -250,15 +267,24 @@ export default function Home() {
                     : "Continue as Guest"}
                 </button>
 
-                {/* Google Login */}
+                {/* =================================================
+                    Google Login
+
+                    Authentication preserved
+                ================================================= */}
 
                 <div
                   className="
                     flex
-                    h-9
+                    h-8
                     w-full
+                    items-center
                     overflow-hidden
                     rounded-full
+
+                    [&>div]:!w-full
+                    [&>div>div]:!w-full
+                    [&_iframe]:!w-full
                   "
                 >
                   <GoogleLogin
@@ -278,6 +304,7 @@ export default function Home() {
                     text="signin_with"
                   />
                 </div>
+
               </div>
 
               {/* =================================================
@@ -297,6 +324,7 @@ export default function Home() {
                   {error}
                 </p>
               )}
+
             </div>
 
             {/* =================================================
@@ -306,8 +334,8 @@ export default function Home() {
             <p
               className="
                 mx-auto
-                mt-3
-                max-w-[300px]
+                mt-4
+                max-w-[336px]
                 text-center
                 text-[9px]
                 leading-4
@@ -315,6 +343,7 @@ export default function Home() {
               "
             >
               By clicking continue, you agree to our{" "}
+
               <button
                 type="button"
                 className="
@@ -326,7 +355,9 @@ export default function Home() {
               >
                 Terms of Service
               </button>{" "}
+
               and{" "}
+
               <button
                 type="button"
                 className="
@@ -340,6 +371,7 @@ export default function Home() {
               </button>
               .
             </p>
+
           </div>
         </div>
 
@@ -348,6 +380,7 @@ export default function Home() {
         ================================================= */}
 
         <footer className="flex justify-center pb-5">
+
           <div
             className="
               flex
@@ -361,7 +394,9 @@ export default function Home() {
 
             <span>TaskFlow</span>
           </div>
+
         </footer>
+
       </div>
     </main>
   );
