@@ -235,8 +235,6 @@ export default function Home() {
 
                 {/* =================================================
                     Guest Login
-
-                    Authentication preserved
                 ================================================= */}
 
                 <button
@@ -270,7 +268,10 @@ export default function Home() {
                 {/* =================================================
                     Google Login
 
-                    Authentication preserved
+                    IMPORTANT:
+                    Card width = 336px
+                    Horizontal padding = 20px + 20px
+                    Inner width = 296px
                 ================================================= */}
 
                 <div
@@ -279,12 +280,9 @@ export default function Home() {
                     h-8
                     w-full
                     items-center
+                    justify-center
                     overflow-hidden
                     rounded-full
-
-                    [&>div]:!w-full
-                    [&>div>div]:!w-full
-                    [&_iframe]:!w-full
                   "
                 >
                   <GoogleLogin
@@ -300,7 +298,7 @@ export default function Home() {
                     theme="outline"
                     size="medium"
                     shape="pill"
-                    width="100%"
+                    width={296}
                     text="signin_with"
                   />
                 </div>
