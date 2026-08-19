@@ -4,11 +4,16 @@ import {
   Check,
   ChevronDown,
 } from "lucide-react";
+
 import {
   useEffect,
   useRef,
   useState,
 } from "react";
+
+/* =========================================================
+   TYPES
+========================================================= */
 
 export interface TaskFields {
   priority: boolean;
@@ -19,8 +24,14 @@ export interface TaskFields {
 
 interface FieldsMenuProps {
   fields: TaskFields;
-  onChange: (fields: TaskFields) => void;
+  onChange: (
+    fields: TaskFields,
+  ) => void;
 }
+
+/* =========================================================
+   FIELD OPTIONS
+========================================================= */
 
 const fieldOptions: {
   key: keyof TaskFields;
@@ -44,6 +55,10 @@ const fieldOptions: {
   },
 ];
 
+/* =========================================================
+   COMPONENT
+========================================================= */
+
 export default function FieldsMenu({
   fields,
   onChange,
@@ -52,26 +67,30 @@ export default function FieldsMenu({
     useState(false);
 
   const menuRef =
-    useRef<HTMLDivElement | null>(null);
+    useRef<HTMLDivElement | null>(
+      null,
+    );
 
-  // =====================================================
-  // Close when clicking outside
-  // =====================================================
+  /* =======================================================
+     CLOSE ON OUTSIDE CLICK / ESCAPE
+  ======================================================= */
 
   useEffect(() => {
     if (!open) {
       return;
     }
 
-    const handleOutsideClick = (
-      event: MouseEvent,
+    const handlePointerDown = (
+      event: PointerEvent,
     ) => {
       const target =
         event.target as Node;
 
       if (
         menuRef.current &&
-        !menuRef.current.contains(target)
+        !menuRef.current.contains(
+          target,
+        )
       ) {
         setOpen(false);
       }
@@ -86,8 +105,8 @@ export default function FieldsMenu({
     };
 
     document.addEventListener(
-      "mousedown",
-      handleOutsideClick,
+      "pointerdown",
+      handlePointerDown,
     );
 
     document.addEventListener(
@@ -97,8 +116,8 @@ export default function FieldsMenu({
 
     return () => {
       document.removeEventListener(
-        "mousedown",
-        handleOutsideClick,
+        "pointerdown",
+        handlePointerDown,
       );
 
       document.removeEventListener(
@@ -108,9 +127,9 @@ export default function FieldsMenu({
     };
   }, [open]);
 
-  // =====================================================
-  // Toggle field
-  // =====================================================
+  /* =======================================================
+     TOGGLE FIELD
+  ======================================================= */
 
   const toggleField = (
     key: keyof TaskFields,
@@ -121,38 +140,52 @@ export default function FieldsMenu({
     });
   };
 
+  const visibleCount =
+    Object.values(fields).filter(
+      Boolean,
+    ).length;
+
+  /* =======================================================
+     RENDER
+  ======================================================= */
+
   return (
     <div
       ref={menuRef}
       className="relative"
     >
       {/* =================================================
-          Fields Button
+          TRIGGER
       ================================================= */}
 
       <button
         type="button"
         onClick={() =>
-          setOpen((current) => !current)
+          setOpen(
+            (current) => !current,
+          )
         }
         aria-haspopup="menu"
         aria-expanded={open}
         className={`
           flex
-          h-9
+          h-8
           items-center
-          gap-2
+          gap-1.5
           rounded-md
           border
-          px-3
-          text-xs
+          px-2.5
+          text-[11px]
+          font-medium
           transition
+
           ${
             open
               ? `
                 border-zinc-300
                 bg-zinc-50
-                text-zinc-800
+                text-zinc-900
+
                 dark:border-zinc-600
                 dark:bg-zinc-800
                 dark:text-zinc-100
@@ -161,21 +194,39 @@ export default function FieldsMenu({
                 border-zinc-200
                 bg-white
                 text-zinc-600
+
                 hover:bg-zinc-50
-                dark:border-zinc-700
-                dark:bg-zinc-900
+                hover:text-zinc-900
+
+                dark:border-zinc-800
+                dark:bg-zinc-950
                 dark:text-zinc-300
-                dark:hover:bg-zinc-800
+                dark:hover:bg-zinc-900
+                dark:hover:text-zinc-100
               `
           }
         `}
       >
         <span>Fields</span>
 
+        {visibleCount !==
+          fieldOptions.length && (
+          <>
+            <span className="text-zinc-300 dark:text-zinc-600">
+              :
+            </span>
+
+            <span className="text-violet-600 dark:text-violet-400">
+              {visibleCount}
+            </span>
+          </>
+        )}
+
         <ChevronDown
           className={`
-            h-3.5
-            w-3.5
+            h-3
+            w-3
+            shrink-0
             transition-transform
             ${
               open
@@ -187,35 +238,46 @@ export default function FieldsMenu({
       </button>
 
       {/* =================================================
-          Dropdown
+          DROPDOWN
       ================================================= */}
 
       {open && (
         <div
+          role="menu"
           className="
             absolute
             left-0
-            top-11
-            z-50
-            w-48
-            rounded-lg
+            top-[calc(100%+6px)]
+            z-[100]
+
+            w-[190px]
+
+            overflow-hidden
+            rounded-md
+
             border
             border-zinc-200
+
             bg-white
-            p-2
-            shadow-xl
+
+            p-1
+
+            shadow-[0_8px_24px_rgba(0,0,0,0.10)]
+
             dark:border-zinc-700
             dark:bg-zinc-900
+            dark:shadow-[0_8px_24px_rgba(0,0,0,0.35)]
           "
-          role="menu"
         >
-          {/* Header */}
+          {/* =================================================
+              HEADER
+          ================================================= */}
 
-          <p
+          <div
             className="
-              px-2
+              px-2.5
               py-1.5
-              text-[10px]
+              text-[9px]
               font-medium
               uppercase
               tracking-wide
@@ -224,19 +286,31 @@ export default function FieldsMenu({
             "
           >
             Visible fields
-          </p>
+          </div>
 
-          {/* Options */}
+          <div className="mb-1 border-t border-zinc-100 dark:border-zinc-800" />
+
+          {/* =================================================
+              OPTIONS
+          ================================================= */}
 
           {fieldOptions.map(
             (option) => {
               const checked =
-                fields[option.key];
+                fields[
+                  option.key
+                ];
 
               return (
                 <button
-                  key={option.key}
+                  key={
+                    option.key
+                  }
                   type="button"
+                  role="menuitemcheckbox"
+                  aria-checked={
+                    checked
+                  }
                   onClick={() =>
                     toggleField(
                       option.key,
@@ -247,18 +321,21 @@ export default function FieldsMenu({
                     w-full
                     items-center
                     justify-between
-                    rounded-md
-                    px-2
+                    rounded
+                    px-2.5
                     py-2
                     text-left
-                    text-xs
-                    text-zinc-700
+                    text-[11px]
+                    text-zinc-600
                     transition
+
                     hover:bg-zinc-50
+                    hover:text-zinc-900
+
                     dark:text-zinc-300
                     dark:hover:bg-zinc-800
+                    dark:hover:text-zinc-100
                   "
-                  role="menuitem"
                 >
                   <span>
                     {option.label}
@@ -277,6 +354,7 @@ export default function FieldsMenu({
                       rounded
                       border
                       transition
+
                       ${
                         checked
                           ? `
@@ -287,6 +365,7 @@ export default function FieldsMenu({
                           : `
                             border-zinc-300
                             bg-white
+
                             dark:border-zinc-600
                             dark:bg-zinc-800
                           `

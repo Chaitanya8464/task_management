@@ -2,59 +2,151 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+@layer components {
+  .dropdown-item {
+    @apply flex w-full items-center justify-between gap-2 rounded-md px-2.5 py-2 text-left text-xs text-zinc-700 transition hover:bg-zinc-50 dark:text-zinc-300 dark:hover:bg-zinc-800;
+  }
+}
+
+/* ==========================================
+   Base Theme Variables
+========================================== */
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
+
   --muted: #71717a;
   --border: #e4e4e7;
 
   --accent: #2563eb;
   --accent-foreground: #ffffff;
+
+  --accent-soft: #eff6ff;
+  --accent-hover: #1d4ed8;
 }
 
 html.dark {
   --background: #09090b;
   --foreground: #f4f4f5;
+
   --muted: #a1a1aa;
   --border: #27272a;
+
+  --accent-soft: #18181b;
 }
 
-/* ================================
-   Accent Colors
-================================ */
+/* ==========================================
+   Amber
+========================================== */
 
 html[data-accent="amber"] {
   --accent: #f59e0b;
+  --accent-foreground: #ffffff;
+  --accent-soft: #fffbeb;
+  --accent-hover: #d97706;
 }
+
+html.dark[data-accent="amber"] {
+  --accent: #f59e0b;
+  --accent-foreground: #ffffff;
+  --accent-soft: #451a03;
+  --accent-hover: #fbbf24;
+}
+
+/* ==========================================
+   Blue
+========================================== */
 
 html[data-accent="blue"] {
   --accent: #2563eb;
+  --accent-foreground: #ffffff;
+  --accent-soft: #eff6ff;
+  --accent-hover: #1d4ed8;
 }
+
+html.dark[data-accent="blue"] {
+  --accent: #3b82f6;
+  --accent-foreground: #ffffff;
+  --accent-soft: #172554;
+  --accent-hover: #60a5fa;
+}
+
+/* ==========================================
+   Pink
+========================================== */
 
 html[data-accent="pink"] {
   --accent: #ec4899;
+  --accent-foreground: #ffffff;
+  --accent-soft: #fdf2f8;
+  --accent-hover: #db2777;
 }
+
+html.dark[data-accent="pink"] {
+  --accent: #ec4899;
+  --accent-foreground: #ffffff;
+  --accent-soft: #500724;
+  --accent-hover: #f472b6;
+}
+
+/* ==========================================
+   Rose
+========================================== */
 
 html[data-accent="rose"] {
   --accent: #f43f5e;
+  --accent-foreground: #ffffff;
+  --accent-soft: #fff1f2;
+  --accent-hover: #e11d48;
 }
+
+html.dark[data-accent="rose"] {
+  --accent: #f43f5e;
+  --accent-foreground: #ffffff;
+  --accent-soft: #4c0519;
+  --accent-hover: #fb7185;
+}
+
+/* ==========================================
+   Emerald
+========================================== */
 
 html[data-accent="emerald"] {
   --accent: #10b981;
+  --accent-foreground: #ffffff;
+  --accent-soft: #ecfdf5;
+  --accent-hover: #059669;
 }
+
+html.dark[data-accent="emerald"] {
+  --accent: #10b981;
+  --accent-foreground: #ffffff;
+  --accent-soft: #022c22;
+  --accent-hover: #34d399;
+}
+
+/* ==========================================
+   Black
+========================================== */
 
 html[data-accent="black"] {
   --accent: #18181b;
+  --accent-foreground: #ffffff;
+  --accent-soft: #f4f4f5;
+  --accent-hover: #000000;
 }
 
 html.dark[data-accent="black"] {
   --accent: #fafafa;
   --accent-foreground: #18181b;
+  --accent-soft: #27272a;
+  --accent-hover: #ffffff;
 }
 
-/* ================================
+/* ==========================================
    Base
-================================ */
+========================================== */
 
 * {
   box-sizing: border-box;
@@ -85,4 +177,49 @@ input,
 textarea,
 select {
   font: inherit;
+}
+
+/* ==========================================
+   Accent Utility Classes
+========================================== */
+
+.accent-bg {
+  background-color: var(--accent);
+  color: var(--accent-foreground);
+}
+
+.accent-text {
+  color: var(--accent);
+}
+
+.accent-border {
+  border-color: var(--accent);
+}
+
+.accent-soft {
+  background-color: var(--accent-soft);
+}
+
+.accent-hover:hover {
+  background-color: var(--accent-hover);
+}
+
+/* ==========================================
+   Smooth Theme Transitions
+========================================== */
+
+body,
+button,
+a,
+input,
+textarea,
+select,
+aside,
+main,
+header,
+footer {
+  transition:
+    background-color 150ms ease,
+    border-color 150ms ease,
+    color 150ms ease;
 }

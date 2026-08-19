@@ -1,23 +1,27 @@
 "use client";
 
-import {
-  GoogleLogin,
-} from "@react-oauth/google";
-
-import {
-  googleLogin,
-} from "@/lib/api";
-
+import { GoogleLogin } from "@react-oauth/google";
 import { CheckCircle2 } from "lucide-react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { guestLogin } from "@/lib/api";
+
+import {
+  googleLogin,
+  guestLogin,
+} from "@/lib/api";
 
 export default function Home() {
   const router = useRouter();
 
-  const [isLoggingIn, setIsLoggingIn] = useState(false);
-  const [error, setError] = useState("");
+  const [isLoggingIn, setIsLoggingIn] =
+    useState(false);
+
+  const [error, setError] =
+    useState("");
+
+  // =====================================================
+  // Guest Login
+  // =====================================================
 
   const handleGuestLogin = async () => {
     if (isLoggingIn) return;
@@ -28,24 +32,32 @@ export default function Home() {
     try {
       const data = await guestLogin();
 
-      console.log("Guest login successful:", data);
+      console.log(
+        "Guest login successful:",
+        data,
+      );
 
-      // Store the logged-in user
+      // Store logged-in user
       localStorage.setItem(
         "taskflow_user",
         JSON.stringify(data.user),
       );
 
-      // Store the active workspace
+      // Store active workspace
       localStorage.setItem(
         "taskflow_workspace",
-        JSON.stringify(data.workspace),
+        JSON.stringify(
+          data.workspace,
+        ),
       );
 
-      // Navigate to dashboard
-      router.push("/dashboard");
+      // Go directly to Tasks
+      router.push("/tasks");
     } catch (error) {
-      console.error("Guest login failed:", error);
+      console.error(
+        "Guest login failed:",
+        error,
+      );
 
       setError(
         "Unable to login as guest. Please try again.",
@@ -55,60 +67,16 @@ export default function Home() {
     }
   };
 
-  const handleGoogleLogin = () => {
-    console.log("Google login clicked");
-  };
+  // =====================================================
+  // Google Login
+  // =====================================================
 
-  return (
-    <main className="min-h-screen border-t-4 border-violet-600 bg-white">
-      <div className="flex min-h-[calc(100vh-4px)] flex-col">
-        {/* Main content */}
-        <div className="flex flex-1 items-center justify-center px-4">
-          <div className="w-full max-w-[360px]">
-            {/* Logo */}
-            <div className="mb-6 flex justify-center">
-              <div className="flex items-center gap-2">
-                <div className="flex h-7 w-7 items-center justify-center rounded-md bg-violet-600 text-xs font-bold text-white">
-                  T
-                </div>
-
-                <span className="text-lg font-semibold tracking-tight text-zinc-900">
-                  TaskFlow
-                </span>
-              </div>
-            </div>
-
-            {/* Login card */}
-            <div className="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm">
-              <div className="text-center">
-                <h1 className="text-[16px] font-semibold text-zinc-900">
-                  Let's get back on track
-                </h1>
-
-                <p className="mt-1 text-[11px] text-zinc-400">
-                  Enter your email below to login to your account.
-                </p>
-              </div>
-
-              <div className="mt-5 space-y-2">
-                {/* Guest Login */}
-                <button
-                  type="button"
-                  onClick={handleGuestLogin}
-                  disabled={isLoggingIn}
-                  className="h-9 w-full rounded-full bg-black px-4 text-xs font-medium text-white transition hover:bg-zinc-800 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {isLoggingIn
-                    ? "Signing in..."
-                    : "Continue as Guest"}
-                </button>
-
-                {/* Google Login */}
-               <GoogleLogin
-  onSuccess={async (credentialResponse) => {
-    if (
-      !credentialResponse.credential
-    ) {
+  const handleGoogleSuccess = async (
+    credentialResponse: {
+      credential?: string;
+    },
+  ) => {
+    if (!credentialResponse.credential) {
       setError(
         "Google login failed. No credential received.",
       );
@@ -120,23 +88,22 @@ export default function Home() {
       setIsLoggingIn(true);
       setError("");
 
-      const data =
-        await googleLogin(
-          credentialResponse.credential,
-        );
+      const data = await googleLogin(
+        credentialResponse.credential,
+      );
 
       console.log(
         "Google login successful:",
         data,
       );
 
+      // Store logged-in user
       localStorage.setItem(
         "taskflow_user",
-        JSON.stringify(
-          data.user,
-        ),
+        JSON.stringify(data.user),
       );
 
+      // Store active workspace
       localStorage.setItem(
         "taskflow_workspace",
         JSON.stringify(
@@ -144,9 +111,8 @@ export default function Home() {
         ),
       );
 
-      router.push(
-        "/dashboard",
-      );
+      // Go directly to Tasks
+      router.push("/tasks");
     } catch (error) {
       console.error(
         "Google login failed:",
@@ -159,38 +125,216 @@ export default function Home() {
     } finally {
       setIsLoggingIn(false);
     }
-  }}
-  onError={() => {
-    setError(
-      "Google login failed. Please try again.",
-    );
-  }}
-  useOneTap={false}
-/>
-                  
+  };
+
+  return (
+    <main className="min-h-screen bg-white text-zinc-900">
+      <div className="flex min-h-screen flex-col">
+        {/* =================================================
+            Main Content
+        ================================================= */}
+
+        <div className="flex flex-1 items-center justify-center px-4">
+          <div className="flex w-full max-w-[384px] flex-col items-center">
+            {/* =================================================
+                Logo
+            ================================================= */}
+
+            <div className="mb-6 flex items-center justify-center">
+              <div className="flex items-center gap-2">
+                <div
+                  className="
+                    flex
+                    h-7
+                    w-7
+                    items-center
+                    justify-center
+                    rounded-md
+                    bg-violet-600
+                    text-xs
+                    font-semibold
+                    text-white
+                  "
+                >
+                  T
+                </div>
+
+                <span
+                  className="
+                    text-[16px]
+                    font-semibold
+                    tracking-tight
+                    text-zinc-900
+                  "
+                >
+                  TaskFlow
+                </span>
+              </div>
+            </div>
+
+            {/* =================================================
+                Login Card
+            ================================================= */}
+
+            <div
+              className="
+                w-full
+                rounded-[16px]
+                border
+                border-[#E5E5E5]
+                bg-white
+                px-4
+                py-4
+                shadow-[0_1px_2px_rgba(0,0,0,0.05)]
+              "
+            >
+              {/* Heading */}
+
+              <div className="text-center">
+                <h1
+                  className="
+                    text-[16px]
+                    font-semibold
+                    leading-5
+                    text-zinc-900
+                  "
+                >
+                  Let's get back on track
+                </h1>
+
+                <p
+                  className="
+                    mt-1
+                    text-[11px]
+                    leading-4
+                    text-zinc-500
+                  "
+                >
+                  Enter your email below to login
+                  to your account.
+                </p>
               </div>
 
-              {/* Error */}
+              {/* =================================================
+                  Login Buttons
+              ================================================= */}
+
+              <div className="mt-5 space-y-2">
+                {/* Guest Login */}
+
+                <button
+                  type="button"
+                  onClick={handleGuestLogin}
+                  disabled={isLoggingIn}
+                  className="
+                    flex
+                    h-9
+                    w-full
+                    items-center
+                    justify-center
+                    rounded-full
+                    bg-[#181818]
+                    px-4
+                    text-[12px]
+                    font-medium
+                    text-white
+                    transition
+                    hover:bg-black
+                    active:scale-[0.99]
+                    disabled:cursor-not-allowed
+                    disabled:opacity-60
+                  "
+                >
+                  {isLoggingIn
+                    ? "Signing in..."
+                    : "Continue as Guest"}
+                </button>
+
+                {/* Google Login */}
+
+                <div
+                  className="
+                    flex
+                    h-9
+                    w-full
+                    overflow-hidden
+                    rounded-full
+                  "
+                >
+                  <GoogleLogin
+                    onSuccess={
+                      handleGoogleSuccess
+                    }
+                    onError={() => {
+                      setError(
+                        "Google login failed. Please try again.",
+                      );
+                    }}
+                    useOneTap={false}
+                    theme="outline"
+                    size="medium"
+                    shape="pill"
+                    width="100%"
+                    text="signin_with"
+                  />
+                </div>
+              </div>
+
+              {/* =================================================
+                  Error
+              ================================================= */}
+
               {error && (
-                <p className="mt-3 text-center text-[10px] text-red-500">
+                <p
+                  className="
+                    mt-3
+                    text-center
+                    text-[10px]
+                    leading-4
+                    text-red-500
+                  "
+                >
                   {error}
                 </p>
               )}
             </div>
 
-            {/* Terms */}
-            <p className="mx-auto mt-3 max-w-[300px] text-center text-[9px] leading-4 text-zinc-400">
+            {/* =================================================
+                Terms
+            ================================================= */}
+
+            <p
+              className="
+                mx-auto
+                mt-3
+                max-w-[300px]
+                text-center
+                text-[9px]
+                leading-4
+                text-zinc-400
+              "
+            >
               By clicking continue, you agree to our{" "}
               <button
                 type="button"
-                className="underline underline-offset-2 hover:text-zinc-600"
+                className="
+                  underline
+                  underline-offset-2
+                  transition
+                  hover:text-zinc-600
+                "
               >
                 Terms of Service
               </button>{" "}
               and{" "}
               <button
                 type="button"
-                className="underline underline-offset-2 hover:text-zinc-600"
+                className="
+                  underline
+                  underline-offset-2
+                  transition
+                  hover:text-zinc-600
+                "
               >
                 Privacy Policy
               </button>
@@ -199,10 +343,22 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Footer */}
+        {/* =================================================
+            Footer
+        ================================================= */}
+
         <footer className="flex justify-center pb-5">
-          <div className="flex items-center gap-1.5 text-[10px] text-zinc-400">
+          <div
+            className="
+              flex
+              items-center
+              gap-1.5
+              text-[10px]
+              text-zinc-400
+            "
+          >
             <CheckCircle2 className="h-3 w-3" />
+
             <span>TaskFlow</span>
           </div>
         </footer>

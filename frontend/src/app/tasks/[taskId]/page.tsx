@@ -7,7 +7,6 @@ import {
   CheckCircle2,
   ChevronDown,
   Circle,
-  Clock3,
   Eye,
   Link2,
   MessageCircle,
@@ -34,6 +33,8 @@ import {
   useState,
 } from "react";
 
+import AppShell from "@/components/layout/AppShell";
+
 import {
   ApiLabel,
   ApiSubtask,
@@ -54,9 +55,9 @@ import {
   updateTask,
 } from "@/lib/api";
 
-// =====================================================
-// Labels
-// =====================================================
+/* =========================================================
+   LABELS
+========================================================= */
 
 const statusLabels: Record<
   ApiTaskDetails["status"],
@@ -101,9 +102,9 @@ const priorityDotColors: Record<
   NO_PRIORITY: "bg-zinc-300",
 };
 
-// =====================================================
-// Page
-// =====================================================
+/* =========================================================
+   PAGE
+========================================================= */
 
 export default function TaskDetailsPage() {
   const params = useParams();
@@ -119,74 +120,102 @@ export default function TaskDetailsPage() {
   const [error, setError] =
     useState("");
 
-  // =====================================================
-  // Subtask
-  // =====================================================
+  /* =======================================================
+     SUBTASK
+  ======================================================= */
 
   const [newSubtask, setNewSubtask] =
     useState("");
 
-  const [newSubtaskPriority, setNewSubtaskPriority] =
-    useState<TaskPriority>("NO_PRIORITY");
+  const [
+    newSubtaskPriority,
+    setNewSubtaskPriority,
+  ] = useState<TaskPriority>("NO_PRIORITY");
 
-  const [newSubtaskDueDate, setNewSubtaskDueDate] =
-    useState("");
+  const [
+    newSubtaskDueDate,
+    setNewSubtaskDueDate,
+  ] = useState("");
 
-  const [newSubtaskAssigneeId, setNewSubtaskAssigneeId] =
-    useState("");
+  const [
+    newSubtaskAssigneeId,
+    setNewSubtaskAssigneeId,
+  ] = useState("");
 
-  const [isSubtaskInputOpen, setIsSubtaskInputOpen] =
-    useState(false);
+  const [
+    isSubtaskInputOpen,
+    setIsSubtaskInputOpen,
+  ] = useState(false);
 
-  const [isAddingSubtask, setIsAddingSubtask] =
-    useState(false);
+  const [
+    isAddingSubtask,
+    setIsAddingSubtask,
+  ] = useState(false);
 
   const [subtaskError, setSubtaskError] =
     useState("");
 
-  const [editingSubtaskId, setEditingSubtaskId] =
-    useState<string | null>(null);
+  const [
+    editingSubtaskId,
+    setEditingSubtaskId,
+  ] = useState<string | null>(null);
 
-  const [openSubtaskMenu, setOpenSubtaskMenu] =
-    useState<string | null>(null);
+  const [
+    openSubtaskMenu,
+    setOpenSubtaskMenu,
+  ] = useState<string | null>(null);
 
-  const [editingSubtaskTitle, setEditingSubtaskTitle] =
-    useState("");
+  const [
+    editingSubtaskTitle,
+    setEditingSubtaskTitle,
+  ] = useState("");
 
-  const [editingSubtaskPriority, setEditingSubtaskPriority] =
-    useState<TaskPriority>("NO_PRIORITY");
+  const [
+    editingSubtaskPriority,
+    setEditingSubtaskPriority,
+  ] = useState<TaskPriority>("NO_PRIORITY");
 
-  const [editingSubtaskDueDate, setEditingSubtaskDueDate] =
-    useState("");
+  const [
+    editingSubtaskDueDate,
+    setEditingSubtaskDueDate,
+  ] = useState("");
 
-  const [editingSubtaskAssigneeId, setEditingSubtaskAssigneeId] =
-    useState("");
+  const [
+    editingSubtaskAssigneeId,
+    setEditingSubtaskAssigneeId,
+  ] = useState("");
 
-  const [isUpdatingSubtask, setIsUpdatingSubtask] =
-    useState(false);
+  const [
+    isUpdatingSubtask,
+    setIsUpdatingSubtask,
+  ] = useState(false);
 
   const subtaskMenuRef =
     useRef<HTMLDivElement | null>(null);
 
-  // =====================================================
-  // Comment
-  // =====================================================
+  /* =======================================================
+     COMMENTS
+  ======================================================= */
 
   const [newComment, setNewComment] =
     useState("");
 
-  const [isAddingComment, setIsAddingComment] =
-    useState(false);
+  const [
+    isAddingComment,
+    setIsAddingComment,
+  ] = useState(false);
 
   const [commentError, setCommentError] =
     useState("");
 
-  // =====================================================
-  // Labels
-  // =====================================================
+  /* =======================================================
+     LABELS
+  ======================================================= */
 
-  const [workspaceLabels, setWorkspaceLabels] =
-    useState<ApiLabel[]>([]);
+  const [
+    workspaceLabels,
+    setWorkspaceLabels,
+  ] = useState<ApiLabel[]>([]);
 
   const [newLabelName, setNewLabelName] =
     useState("");
@@ -194,37 +223,73 @@ export default function TaskDetailsPage() {
   const [newLabelColor, setNewLabelColor] =
     useState("#7c3aed");
 
-  const [selectedLabelId, setSelectedLabelId] =
-    useState("");
+  const [
+    selectedLabelId,
+    setSelectedLabelId,
+  ] = useState("");
 
-  const [isAddingLabel, setIsAddingLabel] =
-    useState(false);
+  const [
+    isAddingLabel,
+    setIsAddingLabel,
+  ] = useState(false);
 
-  const [isAssigningLabel, setIsAssigningLabel] =
-    useState(false);
+  const [
+    isAssigningLabel,
+    setIsAssigningLabel,
+  ] = useState(false);
 
   const [labelError, setLabelError] =
     useState("");
 
-  // =====================================================
-  // Members
-  // =====================================================
+  /* =======================================================
+     MEMBERS
+  ======================================================= */
 
-  const [workspaceMembers, setWorkspaceMembers] =
-    useState<WorkspaceMember[]>([]);
+  const [
+    workspaceMembers,
+    setWorkspaceMembers,
+  ] = useState<WorkspaceMember[]>([]);
 
-  // =====================================================
-  // Dropdowns
-  // =====================================================
+  /* =======================================================
+     DROPDOWNS
+  ======================================================= */
 
   const [openMenu, setOpenMenu] =
     useState<
-      "status" | "priority" | "member" | null
+      | "status"
+      | "priority"
+      | "member"
+      | null
     >(null);
 
-  // =====================================================
-  // Load Task
-  // =====================================================
+  const [
+    openLabelMenu,
+    setOpenLabelMenu,
+  ] = useState(false);
+
+  const [
+    openNewSubtaskPriority,
+    setOpenNewSubtaskPriority,
+  ] = useState(false);
+
+  const [
+    openNewSubtaskMember,
+    setOpenNewSubtaskMember,
+  ] = useState(false);
+
+  const [
+    openEditSubtaskPriority,
+    setOpenEditSubtaskPriority,
+  ] = useState(false);
+
+  const [
+    openEditSubtaskMember,
+    setOpenEditSubtaskMember,
+  ] = useState(false);
+
+  /* =======================================================
+     LOAD TASK
+  ======================================================= */
 
   useEffect(() => {
     async function loadTask() {
@@ -283,45 +348,88 @@ export default function TaskDetailsPage() {
     }
   }, [taskId]);
 
-  // =====================================================
-  // Close Subtask Menu When Clicking Outside
-  // =====================================================
+  /* =======================================================
+     GLOBAL OUTSIDE CLICK
+  ======================================================= */
 
   useEffect(() => {
-    function handleClickOutside(
+    const handleOutsideClick = (
       event: MouseEvent,
-    ) {
+    ) => {
+      const target =
+        event.target as Node;
+
       if (
         subtaskMenuRef.current &&
-        !subtaskMenuRef.current.contains(
-          event.target as Node,
-        )
+        subtaskMenuRef.current.contains(target)
+      ) {
+        return;
+      }
+
+      setOpenMenu(null);
+      setOpenLabelMenu(false);
+      setOpenNewSubtaskPriority(false);
+      setOpenNewSubtaskMember(false);
+      setOpenEditSubtaskPriority(false);
+      setOpenEditSubtaskMember(false);
+
+      if (
+        subtaskMenuRef.current &&
+        !subtaskMenuRef.current.contains(target)
       ) {
         setOpenSubtaskMenu(null);
       }
-    }
+    };
+
+    const handleEscape = (
+      event: KeyboardEvent,
+    ) => {
+      if (event.key !== "Escape") {
+        return;
+      }
+
+      setOpenMenu(null);
+      setOpenLabelMenu(false);
+      setOpenNewSubtaskPriority(false);
+      setOpenNewSubtaskMember(false);
+      setOpenEditSubtaskPriority(false);
+      setOpenEditSubtaskMember(false);
+      setOpenSubtaskMenu(null);
+    };
 
     document.addEventListener(
       "mousedown",
-      handleClickOutside,
+      handleOutsideClick,
+    );
+
+    document.addEventListener(
+      "keydown",
+      handleEscape,
     );
 
     return () => {
       document.removeEventListener(
         "mousedown",
-        handleClickOutside,
+        handleOutsideClick,
+      );
+
+      document.removeEventListener(
+        "keydown",
+        handleEscape,
       );
     };
   }, []);
 
-  // =====================================================
-  // Update Task
-  // =====================================================
+  /* =======================================================
+     UPDATE TASK
+  ======================================================= */
 
   const handleUpdateTask = async (
     changes: Parameters<typeof updateTask>[1],
   ) => {
-    if (!task) return;
+    if (!task) {
+      return;
+    }
 
     try {
       const updated =
@@ -341,9 +449,9 @@ export default function TaskDetailsPage() {
     setOpenMenu(null);
   };
 
-  // =====================================================
-  // Add Subtask
-  // =====================================================
+  /* =======================================================
+     ADD SUBTASK
+  ======================================================= */
 
   const handleAddSubtask = async (
     event: FormEvent,
@@ -353,7 +461,9 @@ export default function TaskDetailsPage() {
     const title =
       newSubtask.trim();
 
-    if (!title || !task) return;
+    if (!title || !task) {
+      return;
+    }
 
     try {
       setIsAddingSubtask(true);
@@ -376,7 +486,9 @@ export default function TaskDetailsPage() {
         );
 
       setTask((current) => {
-        if (!current) return current;
+        if (!current) {
+          return current;
+        }
 
         return {
           ...current,
@@ -408,20 +520,24 @@ export default function TaskDetailsPage() {
     }
   };
 
-  // =====================================================
-  // Toggle Subtask
-  // =====================================================
+  /* =======================================================
+     TOGGLE SUBTASK
+  ======================================================= */
 
   const handleToggleSubtask = async (
     subtaskId: string,
     completed: boolean,
   ) => {
-    if (!task) return;
+    if (!task) {
+      return;
+    }
 
     const previousTask = task;
 
     setTask((current) => {
-      if (!current) return current;
+      if (!current) {
+        return current;
+      }
 
       return {
         ...current,
@@ -447,7 +563,9 @@ export default function TaskDetailsPage() {
         );
 
       setTask((current) => {
-        if (!current) return current;
+        if (!current) {
+          return current;
+        }
 
         return {
           ...current,
@@ -474,9 +592,9 @@ export default function TaskDetailsPage() {
     }
   };
 
-  // =====================================================
-  // Start Edit Subtask
-  // =====================================================
+  /* =======================================================
+     START EDIT SUBTASK
+  ======================================================= */
 
   const handleStartEditSubtask = (
     subtask: ApiSubtask,
@@ -509,9 +627,9 @@ export default function TaskDetailsPage() {
     setOpenSubtaskMenu(null);
   };
 
-  // =====================================================
-  // Cancel Edit Subtask
-  // =====================================================
+  /* =======================================================
+     CANCEL EDIT SUBTASK
+  ======================================================= */
 
   const handleCancelEditSubtask = () => {
     setEditingSubtaskId(null);
@@ -521,16 +639,20 @@ export default function TaskDetailsPage() {
     );
     setEditingSubtaskDueDate("");
     setEditingSubtaskAssigneeId("");
+    setOpenEditSubtaskPriority(false);
+    setOpenEditSubtaskMember(false);
   };
 
-  // =====================================================
-  // Save Subtask
-  // =====================================================
+  /* =======================================================
+     SAVE SUBTASK
+  ======================================================= */
 
   const handleSaveSubtask = async (
     subtaskId: string,
   ) => {
-    if (!task) return;
+    if (!task) {
+      return;
+    }
 
     const title =
       editingSubtaskTitle.trim();
@@ -539,6 +661,7 @@ export default function TaskDetailsPage() {
       setSubtaskError(
         "Subtask title cannot be empty.",
       );
+
       return;
     }
 
@@ -564,7 +687,9 @@ export default function TaskDetailsPage() {
         );
 
       setTask((current) => {
-        if (!current) return current;
+        if (!current) {
+          return current;
+        }
 
         return {
           ...current,
@@ -593,21 +718,25 @@ export default function TaskDetailsPage() {
     }
   };
 
-  // =====================================================
-  // Delete Subtask
-  // =====================================================
+  /* =======================================================
+     DELETE SUBTASK
+  ======================================================= */
 
   const handleDeleteSubtask = async (
     subtaskId: string,
   ) => {
-    if (!task) return;
+    if (!task) {
+      return;
+    }
 
     const confirmed =
       window.confirm(
         "Delete this subtask?",
       );
 
-    if (!confirmed) return;
+    if (!confirmed) {
+      return;
+    }
 
     try {
       await deleteSubtask(
@@ -616,7 +745,9 @@ export default function TaskDetailsPage() {
       );
 
       setTask((current) => {
-        if (!current) return current;
+        if (!current) {
+          return current;
+        }
 
         return {
           ...current,
@@ -642,9 +773,9 @@ export default function TaskDetailsPage() {
     }
   };
 
-  // =====================================================
-  // Add Comment
-  // =====================================================
+  /* =======================================================
+     ADD COMMENT
+  ======================================================= */
 
   const handleAddComment = async (
     event: FormEvent,
@@ -654,7 +785,9 @@ export default function TaskDetailsPage() {
     const content =
       newComment.trim();
 
-    if (!content || !task) return;
+    if (!content || !task) {
+      return;
+    }
 
     try {
       setIsAddingComment(true);
@@ -690,7 +823,9 @@ export default function TaskDetailsPage() {
         );
 
       setTask((current) => {
-        if (!current) return current;
+        if (!current) {
+          return current;
+        }
 
         return {
           ...current,
@@ -716,9 +851,9 @@ export default function TaskDetailsPage() {
     }
   };
 
-  // =====================================================
-  // Create Label
-  // =====================================================
+  /* =======================================================
+     CREATE LABEL
+  ======================================================= */
 
   const handleCreateLabel = async (
     event: FormEvent,
@@ -775,15 +910,21 @@ export default function TaskDetailsPage() {
     }
   };
 
-  // =====================================================
-  // Assign Label
-  // =====================================================
+  /* =======================================================
+     ASSIGN LABEL
+  ======================================================= */
 
   const handleAssignLabel =
-    async () => {
+    async (
+      labelId?: string,
+    ) => {
+      const id =
+        labelId ||
+        selectedLabelId;
+
       if (
         !task ||
-        !selectedLabelId ||
+        !id ||
         isAssigningLabel
       ) {
         return;
@@ -792,11 +933,11 @@ export default function TaskDetailsPage() {
       if (
         task.labels.some(
           (label) =>
-            label.id ===
-            selectedLabelId,
+            label.id === id,
         )
       ) {
         setSelectedLabelId("");
+        setOpenLabelMenu(false);
         return;
       }
 
@@ -807,11 +948,12 @@ export default function TaskDetailsPage() {
         const updated =
           await assignLabel(
             task.id,
-            selectedLabelId,
+            id,
           );
 
         setTask(updated);
         setSelectedLabelId("");
+        setOpenLabelMenu(false);
       } catch (err) {
         console.error(
           "Failed to assign label:",
@@ -826,9 +968,9 @@ export default function TaskDetailsPage() {
       }
     };
 
-  // =====================================================
-  // Remove Label
-  // =====================================================
+  /* =======================================================
+     REMOVE LABEL
+  ======================================================= */
 
   const handleRemoveLabel =
     async (
@@ -861,47 +1003,55 @@ export default function TaskDetailsPage() {
       }
     };
 
-  // =====================================================
-  // Loading
-  // =====================================================
+  /* =======================================================
+     LOADING
+  ======================================================= */
 
   if (loading) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-white text-zinc-900 dark:bg-zinc-950 dark:text-white">
-        <p className="text-sm text-zinc-400">
-          Loading task...
-        </p>
-      </main>
+      <AppShell>
+        <main className="flex min-h-[70vh] items-center justify-center bg-white dark:bg-zinc-950">
+          <div className="text-center">
+            <div className="mx-auto h-6 w-6 animate-spin rounded-full border-2 border-zinc-200 border-t-zinc-900 dark:border-zinc-700 dark:border-t-zinc-100" />
+
+            <p className="mt-3 text-xs text-zinc-400 dark:text-zinc-500">
+              Loading task...
+            </p>
+          </div>
+        </main>
+      </AppShell>
     );
   }
 
-  // =====================================================
-  // Error
-  // =====================================================
+  /* =======================================================
+     ERROR
+  ======================================================= */
 
   if (error || !task) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-white dark:bg-zinc-950">
-        <div className="text-center">
-          <p className="text-sm font-medium">
-            {error ||
-              "Task not found."}
-          </p>
+      <AppShell>
+        <main className="flex min-h-[70vh] items-center justify-center bg-white dark:bg-zinc-950">
+          <div className="text-center">
+            <p className="text-sm font-medium text-zinc-800 dark:text-zinc-100">
+              {error ||
+                "Task not found."}
+            </p>
 
-          <Link
-            href="/tasks"
-            className="mt-3 inline-flex text-xs text-violet-600 hover:underline"
-          >
-            Back to Tasks
-          </Link>
-        </div>
-      </main>
+            <Link
+              href="/tasks"
+              className="mt-3 inline-flex text-xs text-violet-600 hover:underline"
+            >
+              Back to Tasks
+            </Link>
+          </div>
+        </main>
+      </AppShell>
     );
   }
 
-  // =====================================================
-  // Calculations
-  // =====================================================
+  /* =======================================================
+     CALCULATIONS
+  ======================================================= */
 
   const completedSubtasks =
     task.subtasks.filter(
@@ -909,142 +1059,1588 @@ export default function TaskDetailsPage() {
         subtask.completed,
     ).length;
 
-  // =====================================================
-  // UI
-  // =====================================================
+  const unassignedMembers =
+    workspaceMembers;
+
+  /* =======================================================
+     UI
+  ======================================================= */
 
   return (
-    <main className="min-h-screen bg-white text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100">
-      {/* =================================================
-          TOP HEADER
-      ================================================= */}
+    <AppShell>
+      <main className="min-h-full bg-white text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100">
 
-      <header className="flex min-h-[64px] items-center justify-between border-b border-zinc-200 px-4 dark:border-zinc-800 sm:px-6">
-        <div className="flex min-w-0 items-center gap-3">
+        {/* =================================================
+            TOP BAR
+        ================================================= */}
+
+        <header className="flex h-[54px] shrink-0 items-center justify-between border-b border-zinc-200 px-4 dark:border-zinc-800 sm:px-5">
           <Link
             href="/tasks"
-            className="rounded-md p-1.5 text-zinc-400 transition hover:bg-zinc-100 dark:hover:bg-zinc-800"
+            aria-label="Back to tasks"
+            className="flex h-7 w-7 items-center justify-center rounded-md text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
           >
             <ArrowLeft className="h-4 w-4" />
           </Link>
 
-          <div className="min-w-0">
-            <p className="text-[10px] text-zinc-400">
-              Tasks
-            </p>
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              className="flex h-8 w-8 items-center justify-center rounded-md border border-zinc-200 text-zinc-500 transition hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800"
+              aria-label="Watch task"
+            >
+              <Eye className="h-3.5 w-3.5" />
+            </button>
 
-            <h1 className="truncate text-sm font-semibold sm:text-base">
-              {task.title}
-            </h1>
+            <button
+              type="button"
+              className="flex h-8 w-8 items-center justify-center rounded-md border border-zinc-200 text-zinc-500 transition hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800"
+              aria-label="Share task"
+            >
+              <Share2 className="h-3.5 w-3.5" />
+            </button>
+
+            <button
+              type="button"
+              className="flex h-8 w-8 items-center justify-center rounded-md border border-zinc-200 text-zinc-500 transition hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800"
+              aria-label="More actions"
+            >
+              <MoreHorizontal className="h-3.5 w-3.5" />
+            </button>
           </div>
-        </div>
+        </header>
 
-        <div className="flex items-center gap-1">
-          <button
-            type="button"
-            className="hidden rounded-md border border-zinc-200 p-2 text-zinc-500 hover:bg-zinc-50 sm:block dark:border-zinc-700 dark:hover:bg-zinc-800"
-          >
-            <Eye className="h-4 w-4" />
-          </button>
+        {/* =================================================
+            PAGE CONTENT
+        ================================================= */}
 
-          <button
-            type="button"
-            className="rounded-md border border-zinc-200 p-2 text-zinc-500 hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800"
-          >
-            <Share2 className="h-4 w-4" />
-          </button>
-
-          <button
-            type="button"
-            className="rounded-md border border-zinc-200 p-2 text-zinc-500 hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800"
-          >
-            <MoreHorizontal className="h-4 w-4" />
-          </button>
-        </div>
-      </header>
-
-      {/* =================================================
-          PAGE
-      ================================================= */}
-
-      <div className="mx-auto max-w-[1280px] px-4 py-5 sm:px-6 lg:px-8">
-        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_270px]">
+        <div className="mx-auto max-w-[1180px] px-4 py-5 sm:px-6 lg:px-8">
 
           {/* =================================================
-              MAIN CONTENT
+              TASK HEADER
           ================================================= */}
 
-          <section className="min-w-0">
+          <section className="border-b border-zinc-200 pb-5 dark:border-zinc-800">
+            <h1 className="text-xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100 sm:text-2xl">
+              {task.title}
+            </h1>
 
-            {/* Title */}
+            <p className="mt-1.5 max-w-[720px] text-xs leading-5 text-zinc-500 dark:text-zinc-400">
+              {task.description ||
+                "Create and manage detailed task information."}
+            </p>
+          </section>
 
-            <div className="mb-5">
-              <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-                {task.title}
-              </h2>
+          {/* =================================================
+              MAIN TWO COLUMN AREA
+          ================================================= */}
 
-              <p className="mt-1.5 max-w-2xl text-xs leading-5 text-zinc-500 dark:text-zinc-400">
-                {task.description ||
-                  "Create and manage detailed task information."}
-              </p>
-            </div>
+          <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_275px]">
 
             {/* =================================================
-                PROPERTIES
+                LEFT
             ================================================= */}
 
-            <div className="mb-5">
-              <div className="mb-2 text-xs font-medium text-zinc-500">
-                Properties
-              </div>
+            <section className="min-w-0 pt-4">
 
-              <div className="flex flex-wrap items-center gap-2">
+              {/* =================================================
+                  PROPERTIES
+              ================================================= */}
 
-                {/* Assignee */}
+              <section className="mb-5">
+                <SectionHeading>
+                  Properties
+                </SectionHeading>
+
+                <div className="flex flex-wrap items-center gap-2">
+
+                  {/* MEMBER */}
+
+                  <CustomDropdown
+                    open={
+                      openMenu ===
+                      "member"
+                    }
+                    onToggle={() => {
+                      setOpenMenu(
+                        openMenu ===
+                          "member"
+                          ? null
+                          : "member",
+                      );
+                    }}
+                    width="w-56"
+                    trigger={
+                      <button
+                        type="button"
+                        className="flex h-8 items-center gap-2 rounded-md border border-zinc-200 bg-white px-2.5 text-xs text-zinc-700 transition hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                      >
+                        <User className="h-3.5 w-3.5 text-zinc-400" />
+
+                        <span className="max-w-[130px] truncate">
+                          {task.assignee
+                            ?.name ||
+                            "Unassigned"}
+                        </span>
+
+                        <ChevronDown
+                          className={`ml-auto h-3 w-3 text-zinc-400 transition-transform ${
+                            openMenu ===
+                            "member"
+                              ? "rotate-180"
+                              : ""
+                          }`}
+                        />
+                      </button>
+                    }
+                  >
+                    <DropdownTitle>
+                      Members
+                    </DropdownTitle>
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        handleUpdateTask({
+                          assigneeId:
+                            undefined,
+                        })
+                      }
+                      className="dropdown-item"
+                    >
+                      <span>
+                        Unassigned
+                      </span>
+
+                      {!task.assignee && (
+                        <Check className="h-3.5 w-3.5 text-violet-600" />
+                      )}
+                    </button>
+
+                    {unassignedMembers.map(
+                      (member) => (
+                        <button
+                          key={
+                            member.userId
+                          }
+                          type="button"
+                          onClick={() =>
+                            handleUpdateTask({
+                              assigneeId:
+                                member.userId,
+                            })
+                          }
+                          className="dropdown-item"
+                        >
+                          <span className="flex min-w-0 items-center gap-2">
+                            <Avatar
+                              user={
+                                member.user
+                              }
+                              small
+                            />
+
+                            <span className="truncate">
+                              {
+                                member
+                                  .user
+                                  .name
+                              }
+                            </span>
+                          </span>
+
+                          {task.assignee
+                            ?.id ===
+                            member.userId && (
+                            <Check className="h-3.5 w-3.5 text-violet-600" />
+                          )}
+                        </button>
+                      ),
+                    )}
+                  </CustomDropdown>
+
+                  {/* DUE DATE */}
+
+                  <div className="inline-flex h-8 items-center gap-2 rounded-md bg-red-50 px-2.5 text-xs text-red-500 dark:bg-red-950/30 dark:text-red-400">
+                    <CalendarDays className="h-3.5 w-3.5" />
+
+                    {task.dueDate
+                      ? new Date(
+                          task.dueDate,
+                        ).toLocaleDateString(
+                          undefined,
+                          {
+                            day: "numeric",
+                            month: "short",
+                            year: "numeric",
+                          },
+                        )
+                      : "No date"}
+                  </div>
+
+                  {/* PRIORITY */}
+
+                  <CustomDropdown
+                    open={
+                      openMenu ===
+                      "priority"
+                    }
+                    onToggle={() => {
+                      setOpenMenu(
+                        openMenu ===
+                          "priority"
+                          ? null
+                          : "priority",
+                      );
+                    }}
+                    width="w-48"
+                    trigger={
+                      <button
+                        type="button"
+                        className="flex h-8 items-center gap-2 rounded-md border border-zinc-200 bg-white px-2.5 text-xs transition hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:bg-zinc-800"
+                      >
+                        <PriorityIcon
+                          priority={
+                            task.priority
+                          }
+                        />
+
+                        <span
+                          className={
+                            priorityColors[
+                              task.priority
+                            ]
+                          }
+                        >
+                          {
+                            priorityLabels[
+                              task.priority
+                            ]
+                          }
+                        </span>
+
+                        <ChevronDown
+                          className={`h-3 w-3 transition-transform ${
+                            openMenu ===
+                            "priority"
+                              ? "rotate-180"
+                              : ""
+                          } ${
+                            priorityColors[
+                              task.priority
+                            ]
+                          }`}
+                        />
+                      </button>
+                    }
+                  >
+                    <DropdownTitle>
+                      Priority
+                    </DropdownTitle>
+
+                    {(
+                      Object.keys(
+                        priorityLabels,
+                      ) as TaskPriority[]
+                    ).map(
+                      (priority) => (
+                        <button
+                          key={priority}
+                          type="button"
+                          onClick={() =>
+                            handleUpdateTask({
+                              priority,
+                            })
+                          }
+                          className="dropdown-item"
+                        >
+                          <span className="flex items-center gap-2">
+                            <PriorityIcon
+                              priority={
+                                priority
+                              }
+                            />
+
+                            <span
+                              className={
+                                priorityColors[
+                                  priority
+                                ]
+                              }
+                            >
+                              {
+                                priorityLabels[
+                                  priority
+                                ]
+                              }
+                            </span>
+                          </span>
+
+                          {task.priority ===
+                            priority && (
+                            <Check className="h-3.5 w-3.5 text-zinc-800 dark:text-zinc-100" />
+                          )}
+                        </button>
+                      ),
+                    )}
+                  </CustomDropdown>
+                </div>
+              </section>
+
+              {/* =================================================
+                  LABELS
+              ================================================= */}
+
+              <section className="mb-5">
+                <SectionHeading>
+                  Labels
+                </SectionHeading>
+
+                <div className="flex flex-wrap items-center gap-1.5">
+
+                  {task.labels.map(
+                    (label) => (
+                      <span
+                        key={
+                          label.id
+                        }
+                        className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-[10px] font-medium"
+                        style={{
+                          borderColor:
+                            `${label.color}55`,
+                          color:
+                            label.color,
+                          backgroundColor:
+                            `${label.color}10`,
+                        }}
+                      >
+                        <Tag className="h-3 w-3" />
+
+                        {label.name}
+
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleRemoveLabel(
+                              label.id,
+                            )
+                          }
+                          className="ml-0.5 opacity-50 transition hover:opacity-100"
+                        >
+                          <X className="h-2.5 w-2.5" />
+                        </button>
+                      </span>
+                    ),
+                  )}
+
+                  {/* ADD LABEL */}
+
+                  <CustomDropdown
+                    open={
+                      openLabelMenu
+                    }
+                    onToggle={() =>
+                      setOpenLabelMenu(
+                        (current) =>
+                          !current,
+                      )
+                    }
+                    width="w-52"
+                    align="left"
+                    trigger={
+                      <button
+                        type="button"
+                        className="inline-flex h-7 items-center gap-1.5 rounded-md border border-dashed border-zinc-300 px-2 text-[10px] text-zinc-500 transition hover:bg-zinc-50 hover:text-zinc-700 dark:border-zinc-700 dark:hover:bg-zinc-900 dark:hover:text-zinc-200"
+                      >
+                        <Plus className="h-3 w-3" />
+
+                        Add label
+
+                        <ChevronDown className="h-3 w-3" />
+                      </button>
+                    }
+                  >
+                    <DropdownTitle>
+                      Select label
+                    </DropdownTitle>
+
+                    {workspaceLabels.filter(
+                      (label) =>
+                        !task.labels.some(
+                          (assigned) =>
+                            assigned.id ===
+                            label.id,
+                        ),
+                    ).length === 0 ? (
+                      <div className="px-2.5 py-3 text-center text-[10px] text-zinc-400">
+                        No labels available
+                      </div>
+                    ) : (
+                      workspaceLabels
+                        .filter(
+                          (label) =>
+                            !task.labels.some(
+                              (
+                                assigned,
+                              ) =>
+                                assigned.id ===
+                                label.id,
+                            ),
+                        )
+                        .map(
+                          (label) => (
+                            <button
+                              key={
+                                label.id
+                              }
+                              type="button"
+                              onClick={() =>
+                                handleAssignLabel(
+                                  label.id,
+                                )
+                              }
+                              className="dropdown-item"
+                            >
+                              <span className="flex items-center gap-2">
+                                <span
+                                  className="h-2 w-2 rounded-full"
+                                  style={{
+                                    backgroundColor:
+                                      label.color,
+                                  }}
+                                />
+
+                                {
+                                  label.name
+                                }
+                              </span>
+                            </button>
+                          ),
+                        )
+                    )}
+                  </CustomDropdown>
+                </div>
+
+                {/* CREATE LABEL */}
+
+                <form
+                  onSubmit={
+                    handleCreateLabel
+                  }
+                  className="mt-2 flex max-w-sm gap-2"
+                >
+                  <input
+                    value={
+                      newLabelName
+                    }
+                    onChange={(
+                      event,
+                    ) =>
+                      setNewLabelName(
+                        event.target
+                          .value,
+                      )
+                    }
+                    placeholder="Create label..."
+                    className="h-8 min-w-0 flex-1 rounded-md border border-zinc-200 bg-transparent px-2.5 text-xs text-zinc-800 outline-none transition focus:border-violet-400 dark:border-zinc-700 dark:text-zinc-100"
+                  />
+
+                  <input
+                    type="color"
+                    value={
+                      newLabelColor
+                    }
+                    onChange={(
+                      event,
+                    ) =>
+                      setNewLabelColor(
+                        event.target
+                          .value,
+                      )
+                    }
+                    className="h-8 w-9 cursor-pointer rounded-md border border-zinc-200 bg-white p-1 dark:border-zinc-700 dark:bg-zinc-900"
+                  />
+
+                  <button
+                    type="submit"
+                    disabled={
+                      !newLabelName.trim() ||
+                      isAddingLabel
+                    }
+                    className="h-8 rounded-md border border-zinc-200 px-3 text-xs text-zinc-700 transition hover:bg-zinc-50 disabled:opacity-40 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                  >
+                    {isAddingLabel
+                      ? "..."
+                      : "Create"}
+                  </button>
+                </form>
+
+                {labelError && (
+                  <p className="mt-1 text-[10px] text-red-500">
+                    {labelError}
+                  </p>
+                )}
+              </section>
+
+              {/* =================================================
+                  RESOURCES
+              ================================================= */}
+
+              <section className="mb-6">
+                <SectionHeading>
+                  Resources
+                </SectionHeading>
 
                 <button
                   type="button"
-                  onClick={() =>
+                  className="flex items-center gap-2 text-[11px] text-zinc-400 transition hover:text-zinc-700 dark:hover:text-zinc-200"
+                >
+                  <Link2 className="h-3.5 w-3.5" />
+
+                  Add document or link...
+                </button>
+              </section>
+
+              {/* =================================================
+                  SUBTASKS
+              ================================================= */}
+
+              <section className="mb-6">
+                <div className="mb-3 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <ChevronDown className="h-3.5 w-3.5 text-zinc-500" />
+
+                    <h2 className="text-sm font-semibold">
+                      Subtasks
+                    </h2>
+
+                    <span className="text-[10px] text-zinc-400">
+                      {completedSubtasks}/
+                      {task.subtasks.length}
+                    </span>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setIsSubtaskInputOpen(
+                        (current) =>
+                          !current,
+                      )
+                    }
+                    className="flex items-center gap-1 rounded-md px-2 py-1 text-[10px] text-zinc-500 transition hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                  >
+                    <Plus className="h-3 w-3" />
+
+                    Add Subtask
+                  </button>
+                </div>
+
+                {/* ADD SUBTASK */}
+
+                {isSubtaskInputOpen && (
+                  <form
+                    onSubmit={
+                      handleAddSubtask
+                    }
+                    className="mb-3 rounded-lg border border-zinc-200 bg-zinc-50 p-3 dark:border-zinc-800 dark:bg-zinc-900"
+                  >
+                    <input
+                      autoFocus
+                      value={
+                        newSubtask
+                      }
+                      onChange={(
+                        event,
+                      ) =>
+                        setNewSubtask(
+                          event.target
+                            .value,
+                        )
+                      }
+                      placeholder="Enter subtask..."
+                      className="mb-3 h-9 w-full rounded-md border border-zinc-200 bg-white px-3 text-xs outline-none focus:border-violet-400 dark:border-zinc-700 dark:bg-zinc-950"
+                    />
+
+                    <div className="flex flex-wrap items-center gap-2">
+
+                      {/* NEW SUBTASK PRIORITY */}
+
+                      <CustomDropdown
+                        open={
+                          openNewSubtaskPriority
+                        }
+                        onToggle={() => {
+                          setOpenNewSubtaskPriority(
+                            (
+                              current,
+                            ) =>
+                              !current,
+                          );
+
+                          setOpenNewSubtaskMember(
+                            false,
+                          );
+                        }}
+                        width="w-44"
+                        trigger={
+                          <button
+                            type="button"
+                            className="flex h-8 items-center gap-2 rounded-md border border-zinc-200 bg-white px-2.5 text-[11px] dark:border-zinc-700 dark:bg-zinc-950"
+                          >
+                            <PriorityIcon
+                              priority={
+                                newSubtaskPriority
+                              }
+                            />
+
+                            <span>
+                              {
+                                priorityLabels[
+                                  newSubtaskPriority
+                                ]
+                              }
+                            </span>
+
+                            <ChevronDown className="ml-auto h-3 w-3 text-zinc-400" />
+                          </button>
+                        }
+                      >
+                        {(
+                          Object.keys(
+                            priorityLabels,
+                          ) as TaskPriority[]
+                        ).map(
+                          (priority) => (
+                            <button
+                              key={
+                                priority
+                              }
+                              type="button"
+                              onClick={() => {
+                                setNewSubtaskPriority(
+                                  priority,
+                                );
+
+                                setOpenNewSubtaskPriority(
+                                  false,
+                                );
+                              }}
+                              className="dropdown-item"
+                            >
+                              <span className="flex items-center gap-2">
+                                <PriorityIcon
+                                  priority={
+                                    priority
+                                  }
+                                />
+
+                                {
+                                  priorityLabels[
+                                    priority
+                                  ]
+                                }
+                              </span>
+
+                              {newSubtaskPriority ===
+                                priority && (
+                                <Check className="h-3.5 w-3.5 text-violet-600" />
+                              )}
+                            </button>
+                          ),
+                        )}
+                      </CustomDropdown>
+
+                      {/* NEW SUBTASK MEMBER */}
+
+                      <CustomDropdown
+                        open={
+                          openNewSubtaskMember
+                        }
+                        onToggle={() => {
+                          setOpenNewSubtaskMember(
+                            (
+                              current,
+                            ) =>
+                              !current,
+                          );
+
+                          setOpenNewSubtaskPriority(
+                            false,
+                          );
+                        }}
+                        width="w-48"
+                        trigger={
+                          <button
+                            type="button"
+                            className="flex h-8 max-w-[180px] items-center gap-2 rounded-md border border-zinc-200 bg-white px-2.5 text-[11px] dark:border-zinc-700 dark:bg-zinc-950"
+                          >
+                            <User className="h-3.5 w-3.5 shrink-0 text-zinc-400" />
+
+                            <span className="truncate">
+                              {workspaceMembers.find(
+                                (
+                                  member,
+                                ) =>
+                                  member.userId ===
+                                  newSubtaskAssigneeId,
+                              )
+                                ?.user
+                                .name ||
+                                "Unassigned"}
+                            </span>
+
+                            <ChevronDown className="ml-auto h-3 w-3 shrink-0 text-zinc-400" />
+                          </button>
+                        }
+                      >
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setNewSubtaskAssigneeId(
+                              "",
+                            );
+
+                            setOpenNewSubtaskMember(
+                              false,
+                            );
+                          }}
+                          className="dropdown-item"
+                        >
+                          Unassigned
+
+                          {!newSubtaskAssigneeId && (
+                            <Check className="h-3.5 w-3.5 text-violet-600" />
+                          )}
+                        </button>
+
+                        {workspaceMembers.map(
+                          (member) => (
+                            <button
+                              key={
+                                member.userId
+                              }
+                              type="button"
+                              onClick={() => {
+                                setNewSubtaskAssigneeId(
+                                  member.userId,
+                                );
+
+                                setOpenNewSubtaskMember(
+                                  false,
+                                );
+                              }}
+                              className="dropdown-item"
+                            >
+                              <span className="flex items-center gap-2">
+                                <Avatar
+                                  user={
+                                    member.user
+                                  }
+                                  small
+                                />
+
+                                {
+                                  member
+                                    .user
+                                    .name
+                                }
+                              </span>
+
+                              {newSubtaskAssigneeId ===
+                                member.userId && (
+                                <Check className="h-3.5 w-3.5 text-violet-600" />
+                              )}
+                            </button>
+                          ),
+                        )}
+                      </CustomDropdown>
+
+                      {/* DATE */}
+
+                      <input
+                        type="date"
+                        value={
+                          newSubtaskDueDate
+                        }
+                        onChange={(
+                          event,
+                        ) =>
+                          setNewSubtaskDueDate(
+                            event.target
+                              .value,
+                          )
+                        }
+                        className="h-8 rounded-md border border-zinc-200 bg-white px-2 text-[11px] outline-none dark:border-zinc-700 dark:bg-zinc-950"
+                      />
+
+                      <div className="ml-auto flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setIsSubtaskInputOpen(
+                              false,
+                            )
+                          }
+                          className="h-8 rounded-md px-3 text-[11px] text-zinc-500 transition hover:bg-zinc-200 dark:hover:bg-zinc-800"
+                        >
+                          Cancel
+                        </button>
+
+                        <button
+                          type="submit"
+                          disabled={
+                            !newSubtask.trim() ||
+                            isAddingSubtask
+                          }
+                          className="h-8 rounded-md bg-zinc-900 px-3 text-[11px] font-medium text-white transition disabled:opacity-40 dark:bg-white dark:text-black"
+                        >
+                          {isAddingSubtask
+                            ? "Adding..."
+                            : "Add"}
+                        </button>
+                      </div>
+                    </div>
+                  </form>
+                )}
+
+                {/* SUBTASK TABLE */}
+
+                <div className="overflow-visible rounded-lg border border-zinc-200 dark:border-zinc-800">
+
+                  {/* TABLE HEADER */}
+
+                  <div className="grid min-w-[650px] grid-cols-[minmax(0,1fr)_100px_125px_110px_40px] border-b border-zinc-200 bg-zinc-50 px-3 py-2 text-[10px] font-medium text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900">
+                    <span>Task</span>
+                    <span>Priority</span>
+                    <span>Members</span>
+                    <span>Due Date</span>
+                    <span />
+                  </div>
+
+                  {task.subtasks.length ===
+                  0 ? (
+                    <div className="px-4 py-7 text-center text-xs text-zinc-400">
+                      No subtasks yet.
+                    </div>
+                  ) : (
+                    task.subtasks.map(
+                      (subtask) => {
+                        const isEditing =
+                          editingSubtaskId ===
+                          subtask.id;
+
+                        return (
+                          <div
+                            key={
+                              subtask.id
+                            }
+                            className="border-b border-zinc-100 last:border-0 dark:border-zinc-800"
+                          >
+                            {isEditing ? (
+                              <div className="space-y-3 bg-zinc-50 p-3 dark:bg-zinc-900">
+                                <input
+                                  value={
+                                    editingSubtaskTitle
+                                  }
+                                  onChange={(
+                                    event,
+                                  ) =>
+                                    setEditingSubtaskTitle(
+                                      event
+                                        .target
+                                        .value,
+                                    )
+                                  }
+                                  className="h-8 w-full rounded-md border border-zinc-200 bg-white px-2.5 text-xs outline-none focus:border-violet-400 dark:border-zinc-700 dark:bg-zinc-950"
+                                />
+
+                                <div className="flex flex-wrap gap-2">
+
+                                  {/* EDIT PRIORITY */}
+
+                                  <CustomDropdown
+                                    open={
+                                      openEditSubtaskPriority
+                                    }
+                                    onToggle={() => {
+                                      setOpenEditSubtaskPriority(
+                                        (
+                                          current,
+                                        ) =>
+                                          !current,
+                                      );
+
+                                      setOpenEditSubtaskMember(
+                                        false,
+                                      );
+                                    }}
+                                    width="w-44"
+                                    trigger={
+                                      <button
+                                        type="button"
+                                        className="flex h-8 items-center gap-2 rounded-md border border-zinc-200 bg-white px-2.5 text-[11px] dark:border-zinc-700 dark:bg-zinc-950"
+                                      >
+                                        <PriorityIcon
+                                          priority={
+                                            editingSubtaskPriority
+                                          }
+                                        />
+
+                                        {
+                                          priorityLabels[
+                                            editingSubtaskPriority
+                                          ]
+                                        }
+
+                                        <ChevronDown className="ml-auto h-3 w-3 text-zinc-400" />
+                                      </button>
+                                    }
+                                  >
+                                    {(
+                                      Object.keys(
+                                        priorityLabels,
+                                      ) as TaskPriority[]
+                                    ).map(
+                                      (
+                                        priority,
+                                      ) => (
+                                        <button
+                                          key={
+                                            priority
+                                          }
+                                          type="button"
+                                          onClick={() => {
+                                            setEditingSubtaskPriority(
+                                              priority,
+                                            );
+
+                                            setOpenEditSubtaskPriority(
+                                              false,
+                                            );
+                                          }}
+                                          className="dropdown-item"
+                                        >
+                                          <span className="flex items-center gap-2">
+                                            <PriorityIcon
+                                              priority={
+                                                priority
+                                              }
+                                            />
+
+                                            {
+                                              priorityLabels[
+                                                priority
+                                              ]
+                                            }
+                                          </span>
+
+                                          {editingSubtaskPriority ===
+                                            priority && (
+                                            <Check className="h-3.5 w-3.5 text-violet-600" />
+                                          )}
+                                        </button>
+                                      ),
+                                    )}
+                                  </CustomDropdown>
+
+                                  {/* EDIT MEMBER */}
+
+                                  <CustomDropdown
+                                    open={
+                                      openEditSubtaskMember
+                                    }
+                                    onToggle={() => {
+                                      setOpenEditSubtaskMember(
+                                        (
+                                          current,
+                                        ) =>
+                                          !current,
+                                      );
+
+                                      setOpenEditSubtaskPriority(
+                                        false,
+                                      );
+                                    }}
+                                    width="w-48"
+                                    trigger={
+                                      <button
+                                        type="button"
+                                        className="flex h-8 max-w-[180px] items-center gap-2 rounded-md border border-zinc-200 bg-white px-2.5 text-[11px] dark:border-zinc-700 dark:bg-zinc-950"
+                                      >
+                                        <User className="h-3.5 w-3.5 text-zinc-400" />
+
+                                        <span className="truncate">
+                                          {workspaceMembers.find(
+                                            (
+                                              member,
+                                            ) =>
+                                              member.userId ===
+                                              editingSubtaskAssigneeId,
+                                          )
+                                            ?.user
+                                            .name ||
+                                            "Unassigned"}
+                                        </span>
+
+                                        <ChevronDown className="ml-auto h-3 w-3 text-zinc-400" />
+                                      </button>
+                                    }
+                                  >
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setEditingSubtaskAssigneeId(
+                                          "",
+                                        );
+
+                                        setOpenEditSubtaskMember(
+                                          false,
+                                        );
+                                      }}
+                                      className="dropdown-item"
+                                    >
+                                      Unassigned
+
+                                      {!editingSubtaskAssigneeId && (
+                                        <Check className="h-3.5 w-3.5 text-violet-600" />
+                                      )}
+                                    </button>
+
+                                    {workspaceMembers.map(
+                                      (
+                                        member,
+                                      ) => (
+                                        <button
+                                          key={
+                                            member.userId
+                                          }
+                                          type="button"
+                                          onClick={() => {
+                                            setEditingSubtaskAssigneeId(
+                                              member.userId,
+                                            );
+
+                                            setOpenEditSubtaskMember(
+                                              false,
+                                            );
+                                          }}
+                                          className="dropdown-item"
+                                        >
+                                          <span className="flex items-center gap-2">
+                                            <Avatar
+                                              user={
+                                                member.user
+                                              }
+                                              small
+                                            />
+
+                                            {
+                                              member
+                                                .user
+                                                .name
+                                            }
+                                          </span>
+
+                                          {editingSubtaskAssigneeId ===
+                                            member.userId && (
+                                            <Check className="h-3.5 w-3.5 text-violet-600" />
+                                          )}
+                                        </button>
+                                      ),
+                                    )}
+                                  </CustomDropdown>
+
+                                  <input
+                                    type="date"
+                                    value={
+                                      editingSubtaskDueDate
+                                    }
+                                    onChange={(
+                                      event,
+                                    ) =>
+                                      setEditingSubtaskDueDate(
+                                        event
+                                          .target
+                                          .value,
+                                      )
+                                    }
+                                    className="h-8 rounded-md border border-zinc-200 bg-white px-2 text-[11px] dark:border-zinc-700 dark:bg-zinc-950"
+                                  />
+
+                                  <div className="ml-auto flex gap-2">
+                                    <button
+                                      type="button"
+                                      onClick={
+                                        handleCancelEditSubtask
+                                      }
+                                      className="rounded-md px-3 py-1.5 text-[10px] text-zinc-500 hover:bg-zinc-200 dark:hover:bg-zinc-800"
+                                    >
+                                      Cancel
+                                    </button>
+
+                                    <button
+                                      type="button"
+                                      disabled={
+                                        isUpdatingSubtask
+                                      }
+                                      onClick={() =>
+                                        handleSaveSubtask(
+                                          subtask.id,
+                                        )
+                                      }
+                                      className="rounded-md bg-zinc-900 px-3 py-1.5 text-[10px] text-white disabled:opacity-40 dark:bg-white dark:text-black"
+                                    >
+                                      {isUpdatingSubtask
+                                        ? "Saving..."
+                                        : "Save"}
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="grid min-w-[650px] grid-cols-[minmax(0,1fr)_100px_125px_110px_40px] items-center px-3 py-2.5 text-xs">
+
+                                {/* TASK */}
+
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    handleToggleSubtask(
+                                      subtask.id,
+                                      !subtask.completed,
+                                    )
+                                  }
+                                  className="flex min-w-0 items-center gap-2 text-left"
+                                >
+                                  {subtask.completed ? (
+                                    <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-500" />
+                                  ) : (
+                                    <Circle className="h-4 w-4 shrink-0 text-zinc-300 dark:text-zinc-600" />
+                                  )}
+
+                                  <span
+                                    className={
+                                      subtask.completed
+                                        ? "truncate text-zinc-400 line-through"
+                                        : "truncate text-zinc-800 dark:text-zinc-200"
+                                    }
+                                  >
+                                    {
+                                      subtask.title
+                                    }
+                                  </span>
+                                </button>
+
+                                {/* PRIORITY */}
+
+                                <div className="flex items-center gap-1.5">
+                                  <span
+                                    className={`h-1.5 w-1.5 rounded-full ${
+                                      priorityDotColors[
+                                        subtask.priority ||
+                                          "NO_PRIORITY"
+                                      ]
+                                    }`}
+                                  />
+
+                                  <span
+                                    className={`text-[10px] ${
+                                      priorityColors[
+                                        subtask.priority ||
+                                          "NO_PRIORITY"
+                                      ]
+                                    }`}
+                                  >
+                                    {
+                                      priorityLabels[
+                                        subtask.priority ||
+                                          "NO_PRIORITY"
+                                      ]
+                                    }
+                                  </span>
+                                </div>
+
+                                {/* MEMBER */}
+
+                                <div className="flex min-w-0 items-center gap-1.5">
+                                  <Avatar
+                                    user={
+                                      subtask.assignee
+                                    }
+                                    small
+                                  />
+
+                                  <span className="truncate text-[10px] text-zinc-500 dark:text-zinc-400">
+                                    {subtask
+                                      .assignee
+                                      ?.name ||
+                                      "Unassigned"}
+                                  </span>
+                                </div>
+
+                                {/* DATE */}
+
+                                <div className="flex items-center gap-1.5 text-[10px] text-zinc-500 dark:text-zinc-400">
+                                  <CalendarDays className="h-3 w-3 text-zinc-400" />
+
+                                  {subtask.dueDate
+                                    ? new Date(
+                                        subtask.dueDate,
+                                      ).toLocaleDateString(
+                                        undefined,
+                                        {
+                                          day: "numeric",
+                                          month: "short",
+                                          year: "numeric",
+                                        },
+                                      )
+                                    : "No date"}
+                                </div>
+
+                                {/* ACTIONS */}
+
+                                <div
+                                  className="relative flex justify-end"
+                                  ref={
+                                    openSubtaskMenu ===
+                                    subtask.id
+                                      ? subtaskMenuRef
+                                      : null
+                                  }
+                                >
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      setOpenSubtaskMenu(
+                                        openSubtaskMenu ===
+                                          subtask.id
+                                          ? null
+                                          : subtask.id,
+                                      )
+                                    }
+                                    className="rounded p-1 text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
+                                    aria-label="Subtask actions"
+                                  >
+                                    <MoreHorizontal className="h-3.5 w-3.5" />
+                                  </button>
+
+                                  {openSubtaskMenu ===
+                                    subtask.id && (
+                                    <div className="absolute right-0 top-7 z-[100] w-36 rounded-lg border border-zinc-200 bg-white p-1.5 shadow-xl dark:border-zinc-700 dark:bg-zinc-900">
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          handleStartEditSubtask(
+                                            subtask,
+                                          )
+                                        }
+                                        className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-[11px] text-zinc-700 transition hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                                      >
+                                        <Settings className="h-3.5 w-3.5 text-zinc-400" />
+
+                                        Edit
+                                      </button>
+
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          handleDeleteSubtask(
+                                            subtask.id,
+                                          )
+                                        }
+                                        className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-[11px] text-red-500 transition hover:bg-red-50 dark:hover:bg-red-950/30"
+                                      >
+                                        <Trash2 className="h-3.5 w-3.5" />
+
+                                        Delete
+                                      </button>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      },
+                    )
+                  )}
+                </div>
+
+                {subtaskError && (
+                  <p className="mt-2 text-[10px] text-red-500">
+                    {subtaskError}
+                  </p>
+                )}
+              </section>
+
+              {/* =================================================
+                  UPDATES / COMMENTS
+              ================================================= */}
+
+              <section>
+                <div className="mb-3 flex items-center gap-2">
+                  <ChevronDown className="h-3.5 w-3.5 text-zinc-500" />
+
+                  <h2 className="text-sm font-semibold">
+                    Updates
+                  </h2>
+
+                  <span className="text-[10px] text-zinc-400">
+                    {task.comments.length}
+                  </span>
+                </div>
+
+                <div className="rounded-lg border border-zinc-200 dark:border-zinc-800">
+
+                  {task.comments.length ===
+                  0 ? (
+                    <div className="px-5 py-7 text-center">
+                      <MessageCircle className="mx-auto h-5 w-5 text-zinc-300 dark:text-zinc-700" />
+
+                      <p className="mt-2 text-xs text-zinc-400">
+                        No updates yet.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
+                      {task.comments.map(
+                        (comment) => (
+                          <div
+                            key={
+                              comment.id
+                            }
+                            className="flex gap-3 p-4"
+                          >
+                            <Avatar
+                              user={
+                                comment.user
+                              }
+                            />
+
+                            <div className="min-w-0 flex-1">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <span className="text-xs font-medium text-zinc-800 dark:text-zinc-200">
+                                  {comment
+                                    .user
+                                    ?.name ||
+                                    "User"}
+                                </span>
+
+                                <span className="text-[10px] text-zinc-400">
+                                  {new Date(
+                                    comment.createdAt,
+                                  ).toLocaleString()}
+                                </span>
+                              </div>
+
+                              <p className="mt-1 text-xs leading-5 text-zinc-500 dark:text-zinc-400">
+                                {
+                                  comment.content
+                                }
+                              </p>
+                            </div>
+                          </div>
+                        ),
+                      )}
+                    </div>
+                  )}
+
+                  {/* COMMENT INPUT */}
+
+                  <form
+                    onSubmit={
+                      handleAddComment
+                    }
+                    className="border-t border-zinc-200 dark:border-zinc-800"
+                  >
+                    <textarea
+                      value={
+                        newComment
+                      }
+                      onChange={(
+                        event,
+                      ) => {
+                        setNewComment(
+                          event.target
+                            .value,
+                        );
+
+                        setCommentError(
+                          "",
+                        );
+                      }}
+                      onKeyDown={(
+                        event,
+                      ) => {
+                        if (
+                          event.key ===
+                            "Enter" &&
+                          !event.shiftKey
+                        ) {
+                          event.preventDefault();
+
+                          if (
+                            newComment.trim() &&
+                            !isAddingComment
+                          ) {
+                            event.currentTarget.form?.requestSubmit();
+                          }
+                        }
+                      }}
+                      placeholder="Add a comment..."
+                      rows={3}
+                      className="w-full resize-none bg-transparent px-4 py-3 text-xs text-zinc-800 outline-none placeholder:text-zinc-400 dark:text-zinc-100"
+                    />
+
+                    <div className="flex items-center justify-between border-t border-zinc-100 px-3 py-2 dark:border-zinc-800">
+                      <button
+                        type="button"
+                        disabled
+                        className="p-1.5 text-zinc-300 dark:text-zinc-700"
+                      >
+                        <Paperclip className="h-4 w-4" />
+                      </button>
+
+                      <button
+                        type="submit"
+                        disabled={
+                          !newComment.trim() ||
+                          isAddingComment
+                        }
+                        className="flex items-center gap-1.5 rounded-md bg-zinc-900 px-3 py-1.5 text-[10px] font-medium text-white transition disabled:opacity-40 dark:bg-white dark:text-black"
+                      >
+                        <Send className="h-3 w-3" />
+
+                        {isAddingComment
+                          ? "Posting..."
+                          : "Comment"}
+                      </button>
+                    </div>
+                  </form>
+                </div>
+
+                {commentError && (
+                  <p className="mt-2 text-[10px] text-red-500">
+                    {commentError}
+                  </p>
+                )}
+              </section>
+            </section>
+
+            {/* =================================================
+                RIGHT DETAILS
+            ================================================= */}
+
+            <aside className="h-fit pt-4">
+
+              <div className="overflow-visible rounded-xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
+
+                {/* DETAILS HEADER */}
+
+                <div className="flex items-center justify-between border-b border-zinc-200 px-4 py-3 dark:border-zinc-800">
+                  <div className="flex items-center gap-2">
+                    <ChevronDown className="h-3 w-3" />
+
+                    <h2 className="text-xs font-semibold">
+                      Details
+                    </h2>
+                  </div>
+
+                  <button
+                    type="button"
+                    className="rounded p-1 text-zinc-400 transition hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                  >
+                    <Settings className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+
+                {/* STATUS */}
+
+                <CustomDropdown
+                  open={
+                    openMenu ===
+                    "status"
+                  }
+                  onToggle={() =>
                     setOpenMenu(
                       openMenu ===
-                        "member"
+                        "status"
                         ? null
-                        : "member",
+                        : "status",
                     )
                   }
-                  className="inline-flex items-center gap-2 rounded-md border border-zinc-200 px-2.5 py-1.5 text-xs hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-900"
+                  width="w-48"
+                  align="right"
+                  trigger={
+                    <DetailButton
+                      label="Status"
+                      value={
+                        statusLabels[
+                          task.status
+                        ]
+                      }
+                      color={
+                        task.status ===
+                        "COMPLETED"
+                          ? "text-emerald-500"
+                          : task.status ===
+                            "DOING"
+                            ? "text-blue-500"
+                            : task.status ===
+                              "ON_HOLD"
+                              ? "text-orange-500"
+                              : "text-zinc-600 dark:text-zinc-300"
+                      }
+                      onClick={() => {}}
+                    />
+                  }
                 >
-                  <User className="h-3.5 w-3.5 text-zinc-400" />
+                  <DropdownTitle>
+                    Status
+                  </DropdownTitle>
 
-                  {task.assignee?.name ||
-                    "Unassigned"}
+                  {(
+                    Object.keys(
+                      statusLabels,
+                    ) as ApiTaskDetails["status"][]
+                  ).map(
+                    (status) => (
+                      <button
+                        key={status}
+                        type="button"
+                        onClick={() =>
+                          handleUpdateTask({
+                            status,
+                          })
+                        }
+                        className="dropdown-item"
+                      >
+                        <span>
+                          {
+                            statusLabels[
+                              status
+                            ]
+                          }
+                        </span>
 
-                  <ChevronDown className="h-3 w-3 text-zinc-400" />
-                </button>
+                        {task.status ===
+                          status && (
+                          <Check className="h-3.5 w-3.5 text-violet-600" />
+                        )}
+                      </button>
+                    ),
+                  )}
+                </CustomDropdown>
 
-                {/* Due date */}
+                {/* PRIORITY */}
 
-                <span className="inline-flex items-center gap-2 rounded-md bg-red-50 px-2.5 py-1.5 text-xs text-red-500 dark:bg-red-950/30 dark:text-red-400">
-                  <CalendarDays className="h-3.5 w-3.5" />
-
-                  {task.dueDate
-                    ? new Date(
-                        task.dueDate,
-                      ).toLocaleDateString(
-                        undefined,
-                        {
-                          day: "numeric",
-                          month: "short",
-                        },
-                      )
-                    : "No date"}
-                </span>
-
-                {/* Priority */}
-
-                <button
-                  type="button"
-                  onClick={() =>
+                <CustomDropdown
+                  open={
+                    openMenu ===
+                    "priority"
+                  }
+                  onToggle={() =>
                     setOpenMenu(
                       openMenu ===
                         "priority"
@@ -1052,66 +2648,32 @@ export default function TaskDetailsPage() {
                         : "priority",
                     )
                   }
-                  className={`inline-flex items-center gap-2 rounded-md border border-zinc-200 px-2.5 py-1.5 text-xs dark:border-zinc-700 ${priorityColors[task.priority]}`}
+                  width="w-48"
+                  align="right"
+                  trigger={
+                    <DetailButton
+                      label="Priority"
+                      value={
+                        priorityLabels[
+                          task.priority
+                        ]
+                      }
+                      color={
+                        priorityColors[
+                          task.priority
+                        ]
+                      }
+                      icon={
+                        <PriorityIcon
+                          priority={
+                            task.priority
+                          }
+                        />
+                      }
+                      onClick={() => {}}
+                    />
+                  }
                 >
-                  <Clock3 className="h-3.5 w-3.5" />
-
-                  {priorityLabels[
-                    task.priority
-                  ]}
-
-                  <ChevronDown className="h-3 w-3" />
-                </button>
-              </div>
-
-              {/* Member Dropdown */}
-
-              {openMenu === "member" && (
-                <Dropdown>
-                  <DropdownTitle>
-                    Members
-                  </DropdownTitle>
-
-                  <button
-                    type="button"
-                    onClick={() =>
-                      handleUpdateTask({
-                        assigneeId:
-                          undefined,
-                      })
-                    }
-                    className="dropdown-item"
-                  >
-                    Unassigned
-                  </button>
-
-                  {workspaceMembers.map(
-                    (member) => (
-                      <button
-                        key={
-                          member.userId
-                        }
-                        type="button"
-                        onClick={() =>
-                          handleUpdateTask({
-                            assigneeId:
-                              member.userId,
-                          })
-                        }
-                        className="dropdown-item"
-                      >
-                        {member.user.name}
-                      </button>
-                    ),
-                  )}
-                </Dropdown>
-              )}
-
-              {/* Priority Dropdown */}
-
-              {openMenu ===
-                "priority" && (
-                <Dropdown>
                   <DropdownTitle>
                     Priority
                   </DropdownTitle>
@@ -1132,1087 +2694,370 @@ export default function TaskDetailsPage() {
                         }
                         className="dropdown-item"
                       >
-                        <span
-                          className={
-                            priorityColors[
+                        <span className="flex items-center gap-2">
+                          <PriorityIcon
+                            priority={
                               priority
-                            ]
-                          }
-                        >
-                          {
-                            priorityLabels[
-                              priority
-                            ]
-                          }
-                        </span>
+                            }
+                          />
 
-                        {task.priority ===
-                          priority && (
-                          <Check className="ml-auto h-3.5 w-3.5" />
-                        )}
-                      </button>
-                    ),
-                  )}
-                </Dropdown>
-              )}
-            </div>
-
-            {/* =================================================
-                LABELS
-            ================================================= */}
-
-            <div className="mb-5">
-              <div className="mb-2 text-xs font-medium text-zinc-500">
-                Labels
-              </div>
-
-              <div className="flex flex-wrap gap-1.5">
-                {task.labels.map(
-                  (label) => (
-                    <span
-                      key={label.id}
-                      className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-[10px] font-medium"
-                      style={{
-                        borderColor:
-                          `${label.color}55`,
-                        color:
-                          label.color,
-                        backgroundColor:
-                          `${label.color}10`,
-                      }}
-                    >
-                      <Tag className="h-3 w-3" />
-
-                      {label.name}
-
-                      <button
-                        type="button"
-                        onClick={() =>
-                          handleRemoveLabel(
-                            label.id,
-                          )
-                        }
-                        className="ml-0.5 opacity-50 hover:opacity-100"
-                      >
-                        <X className="h-2.5 w-2.5" />
-                      </button>
-                    </span>
-                  ),
-                )}
-
-                <select
-                  value=""
-                  onChange={(event) => {
-                    setSelectedLabelId(
-                      event.target.value,
-                    );
-
-                    setTimeout(
-                      handleAssignLabel,
-                      0,
-                    );
-                  }}
-                  className="h-6 rounded-md border border-dashed border-zinc-300 bg-transparent px-2 text-[10px] text-zinc-500 outline-none dark:border-zinc-700"
-                >
-                  <option value="">
-                    + Add label
-                  </option>
-
-                  {workspaceLabels
-                    .filter(
-                      (label) =>
-                        !task.labels.some(
-                          (assigned) =>
-                            assigned.id ===
-                            label.id,
-                        ),
-                    )
-                    .map((label) => (
-                      <option
-                        key={label.id}
-                        value={label.id}
-                      >
-                        {label.name}
-                      </option>
-                    ))}
-                </select>
-              </div>
-
-              {/* Create label */}
-
-              <form
-                onSubmit={
-                  handleCreateLabel
-                }
-                className="mt-2 flex max-w-sm gap-2"
-              >
-                <input
-                  value={newLabelName}
-                  onChange={(event) =>
-                    setNewLabelName(
-                      event.target.value,
-                    )
-                  }
-                  placeholder="Create label..."
-                  className="h-8 min-w-0 flex-1 rounded-md border border-zinc-200 bg-transparent px-2.5 text-xs outline-none focus:border-violet-400 dark:border-zinc-700"
-                />
-
-                <input
-                  type="color"
-                  value={newLabelColor}
-                  onChange={(event) =>
-                    setNewLabelColor(
-                      event.target.value,
-                    )
-                  }
-                  className="h-8 w-9 rounded-md border border-zinc-200 p-1 dark:border-zinc-700"
-                />
-
-                <button
-                  type="submit"
-                  disabled={
-                    !newLabelName.trim() ||
-                    isAddingLabel
-                  }
-                  className="rounded-md border border-zinc-200 px-3 text-xs dark:border-zinc-700"
-                >
-                  Create
-                </button>
-              </form>
-
-              {labelError && (
-                <p className="mt-1 text-[10px] text-red-500">
-                  {labelError}
-                </p>
-              )}
-            </div>
-
-            {/* =================================================
-                RESOURCES
-            ================================================= */}
-
-            <div className="mb-6">
-              <div className="mb-2 text-xs font-medium text-zinc-500">
-                Resources
-              </div>
-
-              <button
-                type="button"
-                className="flex items-center gap-2 text-[11px] text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200"
-              >
-                <Link2 className="h-3.5 w-3.5" />
-
-                Add document or link...
-              </button>
-            </div>
-
-            {/* =================================================
-                SUBTASKS
-            ================================================= */}
-
-            <section className="mb-6">
-              <div className="mb-3 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <ChevronDown className="h-3.5 w-3.5 text-zinc-500" />
-
-                  <h3 className="text-sm font-semibold">
-                    Subtasks
-                  </h3>
-
-                  <span className="text-[10px] text-zinc-400">
-                    {completedSubtasks}/
-                    {task.subtasks.length}
-                  </span>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() =>
-                    setIsSubtaskInputOpen(
-                      (current) =>
-                        !current,
-                    )
-                  }
-                  className="flex items-center gap-1 rounded-md px-2 py-1 text-[10px] text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800"
-                >
-                  <Plus className="h-3 w-3" />
-                  Add Subtask
-                </button>
-              </div>
-
-              {/* =================================================
-                  ADD SUBTASK FORM
-              ================================================= */}
-
-              {isSubtaskInputOpen && (
-                <form
-                  onSubmit={
-                    handleAddSubtask
-                  }
-                  className="mb-3 rounded-lg border border-zinc-200 bg-zinc-50 p-3 dark:border-zinc-800 dark:bg-zinc-900"
-                >
-                  <input
-                    autoFocus
-                    value={newSubtask}
-                    onChange={(event) =>
-                      setNewSubtask(
-                        event.target.value,
-                      )
-                    }
-                    placeholder="Enter subtask..."
-                    className="mb-3 h-9 w-full rounded-md border border-zinc-200 bg-white px-3 text-xs outline-none focus:border-violet-400 dark:border-zinc-700 dark:bg-zinc-950"
-                  />
-
-                  <div className="flex flex-wrap items-center gap-2">
-
-                    {/* Priority */}
-
-                    <select
-                      value={
-                        newSubtaskPriority
-                      }
-                      onChange={(event) =>
-                        setNewSubtaskPriority(
-                          event.target
-                            .value as TaskPriority,
-                        )
-                      }
-                      className="h-8 rounded-md border border-zinc-200 bg-white px-2 text-[11px] outline-none dark:border-zinc-700 dark:bg-zinc-950"
-                    >
-                      {(
-                        Object.keys(
-                          priorityLabels,
-                        ) as TaskPriority[]
-                      ).map(
-                        (priority) => (
-                          <option
-                            key={priority}
-                            value={priority}
+                          <span
+                            className={
+                              priorityColors[
+                                priority
+                              ]
+                            }
                           >
                             {
                               priorityLabels[
                                 priority
                               ]
                             }
-                          </option>
-                        ),
-                      )}
-                    </select>
+                          </span>
+                        </span>
 
-                    {/* Assignee */}
-
-                    <select
-                      value={
-                        newSubtaskAssigneeId
-                      }
-                      onChange={(event) =>
-                        setNewSubtaskAssigneeId(
-                          event.target
-                            .value,
-                        )
-                      }
-                      className="h-8 max-w-[170px] rounded-md border border-zinc-200 bg-white px-2 text-[11px] outline-none dark:border-zinc-700 dark:bg-zinc-950"
-                    >
-                      <option value="">
-                        Unassigned
-                      </option>
-
-                      {workspaceMembers.map(
-                        (member) => (
-                          <option
-                            key={
-                              member.userId
-                            }
-                            value={
-                              member.userId
-                            }
-                          >
-                            {member.user.name}
-                          </option>
-                        ),
-                      )}
-                    </select>
-
-                    {/* Due Date */}
-
-                    <input
-                      type="date"
-                      value={
-                        newSubtaskDueDate
-                      }
-                      onChange={(event) =>
-                        setNewSubtaskDueDate(
-                          event.target.value,
-                        )
-                      }
-                      className="h-8 rounded-md border border-zinc-200 bg-white px-2 text-[11px] outline-none dark:border-zinc-700 dark:bg-zinc-950"
-                    />
-
-                    <div className="ml-auto flex gap-2">
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setIsSubtaskInputOpen(
-                            false,
-                          )
-                        }
-                        className="h-8 rounded-md px-3 text-[11px] text-zinc-500 hover:bg-zinc-200 dark:hover:bg-zinc-800"
-                      >
-                        Cancel
+                        {task.priority ===
+                          priority && (
+                          <Check className="h-3.5 w-3.5 text-zinc-800 dark:text-zinc-100" />
+                        )}
                       </button>
+                    ),
+                  )}
+                </CustomDropdown>
 
-                      <button
-                        type="submit"
-                        disabled={
-                          !newSubtask.trim() ||
-                          isAddingSubtask
-                        }
-                        className="h-8 rounded-md bg-zinc-900 px-3 text-[11px] font-medium text-white disabled:opacity-40 dark:bg-white dark:text-black"
-                      >
-                        {isAddingSubtask
-                          ? "Adding..."
-                          : "Add"}
-                      </button>
-                    </div>
+                {/* MEMBERS */}
+
+                <DetailRow
+                  icon={
+                    <User className="h-3.5 w-3.5" />
+                  }
+                  label="Members"
+                  value={
+                    task.assignee?.name ||
+                    "Unassigned"
+                  }
+                />
+
+                {/* DATES */}
+
+                <DetailRow
+                  icon={
+                    <CalendarDays className="h-3.5 w-3.5" />
+                  }
+                  label="Dates"
+                  value={
+                    task.dueDate
+                      ? new Date(
+                          task.dueDate,
+                        ).toLocaleDateString(
+                          undefined,
+                          {
+                            day: "numeric",
+                            month: "short",
+                            year: "numeric",
+                          },
+                        )
+                      : "No date"
+                  }
+                />
+
+                {/* LABELS */}
+
+                <DetailRow
+                  icon={
+                    <Tag className="h-3.5 w-3.5" />
+                  }
+                  label="Labels"
+                  value={String(
+                    task.labels.length,
+                  )}
+                />
+
+                {/* TEAMS */}
+
+                <DetailRow
+                  icon={
+                    <User className="h-3.5 w-3.5" />
+                  }
+                  label="Teams"
+                  value="Workspace"
+                />
+
+                {/* REPORTER */}
+
+                <DetailRow
+                  icon={
+                    <User className="h-3.5 w-3.5" />
+                  }
+                  label="Reporter"
+                  value={
+                    task.creator?.name ||
+                    "Unknown"
+                  }
+                />
+
+                {/* =================================================
+                    UPDATES
+                ================================================= */}
+
+                <div className="border-t border-zinc-200 dark:border-zinc-800">
+                  <div className="flex items-center gap-2 px-4 py-3">
+                    <ChevronDown className="h-3 w-3" />
+
+                    <span className="text-xs font-semibold">
+                      Updates
+                    </span>
                   </div>
-                </form>
-              )}
 
-              {/* =================================================
-                  SUBTASK TABLE
-              ================================================= */}
-
-              <div className="overflow-visible rounded-lg border border-zinc-200 dark:border-zinc-800">
-
-                {/* Table Header */}
-
-                <div className="grid grid-cols-[minmax(0,1fr)_100px_125px_110px_40px] border-b border-zinc-200 bg-zinc-50 px-3 py-2 text-[10px] font-medium text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900">
-                  <span>Task</span>
-                  <span>Priority</span>
-                  <span>Members</span>
-                  <span>Due Date</span>
-                  <span />
-                </div>
-
-                {task.subtasks.length ===
-                0 ? (
-                  <div className="px-4 py-7 text-center text-xs text-zinc-400">
-                    No subtasks yet.
-                  </div>
-                ) : (
-                  task.subtasks.map(
-                    (subtask) => {
-                      const isEditing =
-                        editingSubtaskId ===
-                        subtask.id;
-
-                      return (
-                        <div
-                          key={
-                            subtask.id
-                          }
-                          className="border-b border-zinc-100 last:border-0 dark:border-zinc-800"
-                        >
-                          {isEditing ? (
-                            /* =================================================
-                               EDIT SUBTASK
-                            ================================================= */
-
-                            <div className="space-y-3 bg-zinc-50 p-3 dark:bg-zinc-900">
-                              <input
-                                value={
-                                  editingSubtaskTitle
-                                }
-                                onChange={(
-                                  event,
-                                ) =>
-                                  setEditingSubtaskTitle(
-                                    event
-                                      .target
-                                      .value,
-                                  )
-                                }
-                                className="h-8 w-full rounded-md border border-zinc-200 bg-white px-2.5 text-xs outline-none focus:border-violet-400 dark:border-zinc-700 dark:bg-zinc-950"
-                              />
-
-                              <div className="flex flex-wrap gap-2">
-                                <select
-                                  value={
-                                    editingSubtaskPriority
-                                  }
-                                  onChange={(
-                                    event,
-                                  ) =>
-                                    setEditingSubtaskPriority(
-                                      event
-                                        .target
-                                        .value as TaskPriority,
-                                    )
-                                  }
-                                  className="h-8 rounded-md border border-zinc-200 bg-white px-2 text-[11px] dark:border-zinc-700 dark:bg-zinc-950"
-                                >
-                                  {(
-                                    Object.keys(
-                                      priorityLabels,
-                                    ) as TaskPriority[]
-                                  ).map(
-                                    (
-                                      priority,
-                                    ) => (
-                                      <option
-                                        key={
-                                          priority
-                                        }
-                                        value={
-                                          priority
-                                        }
-                                      >
-                                        {
-                                          priorityLabels[
-                                            priority
-                                          ]
-                                        }
-                                      </option>
-                                    ),
-                                  )}
-                                </select>
-
-                                <select
-                                  value={
-                                    editingSubtaskAssigneeId
-                                  }
-                                  onChange={(
-                                    event,
-                                  ) =>
-                                    setEditingSubtaskAssigneeId(
-                                      event
-                                        .target
-                                        .value,
-                                    )
-                                  }
-                                  className="h-8 max-w-[170px] rounded-md border border-zinc-200 bg-white px-2 text-[11px] dark:border-zinc-700 dark:bg-zinc-950"
-                                >
-                                  <option value="">
-                                    Unassigned
-                                  </option>
-
-                                  {workspaceMembers.map(
-                                    (
-                                      member,
-                                    ) => (
-                                      <option
-                                        key={
-                                          member.userId
-                                        }
-                                        value={
-                                          member.userId
-                                        }
-                                      >
-                                        {
-                                          member
-                                            .user
-                                            .name
-                                        }
-                                      </option>
-                                    ),
-                                  )}
-                                </select>
-
-                                <input
-                                  type="date"
-                                  value={
-                                    editingSubtaskDueDate
-                                  }
-                                  onChange={(
-                                    event,
-                                  ) =>
-                                    setEditingSubtaskDueDate(
-                                      event
-                                        .target
-                                        .value,
-                                    )
-                                  }
-                                  className="h-8 rounded-md border border-zinc-200 bg-white px-2 text-[11px] dark:border-zinc-700 dark:bg-zinc-950"
-                                />
-
-                                <div className="ml-auto flex gap-2">
-                                  <button
-                                    type="button"
-                                    onClick={
-                                      handleCancelEditSubtask
-                                    }
-                                    className="rounded-md px-3 py-1.5 text-[10px] text-zinc-500 hover:bg-zinc-200 dark:hover:bg-zinc-800"
-                                  >
-                                    Cancel
-                                  </button>
-
-                                  <button
-                                    type="button"
-                                    disabled={
-                                      isUpdatingSubtask
-                                    }
-                                    onClick={() =>
-                                      handleSaveSubtask(
-                                        subtask.id,
-                                      )
-                                    }
-                                    className="rounded-md bg-zinc-900 px-3 py-1.5 text-[10px] text-white disabled:opacity-40 dark:bg-white dark:text-black"
-                                  >
-                                    {isUpdatingSubtask
-                                      ? "Saving..."
-                                      : "Save"}
-                                  </button>
-                                </div>
-                              </div>
-                            </div>
-                          ) : (
-                            /* =================================================
-                               NORMAL SUBTASK ROW
-                            ================================================= */
-
-                            <div className="grid grid-cols-[minmax(0,1fr)_100px_125px_110px_40px] items-center px-3 py-2.5 text-xs">
-
-                              {/* Task */}
-
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  handleToggleSubtask(
-                                    subtask.id,
-                                    !subtask.completed,
-                                  )
-                                }
-                                className="flex min-w-0 items-center gap-2 text-left"
-                              >
-                                {subtask.completed ? (
-                                  <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-500" />
-                                ) : (
-                                  <Circle className="h-4 w-4 shrink-0 text-zinc-300 dark:text-zinc-600" />
-                                )}
-
-                                <span
-                                  className={
-                                    subtask.completed
-                                      ? "truncate text-zinc-400 line-through"
-                                      : "truncate"
-                                  }
-                                >
-                                  {
-                                    subtask.title
-                                  }
-                                </span>
-                              </button>
-
-                              {/* Priority */}
-
-                              <div className="flex items-center gap-1.5">
-                                <span
-                                  className={`h-1.5 w-1.5 rounded-full ${
-                                    priorityDotColors[
-                                      subtask.priority ||
-                                        "NO_PRIORITY"
-                                    ]
-                                  }`}
-                                />
-
-                                <span
-                                  className={`text-[10px] ${
-                                    priorityColors[
-                                      subtask.priority ||
-                                        "NO_PRIORITY"
-                                    ]
-                                  }`}
-                                >
-                                  {
-                                    priorityLabels[
-                                      subtask.priority ||
-                                        "NO_PRIORITY"
-                                    ]
-                                  }
-                                </span>
-                              </div>
-
-                              {/* Member */}
-
-                              <div className="flex min-w-0 items-center gap-1.5">
-                                <Avatar
-                                  user={
-                                    subtask.assignee
-                                  }
-                                  small
-                                />
-
-                                <span className="truncate text-[10px] text-zinc-500 dark:text-zinc-400">
-                                  {subtask
-                                    .assignee
-                                    ?.name ||
-                                    "Unassigned"}
-                                </span>
-                              </div>
-
-                              {/* Due Date */}
-
-                              <div className="flex items-center gap-1.5 text-[10px] text-zinc-500">
-                                <CalendarDays className="h-3 w-3 text-zinc-400" />
-
-                                {subtask.dueDate
-                                  ? new Date(
-                                      subtask.dueDate,
-                                    ).toLocaleDateString(
-                                      undefined,
-                                      {
-                                        day: "numeric",
-                                        month: "short",
-                                      },
-                                    )
-                                  : "No date"}
-                              </div>
-
-                              {/* Actions */}
-
-                              <div
-                                className="relative flex justify-end"
-                                ref={
-                                  openSubtaskMenu ===
-                                  subtask.id
-                                    ? subtaskMenuRef
-                                    : null
-                                }
-                              >
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    setOpenSubtaskMenu(
-                                      openSubtaskMenu ===
-                                        subtask.id
-                                        ? null
-                                        : subtask.id,
-                                    )
-                                  }
-                                  className="rounded p-1 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
-                                  aria-label="Subtask actions"
-                                >
-                                  <MoreHorizontal className="h-3.5 w-3.5" />
-                                </button>
-
-                                {openSubtaskMenu ===
-                                  subtask.id && (
-                                  <div className="absolute right-0 top-7 z-50 w-36 rounded-lg border border-zinc-200 bg-white p-1.5 shadow-lg dark:border-zinc-700 dark:bg-zinc-900">
-
-                                    <button
-                                      type="button"
-                                      onClick={() =>
-                                        handleStartEditSubtask(
-                                          subtask,
-                                        )
-                                      }
-                                      className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-[11px] hover:bg-zinc-100 dark:hover:bg-zinc-800"
-                                    >
-                                      <Settings className="h-3.5 w-3.5 text-zinc-400" />
-                                      Edit
-                                    </button>
-
-                                    <button
-                                      type="button"
-                                      onClick={() =>
-                                        handleDeleteSubtask(
-                                          subtask.id,
-                                        )
-                                      }
-                                      className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-[11px] text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30"
-                                    >
-                                      <Trash2 className="h-3.5 w-3.5" />
-                                      Delete
-                                    </button>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    },
-                  )
-                )}
-              </div>
-
-              {subtaskError && (
-                <p className="mt-2 text-[10px] text-red-500">
-                  {subtaskError}
-                </p>
-              )}
-            </section>
-
-            {/* =================================================
-                UPDATES
-            ================================================= */}
-
-            <section>
-              <div className="mb-3 flex items-center gap-2">
-                <ChevronDown className="h-3.5 w-3.5 text-zinc-500" />
-
-                <h3 className="text-sm font-semibold">
-                  Updates
-                </h3>
-
-                <span className="text-[10px] text-zinc-400">
-                  {task.comments.length}
-                </span>
-              </div>
-
-              <div className="rounded-lg border border-zinc-200 dark:border-zinc-800">
-                {task.comments.length ===
-                0 ? (
-                  <div className="px-5 py-7 text-center">
-                    <MessageCircle className="mx-auto h-5 w-5 text-zinc-300 dark:text-zinc-700" />
-
-                    <p className="mt-2 text-xs text-zinc-400">
-                      No updates yet.
-                    </p>
-                  </div>
-                ) : (
-                  <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
-                    {task.comments.map(
+                  {task.comments
+                    .slice(-3)
+                    .reverse()
+                    .map(
                       (comment) => (
                         <div
                           key={
                             comment.id
                           }
-                          className="flex gap-3 p-4"
+                          className="flex gap-2 border-t border-zinc-100 px-4 py-3 dark:border-zinc-800"
                         >
                           <Avatar
                             user={
                               comment.user
                             }
+                            small
                           />
 
-                          <div className="min-w-0 flex-1">
-                            <div className="flex flex-wrap items-center gap-2">
-                              <span className="text-xs font-medium">
-                                {comment.user
-                                  ?.name ||
-                                  "User"}
-                              </span>
+                          <div className="min-w-0">
+                            <p className="text-[10px] font-medium">
+                              {comment
+                                .user
+                                ?.name ||
+                                "User"}
+                            </p>
 
-                              <span className="text-[10px] text-zinc-400">
-                                {new Date(
-                                  comment.createdAt,
-                                ).toLocaleString()}
-                              </span>
-                            </div>
-
-                            <p className="mt-1 text-xs leading-5 text-zinc-500 dark:text-zinc-400">
+                            <p className="mt-0.5 truncate text-[10px] text-zinc-400">
                               {
                                 comment.content
                               }
+                            </p>
+
+                            <p className="mt-1 text-[9px] text-zinc-400">
+                              {new Date(
+                                comment.createdAt,
+                              ).toLocaleDateString()}
                             </p>
                           </div>
                         </div>
                       ),
                     )}
-                  </div>
-                )}
-
-                {/* Comment */}
-
-                <form
-                  onSubmit={
-                    handleAddComment
-                  }
-                  className="border-t border-zinc-200 dark:border-zinc-800"
-                >
-                  <textarea
-                    value={newComment}
-                    onChange={(event) => {
-                      setNewComment(
-                        event.target
-                          .value,
-                      );
-
-                      setCommentError("");
-                    }}
-                    onKeyDown={(event) => {
-                      if (
-                        event.key ===
-                          "Enter" &&
-                        !event.shiftKey
-                      ) {
-                        event.preventDefault();
-
-                        if (
-                          newComment.trim() &&
-                          !isAddingComment
-                        ) {
-                          event.currentTarget.form?.requestSubmit();
-                        }
-                      }
-                    }}
-                    placeholder="Add a comment..."
-                    rows={3}
-                    className="w-full resize-none bg-transparent px-4 py-3 text-xs outline-none placeholder:text-zinc-400"
-                  />
-
-                  <div className="flex items-center justify-between border-t border-zinc-100 px-3 py-2 dark:border-zinc-800">
-                    <button
-                      type="button"
-                      disabled
-                      className="p-1.5 text-zinc-300 dark:text-zinc-700"
-                    >
-                      <Paperclip className="h-4 w-4" />
-                    </button>
-
-                    <button
-                      type="submit"
-                      disabled={
-                        !newComment.trim() ||
-                        isAddingComment
-                      }
-                      className="flex items-center gap-1.5 rounded-md bg-zinc-900 px-3 py-1.5 text-[10px] font-medium text-white disabled:opacity-40 dark:bg-white dark:text-black"
-                    >
-                      <Send className="h-3 w-3" />
-
-                      {isAddingComment
-                        ? "Posting..."
-                        : "Comment"}
-                    </button>
-                  </div>
-                </form>
+                </div>
               </div>
-
-              {commentError && (
-                <p className="mt-2 text-[10px] text-red-500">
-                  {commentError}
-                </p>
-              )}
-            </section>
-          </section>
-
-          {/* =================================================
-              RIGHT DETAILS PANEL
-          ================================================= */}
-
-          <aside className="h-fit rounded-xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
-            <div className="flex items-center justify-between border-b border-zinc-200 px-4 py-3 dark:border-zinc-800">
-              <div className="flex items-center gap-2">
-                <ChevronDown className="h-3 w-3" />
-
-                <h3 className="text-xs font-semibold">
-                  Details
-                </h3>
-              </div>
-
-              <button
-                type="button"
-                className="rounded p-1 text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
-              >
-                <Settings className="h-3.5 w-3.5" />
-              </button>
-            </div>
-
-            {/* Status */}
-
-            <DetailButton
-              label="Status"
-              value={
-                statusLabels[
-                  task.status
-                ]
-              }
-              color="text-orange-500"
-              onClick={() =>
-                setOpenMenu(
-                  openMenu ===
-                    "status"
-                    ? null
-                    : "status",
-                )
-              }
-            />
-
-            {openMenu === "status" && (
-              <div className="border-b border-zinc-100 px-4 pb-2 dark:border-zinc-800">
-                {(
-                  Object.keys(
-                    statusLabels,
-                  ) as ApiTaskDetails["status"][]
-                ).map(
-                  (status) => (
-                    <button
-                      key={status}
-                      type="button"
-                      onClick={() =>
-                        handleUpdateTask({
-                          status,
-                        })
-                      }
-                      className="flex w-full items-center justify-between rounded-md px-2 py-1.5 text-xs hover:bg-zinc-100 dark:hover:bg-zinc-800"
-                    >
-                      {
-                        statusLabels[
-                          status
-                        ]
-                      }
-
-                      {task.status ===
-                        status && (
-                        <Check className="h-3.5 w-3.5" />
-                      )}
-                    </button>
-                  ),
-                )}
-              </div>
-            )}
-
-            {/* Priority */}
-
-            <DetailButton
-              label="Priority"
-              value={
-                priorityLabels[
-                  task.priority
-                ]
-              }
-              color={
-                priorityColors[
-                  task.priority
-                ]
-              }
-              onClick={() =>
-                setOpenMenu(
-                  openMenu ===
-                    "priority"
-                    ? null
-                    : "priority",
-                )
-              }
-            />
-
-            {/* Members */}
-
-            <DetailRow
-              icon={
-                <User className="h-3.5 w-3.5" />
-              }
-              label="Members"
-              value={
-                task.assignee?.name ||
-                "Unassigned"
-              }
-            />
-
-            {/* Dates */}
-
-            <DetailRow
-              icon={
-                <CalendarDays className="h-3.5 w-3.5" />
-              }
-              label="Dates"
-              value={
-                task.dueDate
-                  ? new Date(
-                      task.dueDate,
-                    ).toLocaleDateString()
-                  : "No date"
-              }
-            />
-
-            {/* Labels */}
-
-            <DetailRow
-              icon={
-                <Tag className="h-3.5 w-3.5" />
-              }
-              label="Labels"
-              value={String(
-                task.labels.length,
-              )}
-            />
-
-            {/* Teams */}
-
-            <DetailRow
-              icon={
-                <User className="h-3.5 w-3.5" />
-              }
-              label="Teams"
-              value="Workspace"
-            />
-
-            {/* Reporter */}
-
-            <DetailRow
-              icon={
-                <User className="h-3.5 w-3.5" />
-              }
-              label="Reporter"
-              value={
-                task.creator?.name ||
-                "Unknown"
-              }
-            />
-
-            {/* Updates */}
-
-            <div className="border-t border-zinc-200 dark:border-zinc-800">
-              <div className="flex items-center gap-2 px-4 py-3">
-                <ChevronDown className="h-3 w-3" />
-
-                <span className="text-xs font-semibold">
-                  Updates
-                </span>
-              </div>
-
-              {task.comments
-                .slice(-3)
-                .reverse()
-                .map(
-                  (comment) => (
-                    <div
-                      key={
-                        comment.id
-                      }
-                      className="flex gap-2 border-t border-zinc-100 px-4 py-3 dark:border-zinc-800"
-                    >
-                      <Avatar
-                        user={
-                          comment.user
-                        }
-                        small
-                      />
-
-                      <div className="min-w-0">
-                        <p className="text-[10px] font-medium">
-                          {comment.user
-                            ?.name ||
-                            "User"}
-                        </p>
-
-                        <p className="mt-0.5 truncate text-[10px] text-zinc-400">
-                          {
-                            comment.content
-                          }
-                        </p>
-
-                        <p className="mt-1 text-[9px] text-zinc-400">
-                          {new Date(
-                            comment.createdAt,
-                          ).toLocaleDateString()}
-                        </p>
-                      </div>
-                    </div>
-                  ),
-                )}
-            </div>
-          </aside>
+            </aside>
+          </div>
         </div>
-      </div>
-    </main>
+      </main>
+    </AppShell>
   );
 }
 
-// =====================================================
-// Helpers
-// =====================================================
+/* =========================================================
+   CUSTOM DROPDOWN
+========================================================= */
+
+function CustomDropdown({
+  open,
+  onToggle,
+  trigger,
+  children,
+  width = "w-48",
+  align = "left",
+}: {
+  open: boolean;
+  onToggle: () => void;
+  trigger: ReactNode;
+  children: ReactNode;
+  width?: string;
+  align?: "left" | "right";
+}) {
+  return (
+    <div className="relative">
+      <div onClick={onToggle}>
+        {trigger}
+      </div>
+
+      {open && (
+        <div
+          className={`absolute top-[calc(100%+6px)] z-[9999] ${width} ${
+            align === "right"
+              ? "right-0"
+              : "left-0"
+          } rounded-lg border border-zinc-200 bg-white p-1.5 shadow-xl shadow-zinc-900/10 dark:border-zinc-700 dark:bg-zinc-900 dark:shadow-black/40`}
+          role="menu"
+          onClick={(event) =>
+            event.stopPropagation()
+          }
+        >
+          {children}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* =========================================================
+   DROPDOWN TITLE
+========================================================= */
+
+function DropdownTitle({
+  children,
+}: {
+  children: ReactNode;
+}) {
+  return (
+    <div className="px-2.5 pb-1.5 pt-1 text-[10px] font-medium uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
+      {children}
+    </div>
+  );
+}
+
+/* =========================================================
+   SECTION HEADING
+========================================================= */
+
+function SectionHeading({
+  children,
+}: {
+  children: ReactNode;
+}) {
+  return (
+    <div className="mb-2 text-[11px] font-medium text-zinc-500 dark:text-zinc-400">
+      {children}
+    </div>
+  );
+}
+
+/* =========================================================
+   DETAIL BUTTON
+========================================================= */
+
+function DetailButton({
+  label,
+  value,
+  color,
+  icon,
+  onClick,
+}: {
+  label: string;
+  value: string;
+  color?: string;
+  icon?: ReactNode;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex w-full items-center justify-between gap-3 border-b border-zinc-100 px-4 py-3 text-left transition hover:bg-zinc-50 dark:border-zinc-800 dark:hover:bg-zinc-800/50"
+    >
+      <span className="text-[10px] text-zinc-500 dark:text-zinc-400">
+        {label}
+      </span>
+
+      <span
+        className={`flex min-w-0 items-center gap-1.5 text-[10px] font-medium ${
+          color ||
+          "text-zinc-700 dark:text-zinc-300"
+        }`}
+      >
+        {icon}
+
+        <span className="truncate">
+          {value}
+        </span>
+
+        <ChevronDown className="h-3 w-3 shrink-0 opacity-60" />
+      </span>
+    </button>
+  );
+}
+
+/* =========================================================
+   DETAIL ROW
+========================================================= */
+
+function DetailRow({
+  icon,
+  label,
+  value,
+}: {
+  icon: ReactNode;
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-3 border-b border-zinc-100 px-4 py-3 dark:border-zinc-800">
+      <div className="flex items-center gap-2 text-zinc-400">
+        {icon}
+
+        <span className="text-[10px] text-zinc-500 dark:text-zinc-400">
+          {label}
+        </span>
+      </div>
+
+      <span className="max-w-[130px] truncate text-right text-[10px] font-medium text-zinc-700 dark:text-zinc-300">
+        {value}
+      </span>
+    </div>
+  );
+}
+
+/* =========================================================
+   PRIORITY ICON
+========================================================= */
+
+function PriorityIcon({
+  priority,
+}: {
+  priority: TaskPriority;
+}) {
+  return (
+    <span
+      className={`flex items-end gap-[1px] ${priorityColors[priority]}`}
+      aria-hidden="true"
+    >
+      <span
+        className={`h-1 w-[2px] rounded-sm bg-current ${
+          priority ===
+          "NO_PRIORITY"
+            ? "opacity-30"
+            : ""
+        }`}
+      />
+
+      <span
+        className={`h-1.5 w-[2px] rounded-sm bg-current ${
+          priority ===
+          "NO_PRIORITY"
+            ? "opacity-30"
+            : ""
+        }`}
+      />
+
+      <span
+        className={`h-2 w-[2px] rounded-sm bg-current ${
+          priority ===
+          "NO_PRIORITY"
+            ? "opacity-30"
+            : ""
+        }`}
+      />
+    </span>
+  );
+}
+
+/* =========================================================
+   DATE FORMAT
+========================================================= */
 
 function formatDateForInput(
   date: string,
@@ -2244,104 +3089,9 @@ function formatDateForInput(
   return `${year}-${month}-${day}`;
 }
 
-// =====================================================
-// Dropdown
-// =====================================================
-
-function Dropdown({
-  children,
-}: {
-  children: ReactNode;
-}) {
-  return (
-    <div className="relative z-20 mt-2 w-64 rounded-lg border border-zinc-200 bg-white p-2 shadow-lg dark:border-zinc-700 dark:bg-zinc-900">
-      {children}
-    </div>
-  );
-}
-
-function DropdownTitle({
-  children,
-}: {
-  children: ReactNode;
-}) {
-  return (
-    <div className="px-2 pb-2 text-[10px] font-medium text-zinc-400">
-      {children}
-    </div>
-  );
-}
-
-// =====================================================
-// Detail Button
-// =====================================================
-
-function DetailButton({
-  label,
-  value,
-  color,
-  onClick,
-}: {
-  label: string;
-  value: string;
-  color?: string;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="flex w-full items-center justify-between border-b border-zinc-100 px-4 py-3 text-left hover:bg-zinc-50 dark:border-zinc-800 dark:hover:bg-zinc-800/50"
-    >
-      <span className="text-[10px] text-zinc-500">
-        {label}
-      </span>
-
-      <span
-        className={`text-[10px] font-medium ${
-          color ||
-          "text-zinc-700 dark:text-zinc-300"
-        }`}
-      >
-        {value}
-      </span>
-    </button>
-  );
-}
-
-// =====================================================
-// Detail Row
-// =====================================================
-
-function DetailRow({
-  icon,
-  label,
-  value,
-}: {
-  icon: ReactNode;
-  label: string;
-  value: string;
-}) {
-  return (
-    <div className="flex items-center justify-between gap-3 border-b border-zinc-100 px-4 py-3 dark:border-zinc-800">
-      <div className="flex items-center gap-2 text-zinc-400">
-        {icon}
-
-        <span className="text-[10px] text-zinc-500">
-          {label}
-        </span>
-      </div>
-
-      <span className="max-w-[130px] truncate text-right text-[10px] font-medium text-zinc-700 dark:text-zinc-300">
-        {value}
-      </span>
-    </div>
-  );
-}
-
-// =====================================================
-// Avatar
-// =====================================================
+/* =========================================================
+   AVATAR
+========================================================= */
 
 function Avatar({
   user,
@@ -2368,7 +3118,7 @@ function Avatar({
     <div
       className={`${size} flex shrink-0 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800`}
     >
-      <User className="h-3.5 w-3.5 text-zinc-500" />
+      <User className="h-3.5 w-3.5 text-zinc-500 dark:text-zinc-400" />
     </div>
   );
 }

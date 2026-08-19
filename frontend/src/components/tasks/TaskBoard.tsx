@@ -22,6 +22,10 @@ export default function TaskBoard({
   onDelete,
   onStatusChange,
 }: TaskBoardProps) {
+  /* =========================================================
+     GROUP TASKS BY STATUS
+  ========================================================= */
+
   const todo = tasks.filter(
     (task) => task.status === "To Do",
   );
@@ -41,72 +45,126 @@ export default function TaskBoard({
   return (
     <div
       className="
-        grid
+        w-full
         min-w-0
-        grid-cols-1
-        gap-4
-        md:grid-cols-2
-        xl:grid-cols-4
+        overflow-x-auto
+        overflow-y-visible
+        pb-2
       "
     >
-      {/* ================================
-          To Do
-      ================================= */}
+      {/* =======================================================
+          BOARD
 
-      <div className="min-w-0">
-        <TaskColumn
-          title="To Do"
-          tasks={todo}
-          color="bg-zinc-400"
-          onEdit={onEdit}
-          onDelete={onDelete}
-          onStatusChange={onStatusChange}
-        />
-      </div>
+          Figma:
+          - Four columns horizontally
+          - Compact spacing
+          - Columns retain their width
+          - Horizontal scroll on smaller screens
+      ======================================================= */}
 
-      {/* ================================
-          Doing
-      ================================= */}
+      <div
+        className="
+          flex
+          min-w-max
+          items-start
+          gap-3
+        "
+      >
+        {/* =====================================================
+            TO DO
+        ===================================================== */}
 
-      <div className="min-w-0">
-        <TaskColumn
-          title="Doing"
-          tasks={doing}
-          color="bg-blue-500"
-          onEdit={onEdit}
-          onDelete={onDelete}
-          onStatusChange={onStatusChange}
-        />
-      </div>
+        <div
+          className="
+            w-[260px]
+            shrink-0
+            md:w-[250px]
+            xl:w-[255px]
+          "
+        >
+          <TaskColumn
+            title="To Do"
+            tasks={todo}
+            color="bg-zinc-400"
+            onEdit={onEdit}
+            onDelete={onDelete}
+            onStatusChange={
+              onStatusChange
+            }
+          />
+        </div>
 
-      {/* ================================
-          Completed
-      ================================= */}
+        {/* =====================================================
+            DOING
+        ===================================================== */}
 
-      <div className="min-w-0">
-        <TaskColumn
-          title="Completed"
-          tasks={completed}
-          color="bg-emerald-500"
-          onEdit={onEdit}
-          onDelete={onDelete}
-          onStatusChange={onStatusChange}
-        />
-      </div>
+        <div
+          className="
+            w-[260px]
+            shrink-0
+            md:w-[250px]
+            xl:w-[255px]
+          "
+        >
+          <TaskColumn
+            title="Doing"
+            tasks={doing}
+            color="bg-blue-500"
+            onEdit={onEdit}
+            onDelete={onDelete}
+            onStatusChange={
+              onStatusChange
+            }
+          />
+        </div>
 
-      {/* ================================
-          On Hold
-      ================================= */}
+        {/* =====================================================
+            COMPLETED
+        ===================================================== */}
 
-      <div className="min-w-0">
-        <TaskColumn
-          title="On Hold"
-          tasks={onHold}
-          color="bg-orange-500"
-          onEdit={onEdit}
-          onDelete={onDelete}
-          onStatusChange={onStatusChange}
-        />
+        <div
+          className="
+            w-[260px]
+            shrink-0
+            md:w-[250px]
+            xl:w-[255px]
+          "
+        >
+          <TaskColumn
+            title="Completed"
+            tasks={completed}
+            color="bg-emerald-500"
+            onEdit={onEdit}
+            onDelete={onDelete}
+            onStatusChange={
+              onStatusChange
+            }
+          />
+        </div>
+
+        {/* =====================================================
+            ON HOLD
+        ===================================================== */}
+
+        <div
+          className="
+            w-[260px]
+            shrink-0
+            md:w-[250px]
+            xl:w-[255px]
+          "
+        >
+          <TaskColumn
+            title="On Hold"
+            tasks={onHold}
+            color="bg-orange-500"
+            onEdit={onEdit}
+            onDelete={onDelete}
+            onStatusChange={
+              onStatusChange
+            }
+          />
+        </div>
       </div>
     </div>
   );

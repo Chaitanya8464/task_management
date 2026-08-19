@@ -1,12 +1,10 @@
 "use client";
 
 import {
-  CalendarDays,
-  MessageCircle,
-  User,
   MoreHorizontal,
   Pencil,
   Trash2,
+  ChevronDown,
 } from "lucide-react";
 
 import {
@@ -25,26 +23,12 @@ interface TaskListProps {
   fields: TaskFields;
 
   onEdit?: (task: Task) => void;
-
   onDelete?: (task: Task) => void;
 }
 
-const priorityStyles = {
-  Urgent:
-    "bg-red-50 text-red-600 dark:bg-red-950/40 dark:text-red-400",
-
-  High:
-    "bg-orange-50 text-orange-600 dark:bg-orange-950/40 dark:text-orange-400",
-
-  Medium:
-    "bg-yellow-50 text-yellow-700 dark:bg-yellow-950/40 dark:text-yellow-400",
-
-  Low:
-    "bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400",
-
-  "No Priority":
-    "bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400",
-};
+/* =========================================================
+   STATUS GROUPS
+========================================================= */
 
 const statusGroups: Task["status"][] = [
   "To Do",
@@ -52,6 +36,110 @@ const statusGroups: Task["status"][] = [
   "Completed",
   "On Hold",
 ];
+
+/* =========================================================
+   STATUS DOT
+========================================================= */
+
+function getStatusDot(
+  status: Task["status"],
+) {
+  switch (status) {
+    case "To Do":
+      return "bg-zinc-400";
+
+    case "Doing":
+      return "bg-blue-500";
+
+    case "Completed":
+      return "bg-emerald-500";
+
+    case "On Hold":
+      return "bg-orange-500";
+
+    default:
+      return "bg-zinc-400";
+  }
+}
+
+/* =========================================================
+   PRIORITY
+========================================================= */
+
+function getPriorityStyle(
+  priority: Task["priority"],
+) {
+  switch (priority) {
+    case "Urgent":
+      return {
+        icon: "↑",
+        className: "text-red-500",
+      };
+
+    case "High":
+      return {
+        icon: "▰",
+        className: "text-red-500",
+      };
+
+    case "Medium":
+      return {
+        icon: "▰",
+        className: "text-orange-500",
+      };
+
+    case "Low":
+      return {
+        icon: "▱",
+        className: "text-zinc-400",
+      };
+
+    case "No Priority":
+    default:
+      return {
+        icon: "·",
+        className: "text-zinc-300",
+      };
+  }
+}
+
+/* =========================================================
+   AVATAR COLORS
+========================================================= */
+
+function getAvatarStyle(
+  name: string,
+) {
+  const colors = [
+    "bg-violet-100 text-violet-700",
+    "bg-blue-100 text-blue-700",
+    "bg-emerald-100 text-emerald-700",
+    "bg-orange-100 text-orange-700",
+    "bg-pink-100 text-pink-700",
+    "bg-zinc-100 text-zinc-700",
+  ];
+
+  let hash = 0;
+
+  for (
+    let index = 0;
+    index < name.length;
+    index++
+  ) {
+    hash =
+      name.charCodeAt(index) +
+      ((hash << 5) - hash);
+  }
+
+  return colors[
+    Math.abs(hash) %
+      colors.length
+  ];
+}
+
+/* =========================================================
+   TASK ROW ACTIONS
+========================================================= */
 
 interface TaskRowActionsProps {
   task: Task;
@@ -69,11 +157,13 @@ function TaskRowActions({
   const [isOpen, setIsOpen] =
     useState(false);
 
-  const [menuPosition, setMenuPosition] =
-    useState({
-      top: 0,
-      left: 0,
-    });
+  const [
+    menuPosition,
+    setMenuPosition,
+  ] = useState({
+    top: 0,
+    left: 0,
+  });
 
   const buttonRef =
     useRef<HTMLButtonElement>(null);
@@ -81,63 +171,78 @@ function TaskRowActions({
   const menuRef =
     useRef<HTMLDivElement>(null);
 
-  const updateMenuPosition = () => {
-    if (!buttonRef.current) {
-      return;
-    }
+  /* =======================================================
+     POSITION MENU
+  ======================================================= */
 
-    const rect =
-      buttonRef.current.getBoundingClientRect();
+  const updateMenuPosition =
+    () => {
+      if (!buttonRef.current) {
+        return;
+      }
 
-    const menuWidth = 140;
-    const menuHeight = 90;
-    const gap = 6;
+      const rect =
+        buttonRef.current.getBoundingClientRect();
 
-    let left =
-      rect.right - menuWidth;
+      const menuWidth = 140;
+      const menuHeight = 90;
+      const gap = 6;
 
-    let top =
-      rect.bottom + gap;
+      let left =
+        rect.right -
+        menuWidth;
 
-    if (left < 8) {
-      left = 8;
-    }
+      let top =
+        rect.bottom + gap;
 
-    if (
-      left + menuWidth >
-      window.innerWidth - 8
-    ) {
-      left =
-        window.innerWidth -
-        menuWidth -
-        8;
-    }
+      if (left < 8) {
+        left = 8;
+      }
 
-    if (
-      top + menuHeight >
-      window.innerHeight - 8
-    ) {
-      top =
-        rect.top -
-        menuHeight -
-        gap;
-    }
+      if (
+        left + menuWidth >
+        window.innerWidth - 8
+      ) {
+        left =
+          window.innerWidth -
+          menuWidth -
+          8;
+      }
 
-    setMenuPosition({
-      top,
-      left,
-    });
-  };
+      if (
+        top + menuHeight >
+        window.innerHeight - 8
+      ) {
+        top =
+          rect.top -
+          menuHeight -
+          gap;
+      }
 
-  const handleToggleMenu = () => {
-    if (!isOpen) {
-      updateMenuPosition();
-    }
+      setMenuPosition({
+        top,
+        left,
+      });
+    };
 
-    setIsOpen(
-      (current) => !current,
-    );
-  };
+  /* =======================================================
+     TOGGLE
+  ======================================================= */
+
+  const handleToggleMenu =
+    () => {
+      if (!isOpen) {
+        updateMenuPosition();
+      }
+
+      setIsOpen(
+        (current) => !current,
+      );
+    };
+
+  /* =======================================================
+     EVENTS
+  ======================================================= */
 
   useEffect(() => {
     if (!isOpen) {
@@ -172,9 +277,10 @@ function TaskRowActions({
       }
     };
 
-    const handleViewportChange = () => {
-      updateMenuPosition();
-    };
+    const handleViewportChange =
+      () => {
+        updateMenuPosition();
+      };
 
     document.addEventListener(
       "mousedown",
@@ -221,6 +327,10 @@ function TaskRowActions({
     };
   }, [isOpen]);
 
+  /* =======================================================
+     ACTIONS
+  ======================================================= */
+
   const handleEdit = () => {
     setIsOpen(false);
     onEdit?.(task);
@@ -231,9 +341,12 @@ function TaskRowActions({
     onDelete?.(task);
   };
 
+  /* =======================================================
+     RENDER
+  ======================================================= */
+
   return (
     <>
-      {/* Three-dot button */}
       <button
         ref={buttonRef}
         type="button"
@@ -243,20 +356,51 @@ function TaskRowActions({
           event.stopPropagation();
           handleToggleMenu();
         }}
-        className={`rounded-md p-1.5 text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100 ${
-          isOpen
-            ? "bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
-            : ""
-        }`}
+        className={`
+          flex
+          h-7
+          w-7
+          items-center
+          justify-center
+          rounded-md
+          text-zinc-400
+          transition
+          hover:bg-zinc-100
+          hover:text-zinc-700
+          dark:text-zinc-500
+          dark:hover:bg-zinc-800
+          dark:hover:text-zinc-200
+          ${
+            isOpen
+              ? "bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200"
+              : ""
+          }
+        `}
       >
         <MoreHorizontal className="h-4 w-4" />
       </button>
 
-      {/* Floating menu */}
+      {/* =================================================
+          FLOATING MENU
+      ================================================= */}
+
       {isOpen && (
         <div
           ref={menuRef}
-          className="fixed z-[9999] w-36 rounded-md border border-zinc-200 bg-white p-1 shadow-lg dark:border-zinc-700 dark:bg-zinc-900"
+          className="
+            fixed
+            z-[9999]
+            w-36
+            overflow-hidden
+            rounded-md
+            border
+            border-zinc-200
+            bg-white
+            p-1
+            shadow-lg
+            dark:border-zinc-700
+            dark:bg-zinc-900
+          "
           style={{
             top: menuPosition.top,
             left: menuPosition.left,
@@ -268,18 +412,50 @@ function TaskRowActions({
           <button
             type="button"
             onClick={handleEdit}
-            className="flex w-full items-center gap-2 rounded px-2.5 py-2 text-left text-xs text-zinc-600 transition hover:bg-zinc-50 dark:text-zinc-300 dark:hover:bg-zinc-800"
+            className="
+              flex
+              w-full
+              items-center
+              gap-2
+              rounded
+              px-2.5
+              py-2
+              text-left
+              text-xs
+              text-zinc-600
+              transition
+              hover:bg-zinc-50
+              dark:text-zinc-300
+              dark:hover:bg-zinc-800
+            "
           >
             <Pencil className="h-3.5 w-3.5" />
+
             Edit
           </button>
 
           <button
             type="button"
             onClick={handleDelete}
-            className="flex w-full items-center gap-2 rounded px-2.5 py-2 text-left text-xs text-red-500 transition hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/40"
+            className="
+              flex
+              w-full
+              items-center
+              gap-2
+              rounded
+              px-2.5
+              py-2
+              text-left
+              text-xs
+              text-red-500
+              transition
+              hover:bg-red-50
+              dark:text-red-400
+              dark:hover:bg-red-950/40
+            "
           >
             <Trash2 className="h-3.5 w-3.5" />
+
             Delete
           </button>
         </div>
@@ -287,6 +463,10 @@ function TaskRowActions({
     </>
   );
 }
+
+/* =========================================================
+   TASK LIST
+========================================================= */
 
 export default function TaskList({
   tasks,
@@ -296,6 +476,10 @@ export default function TaskList({
 }: TaskListProps) {
   const router = useRouter();
 
+  /* =======================================================
+     ROW CLICK
+  ======================================================= */
+
   const handleTaskRowClick = (
     event: React.MouseEvent<HTMLDivElement>,
     taskId: string,
@@ -303,7 +487,6 @@ export default function TaskList({
     const target =
       event.target as HTMLElement;
 
-    // Don't navigate when clicking actions.
     if (
       target.closest(
         "button, select, a, input, textarea",
@@ -316,6 +499,10 @@ export default function TaskList({
       `/tasks/${taskId}`,
     );
   };
+
+  /* =======================================================
+     KEYBOARD NAVIGATION
+  ======================================================= */
 
   const handleTaskRowKeyDown = (
     event: React.KeyboardEvent<HTMLDivElement>,
@@ -346,194 +533,521 @@ export default function TaskList({
     );
   };
 
+  /* =======================================================
+     RENDER
+  ======================================================= */
+
   return (
     <div className="min-w-0">
-      {statusGroups.map((status) => {
-        const statusTasks =
-          tasks.filter(
-            (task) =>
-              task.status === status,
-          );
+      {statusGroups.map(
+        (status) => {
+          const statusTasks =
+            tasks.filter(
+              (task) =>
+                task.status ===
+                status,
+            );
 
-        return (
-          <section
-            key={status}
-            className="mb-6"
-          >
-            {/* Group Header */}
-            <div className="mb-2 flex items-center gap-2">
-              <span
-                className={`h-2 w-2 rounded-full ${
-                  status === "To Do"
-                    ? "bg-zinc-400"
-                    : status === "Doing"
-                      ? "bg-blue-500"
-                      : status === "Completed"
-                        ? "bg-emerald-500"
-                        : "bg-orange-500"
-                }`}
-              />
+          return (
+            <section
+              key={status}
+              className="mb-5"
+            >
+              {/* =================================================
+                  STATUS HEADER
+              ================================================= */}
 
-              <h2 className="text-xs font-semibold text-zinc-700 dark:text-zinc-200">
-                {status}
-              </h2>
+              <div
+                className="
+                  mb-2
+                  flex
+                  h-6
+                  items-center
+                  gap-1.5
+                  px-1
+                "
+              >
+                <ChevronDown
+                  className="
+                    h-3
+                    w-3
+                    text-zinc-400
+                  "
+                />
 
-              <span className="text-xs text-zinc-400 dark:text-zinc-500">
-                {statusTasks.length}
-              </span>
-            </div>
+                <span
+                  className={`
+                    h-1.5
+                    w-1.5
+                    rounded-full
+                    ${getStatusDot(
+                      status,
+                    )}
+                  `}
+                />
 
-            {/* Responsive table wrapper */}
-            <div className="overflow-x-auto rounded-lg border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
-              <div className="min-w-[850px]">
-                {/* Table Header */}
-                <div className="flex items-center border-b border-zinc-200 bg-zinc-50 px-4 py-2.5 dark:border-zinc-800 dark:bg-zinc-900">
-                  {/* Task */}
-                  <div className="min-w-[260px] flex-1">
-                    <span className="text-[10px] font-medium text-zinc-400 dark:text-zinc-500">
-                      Task
-                    </span>
+                <h2
+                  className="
+                    text-[11px]
+                    font-medium
+                    text-zinc-700
+                    dark:text-zinc-300
+                  "
+                >
+                  {status}
+                </h2>
+
+                <span
+                  className="
+                    text-[10px]
+                    text-zinc-400
+                    dark:text-zinc-500
+                  "
+                >
+                  {statusTasks.length}
+                </span>
+              </div>
+
+              {/* =================================================
+                  TABLE
+              ================================================= */}
+
+              <div
+                className="
+                  overflow-x-auto
+                  rounded-md
+                  border
+                  border-zinc-200
+                  bg-white
+                  dark:border-zinc-800
+                  dark:bg-zinc-950
+                "
+              >
+                <div className="min-w-[780px]">
+
+                  {/* =================================================
+                      TABLE HEADER
+                  ================================================= */}
+
+                  <div
+                    className="
+                      flex
+                      h-10
+                      items-center
+                      border-b
+                      border-zinc-200
+                      bg-zinc-50
+                      px-2.5
+                      dark:border-zinc-800
+                      dark:bg-zinc-900
+                    "
+                  >
+                    {/* Task */}
+
+                    <div
+                      className="
+                        min-w-[300px]
+                        flex-1
+                        px-2
+                      "
+                    >
+                      <span
+                        className="
+                          text-[10px]
+                          font-medium
+                          text-zinc-500
+                          dark:text-zinc-400
+                        "
+                      >
+                        Task
+                      </span>
+                    </div>
+
+                    {/* Priority */}
+
+                    {fields.priority && (
+                      <div
+                        className="
+                          w-[105px]
+                          shrink-0
+                          px-2
+                        "
+                      >
+                        <span
+                          className="
+                            text-[10px]
+                            font-medium
+                            text-zinc-500
+                            dark:text-zinc-400
+                          "
+                        >
+                          Priority
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Members */}
+
+                    {fields.members && (
+                      <div
+                        className="
+                          w-[130px]
+                          shrink-0
+                          px-2
+                        "
+                      >
+                        <span
+                          className="
+                            text-[10px]
+                            font-medium
+                            text-zinc-500
+                            dark:text-zinc-400
+                          "
+                        >
+                          Members
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Due Date */}
+
+                    {fields.dueDate && (
+                      <div
+                        className="
+                          w-[135px]
+                          shrink-0
+                          px-2
+                        "
+                      >
+                        <span
+                          className="
+                            text-[10px]
+                            font-medium
+                            text-zinc-500
+                            dark:text-zinc-400
+                          "
+                        >
+                          Due Date
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Comments */}
+
+                    {fields.comments && (
+                      <div
+                        className="
+                          w-[90px]
+                          shrink-0
+                          px-2
+                        "
+                      >
+                        <span
+                          className="
+                            text-[10px]
+                            font-medium
+                            text-zinc-500
+                            dark:text-zinc-400
+                          "
+                        >
+                          Comments
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Actions */}
+
+                    <div
+                      className="
+                        w-[42px]
+                        shrink-0
+                      "
+                    />
                   </div>
 
-                  {/* Priority */}
-                  {fields.priority && (
-                    <div className="w-[120px] shrink-0">
-                      <span className="text-[10px] font-medium text-zinc-400 dark:text-zinc-500">
-                        Priority
-                      </span>
-                    </div>
-                  )}
+                  {/* =================================================
+                      TASK ROWS
+                  ================================================= */}
 
-                  {/* Members */}
-                  {fields.members && (
-                    <div className="w-[150px] shrink-0">
-                      <span className="text-[10px] font-medium text-zinc-400 dark:text-zinc-500">
-                        Members
-                      </span>
-                    </div>
-                  )}
+                  {statusTasks.map(
+                    (task) => {
+                      const priority =
+                        getPriorityStyle(
+                          task.priority,
+                        );
 
-                  {/* Due Date */}
-                  {fields.dueDate && (
-                    <div className="w-[130px] shrink-0">
-                      <span className="text-[10px] font-medium text-zinc-400 dark:text-zinc-500">
-                        Due Date
-                      </span>
-                    </div>
-                  )}
+                      return (
+                        <div
+                          key={task.id}
+                          onClick={(
+                            event,
+                          ) =>
+                            handleTaskRowClick(
+                              event,
+                              task.id,
+                            )
+                          }
+                          onKeyDown={(
+                            event,
+                          ) =>
+                            handleTaskRowKeyDown(
+                              event,
+                              task.id,
+                            )
+                          }
+                          role="link"
+                          tabIndex={0}
+                          aria-label={`Open task ${task.title}`}
+                          className="
+                            group
+                            flex
+                            min-h-[44px]
+                            cursor-pointer
+                            items-center
+                            border-b
+                            border-zinc-100
+                            bg-white
+                            px-2.5
+                            transition
+                            last:border-b-0
+                            hover:bg-zinc-50
+                            focus:outline-none
+                            focus:ring-1
+                            focus:ring-inset
+                            focus:ring-zinc-300
+                            dark:border-zinc-800
+                            dark:bg-zinc-950
+                            dark:hover:bg-zinc-900
+                            dark:focus:ring-zinc-700
+                          "
+                        >
+                          {/* =================================================
+                              TASK
+                          ================================================= */}
 
-                  {/* Comments */}
-                  {fields.comments && (
-                    <div className="w-[80px] shrink-0">
-                      <span className="text-[10px] font-medium text-zinc-400 dark:text-zinc-500">
-                        Comments
-                      </span>
-                    </div>
-                  )}
-
-                  {/* Actions */}
-                  <div className="w-[48px] shrink-0" />
-                </div>
-
-                {/* Task Rows */}
-                {statusTasks.map(
-                  (task) => (
-                    <div
-                      key={task.id}
-                      onClick={(event) =>
-                        handleTaskRowClick(
-                          event,
-                          task.id,
-                        )
-                      }
-                      onKeyDown={(event) =>
-                        handleTaskRowKeyDown(
-                          event,
-                          task.id,
-                        )
-                      }
-                      role="link"
-                      tabIndex={0}
-                      aria-label={`Open task ${task.title}`}
-                      className="flex cursor-pointer items-center border-b border-zinc-100 bg-white px-4 py-3 last:border-b-0 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950 dark:hover:bg-zinc-900"
-                    >
-                      {/* Task */}
-                      <div className="min-w-[260px] flex-1">
-                        <p className="truncate text-xs font-medium text-zinc-800 dark:text-zinc-100">
-                          {task.title}
-                        </p>
-
-                        {task.description && (
-                          <p className="mt-0.5 truncate text-[10px] text-zinc-400 dark:text-zinc-500">
-                            {task.description}
-                          </p>
-                        )}
-                      </div>
-
-                      {/* Priority */}
-                      {fields.priority && (
-                        <div className="w-[120px] shrink-0">
-                          <span
-                            className={`rounded-md px-2 py-1 text-[10px] font-medium ${priorityStyles[task.priority]}`}
+                          <div
+                            className="
+                              min-w-[300px]
+                              flex-1
+                              px-2
+                            "
                           >
-                            {task.priority}
-                          </span>
-                        </div>
-                      )}
-
-                      {/* Member */}
-                      {fields.members && (
-                        <div className="flex w-[150px] shrink-0 items-center gap-2">
-                          <div className="flex h-6 w-6 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800">
-                            <User className="h-3 w-3 text-zinc-500 dark:text-zinc-400" />
+                            <p
+                              className="
+                                truncate
+                                text-[11px]
+                                font-medium
+                                text-zinc-800
+                                dark:text-zinc-100
+                              "
+                            >
+                              {task.title}
+                            </p>
                           </div>
 
-                          <span className="truncate text-[10px] text-zinc-500 dark:text-zinc-400">
-                            {task.assignee}
-                          </span>
+                          {/* =================================================
+                              PRIORITY
+                          ================================================= */}
+
+                          {fields.priority && (
+                            <div
+                              className="
+                                flex
+                                w-[105px]
+                                shrink-0
+                                items-center
+                                gap-1.5
+                                px-2
+                              "
+                            >
+                              <span
+                                className={`
+                                  text-[10px]
+                                  leading-none
+                                  ${priority.className}
+                                `}
+                              >
+                                {priority.icon}
+                              </span>
+
+                              <span
+                                className="
+                                  text-[10px]
+                                  text-zinc-500
+                                  dark:text-zinc-400
+                                "
+                              >
+                                {
+                                  task.priority
+                                }
+                              </span>
+                            </div>
+                          )}
+
+                          {/* =================================================
+                              MEMBER
+                          ================================================= */}
+
+                          {fields.members && (
+                            <div
+                              className="
+                                flex
+                                w-[130px]
+                                shrink-0
+                                items-center
+                                gap-2
+                                px-2
+                              "
+                            >
+                              <div
+                                className={`
+                                  flex
+                                  h-5
+                                  w-5
+                                  shrink-0
+                                  items-center
+                                  justify-center
+                                  rounded-full
+                                  text-[8px]
+                                  font-medium
+                                  ${getAvatarStyle(
+                                    task.assignee,
+                                  )}
+                                `}
+                              >
+                                {task.assignee
+                                  .trim()
+                                  .charAt(
+                                    0,
+                                  )
+                                  .toUpperCase()}
+                              </div>
+
+                              <span
+                                className="
+                                  truncate
+                                  text-[10px]
+                                  text-zinc-600
+                                  dark:text-zinc-400
+                                "
+                              >
+                                {
+                                  task.assignee
+                                }
+                              </span>
+                            </div>
+                          )}
+
+                          {/* =================================================
+                              DUE DATE
+                          ================================================= */}
+
+                          {fields.dueDate && (
+                            <div
+                              className="
+                                flex
+                                w-[135px]
+                                shrink-0
+                                items-center
+                                px-2
+                              "
+                            >
+                              <span
+                                className="
+                                  whitespace-nowrap
+                                  text-[10px]
+                                  text-zinc-600
+                                  dark:text-zinc-400
+                                "
+                              >
+                                {
+                                  task.dueDate
+                                }
+                              </span>
+                            </div>
+                          )}
+
+                          {/* =================================================
+                              COMMENTS
+                          ================================================= */}
+
+                          {fields.comments && (
+                            <div
+                              className="
+                                flex
+                                w-[90px]
+                                shrink-0
+                                items-center
+                                px-2
+                              "
+                            >
+                              <span
+                                className="
+                                  text-[10px]
+                                  text-zinc-400
+                                  dark:text-zinc-500
+                                "
+                              >
+                                {
+                                  task.comments
+                                }
+                              </span>
+                            </div>
+                          )}
+
+                          {/* =================================================
+                              ACTIONS
+                          ================================================= */}
+
+                          <div
+                            className="
+                              flex
+                              w-[42px]
+                              shrink-0
+                              justify-end
+                            "
+                          >
+                            <TaskRowActions
+                              task={task}
+                              onEdit={
+                                onEdit
+                              }
+                              onDelete={
+                                onDelete
+                              }
+                            />
+                          </div>
                         </div>
-                      )}
+                      );
+                    },
+                  )}
 
-                      {/* Due Date */}
-                      {fields.dueDate && (
-                        <div className="flex w-[130px] shrink-0 items-center gap-2 text-[10px] text-zinc-400 dark:text-zinc-500">
-                          <CalendarDays className="h-3 w-3" />
-                          {task.dueDate}
-                        </div>
-                      )}
+                  {/* =================================================
+                      EMPTY GROUP
+                  ================================================= */}
 
-                      {/* Comments */}
-                      {fields.comments && (
-                        <div className="flex w-[80px] shrink-0 items-center gap-2 text-[10px] text-zinc-400 dark:text-zinc-500">
-                          <MessageCircle className="h-3 w-3" />
-                          {task.comments}
-                        </div>
-                      )}
-
-                      {/* Actions */}
-                      <div className="flex w-[48px] shrink-0 justify-end">
-                        <TaskRowActions
-                          task={task}
-                          onEdit={onEdit}
-                          onDelete={onDelete}
-                        />
-                      </div>
-                    </div>
-                  ),
-                )}
-
-                {/* Empty State */}
-                {statusTasks.length ===
-                  0 && (
-                    <div className="bg-white px-4 py-6 text-center text-xs text-zinc-400 dark:bg-zinc-950 dark:text-zinc-500">
+                  {statusTasks.length ===
+                    0 && (
+                    <div
+                      className="
+                        flex
+                        h-10
+                        items-center
+                        px-4
+                        text-[10px]
+                        text-zinc-400
+                        dark:text-zinc-500
+                      "
+                    >
                       No tasks
                     </div>
                   )}
+                </div>
               </div>
-            </div>
-          </section>
-        );
-      })}
+            </section>
+          );
+        },
+      )}
     </div>
   );
 }
