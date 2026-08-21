@@ -6,23 +6,20 @@ A full-stack task and project management application built with Next.js, React, 
 
 Add your screenshots under `docs/screenshots/` and replace the filenames if needed.
 
-### Tasks Dashboard
-![Tasks Dashboard](./docs/screenshots/tasks-dashboard.png)
+### Login Dashboard
+![Login Dashboard](./docs/screenshots/login.png)
 
 **Reference:** Main task-management screen showing tasks, status, priority, assignee, due date, projects, and actions.
 
 ### Task Details
-![Task Details](./docs/screenshots/task-details.png)
+![Task Details](./docs/screenshots/tasksdetails.png)
 
 **Reference:** Task details screen showing properties, labels, resources, subtasks, comments, and updates.
 
 ### Create Subtask
-![Create Subtask](./docs/screenshots/create-subtask.png)
+![Create Subtask](./docs/screenshots/create_subtasks.png)
 
 **Reference:** Subtask creation form with title, priority, assignee, and due date.
-
-### Edit Subtask
-![Edit Subtask](./docs/screenshots/edit-subtask.png)
 
 **Reference:** Subtask editing interface.
 
@@ -31,10 +28,20 @@ Add your screenshots under `docs/screenshots/` and replace the filenames if need
 
 **Reference:** Projects and project-related information.
 
-### Labels
-![Labels](./docs/screenshots/labels.png)
+### Project Details
+![Project Details](./docs/screenshots/project_delatis.png)
 
 **Reference:** Label creation, assignment, and display.
+
+### Task In List
+![Task In List View](./docs/screenshots/task_in_list.png)
+
+### Profile Details
+![Profile Details](./docs/screenshots/profile_details.png)
+
+### Theme
+![Theme Color](./docs/screenshots/coolor_mode.png)
+
 
 > Add the actual screenshots to `docs/screenshots/` before submitting.
 
