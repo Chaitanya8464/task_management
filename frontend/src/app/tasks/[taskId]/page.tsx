@@ -42,6 +42,7 @@ import {
   ApiUser,
   TaskPriority,
   WorkspaceMember,
+  assignLabel,
   createComment,
   createLabel,
   createSubtask,
@@ -49,7 +50,6 @@ import {
   getTaskDetails,
   getWorkspaceLabels,
   getWorkspaceMembers,
-  assignLabel,
   removeLabel,
   updateSubtask,
   updateTask,
@@ -130,7 +130,9 @@ export default function TaskDetailsPage() {
   const [
     newSubtaskPriority,
     setNewSubtaskPriority,
-  ] = useState<TaskPriority>("NO_PRIORITY");
+  ] = useState<TaskPriority>(
+    "NO_PRIORITY",
+  );
 
   const [
     newSubtaskDueDate,
@@ -173,7 +175,9 @@ export default function TaskDetailsPage() {
   const [
     editingSubtaskPriority,
     setEditingSubtaskPriority,
-  ] = useState<TaskPriority>("NO_PRIORITY");
+  ] = useState<TaskPriority>(
+    "NO_PRIORITY",
+  );
 
   const [
     editingSubtaskDueDate,
@@ -309,10 +313,10 @@ export default function TaskDetailsPage() {
             );
 
           setWorkspaceLabels(labels);
-        } catch (labelError) {
+        } catch (err) {
           console.error(
             "Failed to load labels:",
-            labelError,
+            err,
           );
         }
 
@@ -323,10 +327,10 @@ export default function TaskDetailsPage() {
             );
 
           setWorkspaceMembers(members);
-        } catch (memberError) {
+        } catch (err) {
           console.error(
             "Failed to load members:",
-            memberError,
+            err,
           );
         }
       } catch (err) {
@@ -361,7 +365,18 @@ export default function TaskDetailsPage() {
 
       if (
         subtaskMenuRef.current &&
-        subtaskMenuRef.current.contains(target)
+        subtaskMenuRef.current.contains(
+          target,
+        )
+      ) {
+        return;
+      }
+
+      if (
+        target instanceof Element &&
+        target.closest(
+          "[data-dropdown-root]",
+        )
       ) {
         return;
       }
@@ -375,7 +390,9 @@ export default function TaskDetailsPage() {
 
       if (
         subtaskMenuRef.current &&
-        !subtaskMenuRef.current.contains(target)
+        !subtaskMenuRef.current.contains(
+          target,
+        )
       ) {
         setOpenSubtaskMenu(null);
       }
@@ -398,7 +415,7 @@ export default function TaskDetailsPage() {
     };
 
     document.addEventListener(
-      "mousedown",
+      "click",
       handleOutsideClick,
     );
 
@@ -409,7 +426,7 @@ export default function TaskDetailsPage() {
 
     return () => {
       document.removeEventListener(
-        "mousedown",
+        "click",
         handleOutsideClick,
       );
 
@@ -425,7 +442,9 @@ export default function TaskDetailsPage() {
   ======================================================= */
 
   const handleUpdateTask = async (
-    changes: Parameters<typeof updateTask>[1],
+    changes: Parameters<
+      typeof updateTask
+    >[1],
   ) => {
     if (!task) {
       return;
@@ -469,42 +488,65 @@ export default function TaskDetailsPage() {
       setIsAddingSubtask(true);
       setSubtaskError("");
 
-      const created =
-        await createSubtask(
+      console.log(
+        "CREATING SUBTASK:",
+        {
+          title,
+          priority:
+            newSubtaskPriority,
+          dueDate:
+            newSubtaskDueDate ||
+            undefined,
+          assigneeId:
+            newSubtaskAssigneeId ||
+            undefined,
+        },
+      );
+
+      await createSubtask(
+        task.id,
+        {
+          title,
+          priority:
+            newSubtaskPriority,
+          dueDate:
+            newSubtaskDueDate ||
+            undefined,
+          assigneeId:
+            newSubtaskAssigneeId ||
+            undefined,
+        },
+      );
+
+      /*
+       * Always reload from backend.
+       * This guarantees that priority,
+       * assignee and assignee relation
+       * are synchronized.
+       */
+      const refreshedTask =
+        await getTaskDetails(
           task.id,
-          {
-            title,
-            priority:
-              newSubtaskPriority,
-            dueDate:
-              newSubtaskDueDate ||
-              undefined,
-            assigneeId:
-              newSubtaskAssigneeId ||
-              undefined,
-          },
         );
 
-      setTask((current) => {
-        if (!current) {
-          return current;
-        }
-
-        return {
-          ...current,
-          subtasks: [
-            ...current.subtasks,
-            created,
-          ],
-        };
-      });
+      setTask(refreshedTask);
 
       setNewSubtask("");
+
       setNewSubtaskPriority(
         "NO_PRIORITY",
       );
+
       setNewSubtaskDueDate("");
+
       setNewSubtaskAssigneeId("");
+
+      setOpenNewSubtaskPriority(
+        false,
+      );
+
+      setOpenNewSubtaskMember(false);
+
       setIsSubtaskInputOpen(true);
     } catch (err) {
       console.error(
@@ -544,7 +586,8 @@ export default function TaskDetailsPage() {
         subtasks:
           current.subtasks.map(
             (subtask) =>
-              subtask.id === subtaskId
+              subtask.id ===
+              subtaskId
                 ? {
                     ...subtask,
                     completed,
@@ -555,29 +598,23 @@ export default function TaskDetailsPage() {
     });
 
     try {
-      const updated =
-        await updateSubtask(
+      await updateSubtask(
+        task.id,
+        subtaskId,
+        {
+          completed,
+        },
+      );
+
+      /*
+       * Reload complete task.
+       */
+      const refreshedTask =
+        await getTaskDetails(
           task.id,
-          subtaskId,
-          { completed },
         );
 
-      setTask((current) => {
-        if (!current) {
-          return current;
-        }
-
-        return {
-          ...current,
-          subtasks:
-            current.subtasks.map(
-              (subtask) =>
-                subtask.id === subtaskId
-                  ? updated
-                  : subtask,
-            ),
-        };
-      });
+      setTask(refreshedTask);
     } catch (err) {
       console.error(
         "Failed to update subtask:",
@@ -599,6 +636,11 @@ export default function TaskDetailsPage() {
   const handleStartEditSubtask = (
     subtask: ApiSubtask,
   ) => {
+    console.log(
+      "START EDIT SUBTASK:",
+      subtask,
+    );
+
     setEditingSubtaskId(
       subtask.id,
     );
@@ -625,6 +667,16 @@ export default function TaskDetailsPage() {
     );
 
     setOpenSubtaskMenu(null);
+
+    setOpenEditSubtaskPriority(
+      false,
+    );
+
+    setOpenEditSubtaskMember(
+      false,
+    );
+
+    setSubtaskError("");
   };
 
   /* =======================================================
@@ -633,13 +685,21 @@ export default function TaskDetailsPage() {
 
   const handleCancelEditSubtask = () => {
     setEditingSubtaskId(null);
+
     setEditingSubtaskTitle("");
+
     setEditingSubtaskPriority(
       "NO_PRIORITY",
     );
+
     setEditingSubtaskDueDate("");
+
     setEditingSubtaskAssigneeId("");
-    setOpenEditSubtaskPriority(false);
+
+    setOpenEditSubtaskPriority(
+      false,
+    );
+
     setOpenEditSubtaskMember(false);
   };
 
@@ -665,6 +725,23 @@ export default function TaskDetailsPage() {
       return;
     }
 
+    const payload = {
+      title,
+      priority:
+        editingSubtaskPriority,
+      dueDate:
+        editingSubtaskDueDate ||
+        undefined,
+      assigneeId:
+        editingSubtaskAssigneeId ||
+        null,
+    };
+
+    console.log(
+      "SAVING SUBTASK:",
+      payload,
+    );
+
     try {
       setIsUpdatingSubtask(true);
       setSubtaskError("");
@@ -673,35 +750,35 @@ export default function TaskDetailsPage() {
         await updateSubtask(
           task.id,
           subtaskId,
-          {
-            title,
-            priority:
-              editingSubtaskPriority,
-            dueDate:
-              editingSubtaskDueDate ||
-              undefined,
-            assigneeId:
-              editingSubtaskAssigneeId ||
-              null,
-          },
+          payload,
         );
 
-      setTask((current) => {
-        if (!current) {
-          return current;
-        }
+      console.log(
+        "UPDATED SUBTASK:",
+        updated,
+      );
 
-        return {
-          ...current,
-          subtasks:
-            current.subtasks.map(
-              (subtask) =>
-                subtask.id === subtaskId
-                  ? updated
-                  : subtask,
-            ),
-        };
-      });
+      /*
+       * IMPORTANT:
+       * Fetch the complete task after
+       * PATCH.
+       *
+       * This guarantees that:
+       *
+       * priority
+       * assigneeId
+       * assignee
+       * dueDate
+       * completed
+       *
+       * all match the database.
+       */
+      const refreshedTask =
+        await getTaskDetails(
+          task.id,
+        );
+
+      setTask(refreshedTask);
 
       handleCancelEditSubtask();
     } catch (err) {
@@ -744,21 +821,12 @@ export default function TaskDetailsPage() {
         subtaskId,
       );
 
-      setTask((current) => {
-        if (!current) {
-          return current;
-        }
+      const refreshedTask =
+        await getTaskDetails(
+          task.id,
+        );
 
-        return {
-          ...current,
-          subtasks:
-            current.subtasks.filter(
-              (subtask) =>
-                subtask.id !==
-                subtaskId,
-            ),
-        };
-      });
+      setTask(refreshedTask);
 
       setOpenSubtaskMenu(null);
     } catch (err) {
@@ -770,6 +838,193 @@ export default function TaskDetailsPage() {
       setSubtaskError(
         "Unable to delete subtask.",
       );
+    }
+  };
+
+  /* =======================================================
+     CREATE LABEL
+  ======================================================= */
+
+  const handleCreateLabel = async (
+    event: FormEvent,
+  ) => {
+    event.preventDefault();
+
+    if (
+      !task ||
+      !newLabelName.trim() ||
+      isAddingLabel
+    ) {
+      return;
+    }
+
+    try {
+      setIsAddingLabel(true);
+      setLabelError("");
+
+      /*
+       * 1. Create label
+       */
+      const created =
+        await createLabel(
+          task.workspaceId,
+          {
+            name:
+              newLabelName.trim(),
+            color: newLabelColor,
+          },
+        );
+
+      console.log(
+        "CREATED LABEL:",
+        created,
+      );
+
+      /*
+       * 2. Add label to workspace list
+       */
+      setWorkspaceLabels(
+        (current) =>
+          [...current, created].sort(
+            (a, b) =>
+              a.name.localeCompare(
+                b.name,
+              ),
+          ),
+      );
+
+      /*
+       * 3. IMPORTANT:
+       * Actually assign the newly
+       * created label to this task.
+       */
+      const updatedTask =
+        await assignLabel(
+          task.id,
+          created.id,
+        );
+
+      console.log(
+        "TASK AFTER LABEL ASSIGNMENT:",
+        updatedTask,
+      );
+
+      /*
+       * 4. The returned task contains
+       * the updated labels.
+       */
+      setTask(updatedTask);
+
+      setNewLabelName("");
+
+      setSelectedLabelId("");
+
+      setOpenLabelMenu(false);
+    } catch (err) {
+      console.error(
+        "Failed to create and assign label:",
+        err,
+      );
+
+      setLabelError(
+        "Unable to create and assign label.",
+      );
+    } finally {
+      setIsAddingLabel(false);
+    }
+  };
+
+  /* =======================================================
+     ASSIGN EXISTING LABEL
+  ======================================================= */
+
+  const handleAssignLabel = async (
+    labelId?: string,
+  ) => {
+    const id =
+      labelId || selectedLabelId;
+
+    if (
+      !task ||
+      !id ||
+      isAssigningLabel
+    ) {
+      return;
+    }
+
+    if (
+      task.labels.some(
+        (label) =>
+          label.id === id,
+      )
+    ) {
+      setSelectedLabelId("");
+
+      setOpenLabelMenu(false);
+
+      return;
+    }
+
+    try {
+      setIsAssigningLabel(true);
+      setLabelError("");
+
+      const updated =
+        await assignLabel(
+          task.id,
+          id,
+        );
+
+      setTask(updated);
+
+      setSelectedLabelId("");
+
+      setOpenLabelMenu(false);
+    } catch (err) {
+      console.error(
+        "Failed to assign label:",
+        err,
+      );
+
+      setLabelError(
+        "Unable to assign label.",
+      );
+    } finally {
+      setIsAssigningLabel(false);
+    }
+  };
+
+  /* =======================================================
+     REMOVE LABEL
+  ======================================================= */
+
+  const handleRemoveLabel = async (
+    labelId: string,
+  ) => {
+    if (
+      !task ||
+      isAssigningLabel
+    ) {
+      return;
+    }
+
+    try {
+      setIsAssigningLabel(true);
+
+      const updated =
+        await removeLabel(
+          task.id,
+          labelId,
+        );
+
+      setTask(updated);
+    } catch (err) {
+      console.error(
+        "Failed to remove label:",
+        err,
+      );
+    } finally {
+      setIsAssigningLabel(false);
     }
   };
 
@@ -813,28 +1068,20 @@ export default function TaskDetailsPage() {
         );
       }
 
-      const created =
-        await createComment(
+      await createComment(
+        task.id,
+        {
+          content,
+          userId: user.id,
+        },
+      );
+
+      const refreshedTask =
+        await getTaskDetails(
           task.id,
-          {
-            content,
-            userId: user.id,
-          },
         );
 
-      setTask((current) => {
-        if (!current) {
-          return current;
-        }
-
-        return {
-          ...current,
-          comments: [
-            ...current.comments,
-            created,
-          ],
-        };
-      });
+      setTask(refreshedTask);
 
       setNewComment("");
     } catch (err) {
@@ -850,158 +1097,6 @@ export default function TaskDetailsPage() {
       setIsAddingComment(false);
     }
   };
-
-  /* =======================================================
-     CREATE LABEL
-  ======================================================= */
-
-  const handleCreateLabel = async (
-    event: FormEvent,
-  ) => {
-    event.preventDefault();
-
-    if (
-      !task ||
-      !newLabelName.trim() ||
-      isAddingLabel
-    ) {
-      return;
-    }
-
-    try {
-      setIsAddingLabel(true);
-      setLabelError("");
-
-      const created =
-        await createLabel(
-          task.workspaceId,
-          {
-            name:
-              newLabelName.trim(),
-            color: newLabelColor,
-          },
-        );
-
-      setWorkspaceLabels(
-        (current) =>
-          [...current, created].sort(
-            (a, b) =>
-              a.name.localeCompare(
-                b.name,
-              ),
-          ),
-      );
-
-      setNewLabelName("");
-      setSelectedLabelId(
-        created.id,
-      );
-    } catch (err) {
-      console.error(
-        "Failed to create label:",
-        err,
-      );
-
-      setLabelError(
-        "Unable to create label.",
-      );
-    } finally {
-      setIsAddingLabel(false);
-    }
-  };
-
-  /* =======================================================
-     ASSIGN LABEL
-  ======================================================= */
-
-  const handleAssignLabel =
-    async (
-      labelId?: string,
-    ) => {
-      const id =
-        labelId ||
-        selectedLabelId;
-
-      if (
-        !task ||
-        !id ||
-        isAssigningLabel
-      ) {
-        return;
-      }
-
-      if (
-        task.labels.some(
-          (label) =>
-            label.id === id,
-        )
-      ) {
-        setSelectedLabelId("");
-        setOpenLabelMenu(false);
-        return;
-      }
-
-      try {
-        setIsAssigningLabel(true);
-        setLabelError("");
-
-        const updated =
-          await assignLabel(
-            task.id,
-            id,
-          );
-
-        setTask(updated);
-        setSelectedLabelId("");
-        setOpenLabelMenu(false);
-      } catch (err) {
-        console.error(
-          "Failed to assign label:",
-          err,
-        );
-
-        setLabelError(
-          "Unable to assign label.",
-        );
-      } finally {
-        setIsAssigningLabel(false);
-      }
-    };
-
-  /* =======================================================
-     REMOVE LABEL
-  ======================================================= */
-
-  const handleRemoveLabel =
-    async (
-      labelId: string,
-    ) => {
-      if (
-        !task ||
-        isAssigningLabel
-      ) {
-        return;
-      }
-
-      try {
-        setIsAssigningLabel(true);
-
-        const updated =
-          await removeLabel(
-            task.id,
-            labelId,
-          );
-
-        setTask(updated);
-      } catch (err) {
-        console.error(
-          "Failed to remove label:",
-          err,
-        );
-      } finally {
-        setIsAssigningLabel(false);
-      }
-    };
 
   /* =======================================================
      LOADING
@@ -1059,9 +1154,6 @@ export default function TaskDetailsPage() {
         subtask.completed,
     ).length;
 
-  const unassignedMembers =
-    workspaceMembers;
-
   /* =======================================================
      UI
   ======================================================= */
@@ -1070,9 +1162,7 @@ export default function TaskDetailsPage() {
     <AppShell>
       <main className="min-h-full bg-white text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100">
 
-        {/* =================================================
-            TOP BAR
-        ================================================= */}
+        {/* TOP BAR */}
 
         <header className="flex h-[54px] shrink-0 items-center justify-between border-b border-zinc-200 px-4 dark:border-zinc-800 sm:px-5">
           <Link
@@ -1087,7 +1177,6 @@ export default function TaskDetailsPage() {
             <button
               type="button"
               className="flex h-8 w-8 items-center justify-center rounded-md border border-zinc-200 text-zinc-500 transition hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800"
-              aria-label="Watch task"
             >
               <Eye className="h-3.5 w-3.5" />
             </button>
@@ -1095,7 +1184,6 @@ export default function TaskDetailsPage() {
             <button
               type="button"
               className="flex h-8 w-8 items-center justify-center rounded-md border border-zinc-200 text-zinc-500 transition hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800"
-              aria-label="Share task"
             >
               <Share2 className="h-3.5 w-3.5" />
             </button>
@@ -1103,22 +1191,17 @@ export default function TaskDetailsPage() {
             <button
               type="button"
               className="flex h-8 w-8 items-center justify-center rounded-md border border-zinc-200 text-zinc-500 transition hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800"
-              aria-label="More actions"
             >
               <MoreHorizontal className="h-3.5 w-3.5" />
             </button>
           </div>
         </header>
 
-        {/* =================================================
-            PAGE CONTENT
-        ================================================= */}
+        {/* CONTENT */}
 
         <div className="mx-auto max-w-[1180px] px-4 py-5 sm:px-6 lg:px-8">
 
-          {/* =================================================
-              TASK HEADER
-          ================================================= */}
+          {/* HEADER */}
 
           <section className="border-b border-zinc-200 pb-5 dark:border-zinc-800">
             <h1 className="text-xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100 sm:text-2xl">
@@ -1131,21 +1214,13 @@ export default function TaskDetailsPage() {
             </p>
           </section>
 
-          {/* =================================================
-              MAIN TWO COLUMN AREA
-          ================================================= */}
-
           <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_275px]">
 
-            {/* =================================================
-                LEFT
-            ================================================= */}
+            {/* LEFT */}
 
             <section className="min-w-0 pt-4">
 
-              {/* =================================================
-                  PROPERTIES
-              ================================================= */}
+              {/* PROPERTIES */}
 
               <section className="mb-5">
                 <SectionHeading>
@@ -1183,14 +1258,7 @@ export default function TaskDetailsPage() {
                             "Unassigned"}
                         </span>
 
-                        <ChevronDown
-                          className={`ml-auto h-3 w-3 text-zinc-400 transition-transform ${
-                            openMenu ===
-                            "member"
-                              ? "rotate-180"
-                              : ""
-                          }`}
-                        />
+                        <ChevronDown className="ml-auto h-3 w-3 text-zinc-400" />
                       </button>
                     }
                   >
@@ -1201,23 +1269,19 @@ export default function TaskDetailsPage() {
                     <button
                       type="button"
                       onClick={() =>
-                        handleUpdateTask({
-                          assigneeId:
-                            undefined,
-                        })
+                        handleUpdateTask(
+                          {
+                            assigneeId:
+                              undefined,
+                          },
+                        )
                       }
                       className="dropdown-item"
                     >
-                      <span>
-                        Unassigned
-                      </span>
-
-                      {!task.assignee && (
-                        <Check className="h-3.5 w-3.5 text-violet-600" />
-                      )}
+                      Unassigned
                     </button>
 
-                    {unassignedMembers.map(
+                    {workspaceMembers.map(
                       (member) => (
                         <button
                           key={
@@ -1225,10 +1289,12 @@ export default function TaskDetailsPage() {
                           }
                           type="button"
                           onClick={() =>
-                            handleUpdateTask({
-                              assigneeId:
-                                member.userId,
-                            })
+                            handleUpdateTask(
+                              {
+                                assigneeId:
+                                  member.userId,
+                              },
+                            )
                           }
                           className="dropdown-item"
                         >
@@ -1240,13 +1306,11 @@ export default function TaskDetailsPage() {
                               small
                             />
 
-                            <span className="truncate">
-                              {
-                                member
-                                  .user
-                                  .name
-                              }
-                            </span>
+                            {
+                              member
+                                .user
+                                .name
+                            }
                           </span>
 
                           {task.assignee
@@ -1259,7 +1323,7 @@ export default function TaskDetailsPage() {
                     )}
                   </CustomDropdown>
 
-                  {/* DUE DATE */}
+                  {/* DATE */}
 
                   <div className="inline-flex h-8 items-center gap-2 rounded-md bg-red-50 px-2.5 text-xs text-red-500 dark:bg-red-950/30 dark:text-red-400">
                     <CalendarDays className="h-3.5 w-3.5" />
@@ -1285,14 +1349,14 @@ export default function TaskDetailsPage() {
                       openMenu ===
                       "priority"
                     }
-                    onToggle={() => {
+                    onToggle={() =>
                       setOpenMenu(
                         openMenu ===
                           "priority"
                           ? null
                           : "priority",
-                      );
-                    }}
+                      )
+                    }
                     width="w-48"
                     trigger={
                       <button
@@ -1319,18 +1383,7 @@ export default function TaskDetailsPage() {
                           }
                         </span>
 
-                        <ChevronDown
-                          className={`h-3 w-3 transition-transform ${
-                            openMenu ===
-                            "priority"
-                              ? "rotate-180"
-                              : ""
-                          } ${
-                            priorityColors[
-                              task.priority
-                            ]
-                          }`}
-                        />
+                        <ChevronDown className="h-3 w-3" />
                       </button>
                     }
                   >
@@ -1345,12 +1398,16 @@ export default function TaskDetailsPage() {
                     ).map(
                       (priority) => (
                         <button
-                          key={priority}
+                          key={
+                            priority
+                          }
                           type="button"
                           onClick={() =>
-                            handleUpdateTask({
-                              priority,
-                            })
+                            handleUpdateTask(
+                              {
+                                priority,
+                              },
+                            )
                           }
                           className="dropdown-item"
                         >
@@ -1378,7 +1435,7 @@ export default function TaskDetailsPage() {
 
                           {task.priority ===
                             priority && (
-                            <Check className="h-3.5 w-3.5 text-zinc-800 dark:text-zinc-100" />
+                            <Check className="h-3.5 w-3.5 text-violet-600" />
                           )}
                         </button>
                       ),
@@ -1387,9 +1444,7 @@ export default function TaskDetailsPage() {
                 </div>
               </section>
 
-              {/* =================================================
-                  LABELS
-              ================================================= */}
+              {/* LABELS */}
 
               <section className="mb-5">
                 <SectionHeading>
@@ -1433,8 +1488,6 @@ export default function TaskDetailsPage() {
                     ),
                   )}
 
-                  {/* ADD LABEL */}
-
                   <CustomDropdown
                     open={
                       openLabelMenu
@@ -1446,16 +1499,13 @@ export default function TaskDetailsPage() {
                       )
                     }
                     width="w-52"
-                    align="left"
                     trigger={
                       <button
                         type="button"
                         className="inline-flex h-7 items-center gap-1.5 rounded-md border border-dashed border-zinc-300 px-2 text-[10px] text-zinc-500 transition hover:bg-zinc-50 hover:text-zinc-700 dark:border-zinc-700 dark:hover:bg-zinc-900 dark:hover:text-zinc-200"
                       >
                         <Plus className="h-3 w-3" />
-
                         Add label
-
                         <ChevronDown className="h-3 w-3" />
                       </button>
                     }
@@ -1471,52 +1521,35 @@ export default function TaskDetailsPage() {
                             assigned.id ===
                             label.id,
                         ),
-                    ).length === 0 ? (
-                      <div className="px-2.5 py-3 text-center text-[10px] text-zinc-400">
-                        No labels available
-                      </div>
-                    ) : (
-                      workspaceLabels
-                        .filter(
-                          (label) =>
-                            !task.labels.some(
-                              (
-                                assigned,
-                              ) =>
-                                assigned.id ===
-                                label.id,
-                            ),
-                        )
-                        .map(
-                          (label) => (
-                            <button
-                              key={
-                                label.id
-                              }
-                              type="button"
-                              onClick={() =>
-                                handleAssignLabel(
-                                  label.id,
-                                )
-                              }
-                              className="dropdown-item"
-                            >
-                              <span className="flex items-center gap-2">
-                                <span
-                                  className="h-2 w-2 rounded-full"
-                                  style={{
-                                    backgroundColor:
-                                      label.color,
-                                  }}
-                                />
+                    ).map(
+                      (label) => (
+                        <button
+                          key={
+                            label.id
+                          }
+                          type="button"
+                          onClick={() =>
+                            handleAssignLabel(
+                              label.id,
+                            )
+                          }
+                          className="dropdown-item"
+                        >
+                          <span className="flex items-center gap-2">
+                            <span
+                              className="h-2 w-2 rounded-full"
+                              style={{
+                                backgroundColor:
+                                  label.color,
+                              }}
+                            />
 
-                                {
-                                  label.name
-                                }
-                              </span>
-                            </button>
-                          ),
-                        )
+                            {
+                              label.name
+                            }
+                          </span>
+                        </button>
+                      ),
                     )}
                   </CustomDropdown>
                 </div>
@@ -1533,16 +1566,14 @@ export default function TaskDetailsPage() {
                     value={
                       newLabelName
                     }
-                    onChange={(
-                      event,
-                    ) =>
+                    onChange={(event) =>
                       setNewLabelName(
                         event.target
                           .value,
                       )
                     }
                     placeholder="Create label..."
-                    className="h-8 min-w-0 flex-1 rounded-md border border-zinc-200 bg-transparent px-2.5 text-xs text-zinc-800 outline-none transition focus:border-violet-400 dark:border-zinc-700 dark:text-zinc-100"
+                    className="h-8 min-w-0 flex-1 rounded-md border border-zinc-200 bg-transparent px-2.5 text-xs text-zinc-800 outline-none focus:border-violet-400 dark:border-zinc-700 dark:text-zinc-100"
                   />
 
                   <input
@@ -1550,9 +1581,7 @@ export default function TaskDetailsPage() {
                     value={
                       newLabelColor
                     }
-                    onChange={(
-                      event,
-                    ) =>
+                    onChange={(event) =>
                       setNewLabelColor(
                         event.target
                           .value,
@@ -1567,7 +1596,7 @@ export default function TaskDetailsPage() {
                       !newLabelName.trim() ||
                       isAddingLabel
                     }
-                    className="h-8 rounded-md border border-zinc-200 px-3 text-xs text-zinc-700 transition hover:bg-zinc-50 disabled:opacity-40 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                    className="h-8 rounded-md border border-zinc-200 px-3 text-xs text-zinc-700 hover:bg-zinc-50 disabled:opacity-40 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
                   >
                     {isAddingLabel
                       ? "..."
@@ -1582,9 +1611,7 @@ export default function TaskDetailsPage() {
                 )}
               </section>
 
-              {/* =================================================
-                  RESOURCES
-              ================================================= */}
+              {/* RESOURCES */}
 
               <section className="mb-6">
                 <SectionHeading>
@@ -1593,17 +1620,14 @@ export default function TaskDetailsPage() {
 
                 <button
                   type="button"
-                  className="flex items-center gap-2 text-[11px] text-zinc-400 transition hover:text-zinc-700 dark:hover:text-zinc-200"
+                  className="flex items-center gap-2 text-[11px] text-zinc-400"
                 >
                   <Link2 className="h-3.5 w-3.5" />
-
                   Add document or link...
                 </button>
               </section>
 
-              {/* =================================================
-                  SUBTASKS
-              ================================================= */}
+              {/* SUBTASKS */}
 
               <section className="mb-6">
                 <div className="mb-3 flex items-center justify-between">
@@ -1615,8 +1639,14 @@ export default function TaskDetailsPage() {
                     </h2>
 
                     <span className="text-[10px] text-zinc-400">
-                      {completedSubtasks}/
-                      {task.subtasks.length}
+                      {
+                        completedSubtasks
+                      }
+                      /
+                      {
+                        task.subtasks
+                          .length
+                      }
                     </span>
                   </div>
 
@@ -1628,15 +1658,14 @@ export default function TaskDetailsPage() {
                           !current,
                       )
                     }
-                    className="flex items-center gap-1 rounded-md px-2 py-1 text-[10px] text-zinc-500 transition hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                    className="flex items-center gap-1 rounded-md px-2 py-1 text-[10px] text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800"
                   >
                     <Plus className="h-3 w-3" />
-
                     Add Subtask
                   </button>
                 </div>
 
-                {/* ADD SUBTASK */}
+                {/* ADD SUBTASK FORM */}
 
                 {isSubtaskInputOpen && (
                   <form
@@ -1650,9 +1679,7 @@ export default function TaskDetailsPage() {
                       value={
                         newSubtask
                       }
-                      onChange={(
-                        event,
-                      ) =>
+                      onChange={(event) =>
                         setNewSubtask(
                           event.target
                             .value,
@@ -1664,7 +1691,7 @@ export default function TaskDetailsPage() {
 
                     <div className="flex flex-wrap items-center gap-2">
 
-                      {/* NEW SUBTASK PRIORITY */}
+                      {/* CREATE PRIORITY */}
 
                       <CustomDropdown
                         open={
@@ -1672,9 +1699,7 @@ export default function TaskDetailsPage() {
                         }
                         onToggle={() => {
                           setOpenNewSubtaskPriority(
-                            (
-                              current,
-                            ) =>
+                            (current) =>
                               !current,
                           );
 
@@ -1694,13 +1719,11 @@ export default function TaskDetailsPage() {
                               }
                             />
 
-                            <span>
-                              {
-                                priorityLabels[
-                                  newSubtaskPriority
-                                ]
-                              }
-                            </span>
+                            {
+                              priorityLabels[
+                                newSubtaskPriority
+                              ]
+                            }
 
                             <ChevronDown className="ml-auto h-3 w-3 text-zinc-400" />
                           </button>
@@ -1717,7 +1740,11 @@ export default function TaskDetailsPage() {
                                 priority
                               }
                               type="button"
-                              onClick={() => {
+                              onMouseDown={(
+                                event,
+                              ) => {
+                                event.preventDefault();
+
                                 setNewSubtaskPriority(
                                   priority,
                                 );
@@ -1751,7 +1778,7 @@ export default function TaskDetailsPage() {
                         )}
                       </CustomDropdown>
 
-                      {/* NEW SUBTASK MEMBER */}
+                      {/* CREATE ASSIGNEE */}
 
                       <CustomDropdown
                         open={
@@ -1759,9 +1786,7 @@ export default function TaskDetailsPage() {
                         }
                         onToggle={() => {
                           setOpenNewSubtaskMember(
-                            (
-                              current,
-                            ) =>
+                            (current) =>
                               !current,
                           );
 
@@ -1779,13 +1804,10 @@ export default function TaskDetailsPage() {
 
                             <span className="truncate">
                               {workspaceMembers.find(
-                                (
-                                  member,
-                                ) =>
+                                (member) =>
                                   member.userId ===
                                   newSubtaskAssigneeId,
-                              )
-                                ?.user
+                              )?.user
                                 .name ||
                                 "Unassigned"}
                             </span>
@@ -1796,7 +1818,11 @@ export default function TaskDetailsPage() {
                       >
                         <button
                           type="button"
-                          onClick={() => {
+                          onMouseDown={(
+                            event,
+                          ) => {
+                            event.preventDefault();
+
                             setNewSubtaskAssigneeId(
                               "",
                             );
@@ -1821,7 +1847,11 @@ export default function TaskDetailsPage() {
                                 member.userId
                               }
                               type="button"
-                              onClick={() => {
+                              onMouseDown={(
+                                event,
+                              ) => {
+                                event.preventDefault();
+
                                 setNewSubtaskAssigneeId(
                                   member.userId,
                                 );
@@ -1863,15 +1893,13 @@ export default function TaskDetailsPage() {
                         value={
                           newSubtaskDueDate
                         }
-                        onChange={(
-                          event,
-                        ) =>
+                        onChange={(event) =>
                           setNewSubtaskDueDate(
                             event.target
                               .value,
                           )
                         }
-                        className="h-8 rounded-md border border-zinc-200 bg-white px-2 text-[11px] outline-none dark:border-zinc-700 dark:bg-zinc-950"
+                        className="h-8 rounded-md border border-zinc-200 bg-white px-2 text-[11px] dark:border-zinc-700 dark:bg-zinc-950"
                       />
 
                       <div className="ml-auto flex gap-2">
@@ -1882,7 +1910,7 @@ export default function TaskDetailsPage() {
                               false,
                             )
                           }
-                          className="h-8 rounded-md px-3 text-[11px] text-zinc-500 transition hover:bg-zinc-200 dark:hover:bg-zinc-800"
+                          className="h-8 rounded-md px-3 text-[11px] text-zinc-500 hover:bg-zinc-200 dark:hover:bg-zinc-800"
                         >
                           Cancel
                         </button>
@@ -1893,7 +1921,7 @@ export default function TaskDetailsPage() {
                             !newSubtask.trim() ||
                             isAddingSubtask
                           }
-                          className="h-8 rounded-md bg-zinc-900 px-3 text-[11px] font-medium text-white transition disabled:opacity-40 dark:bg-white dark:text-black"
+                          className="h-8 rounded-md bg-zinc-900 px-3 text-[11px] font-medium text-white disabled:opacity-40 dark:bg-white dark:text-black"
                         >
                           {isAddingSubtask
                             ? "Adding..."
@@ -1907,8 +1935,6 @@ export default function TaskDetailsPage() {
                 {/* SUBTASK TABLE */}
 
                 <div className="overflow-visible rounded-lg border border-zinc-200 dark:border-zinc-800">
-
-                  {/* TABLE HEADER */}
 
                   <div className="grid min-w-[650px] grid-cols-[minmax(0,1fr)_100px_125px_110px_40px] border-b border-zinc-200 bg-zinc-50 px-3 py-2 text-[10px] font-medium text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900">
                     <span>Task</span>
@@ -1938,7 +1964,12 @@ export default function TaskDetailsPage() {
                             className="border-b border-zinc-100 last:border-0 dark:border-zinc-800"
                           >
                             {isEditing ? (
+                              /* ============================
+                                 EDIT SUBTASK
+                              ============================ */
+
                               <div className="space-y-3 bg-zinc-50 p-3 dark:bg-zinc-900">
+
                                 <input
                                   value={
                                     editingSubtaskTitle
@@ -1987,16 +2018,28 @@ export default function TaskDetailsPage() {
                                           }
                                         />
 
-                                        {
-                                          priorityLabels[
-                                            editingSubtaskPriority
-                                          ]
-                                        }
+                                        <span
+                                          className={
+                                            priorityColors[
+                                              editingSubtaskPriority
+                                            ]
+                                          }
+                                        >
+                                          {
+                                            priorityLabels[
+                                              editingSubtaskPriority
+                                            ]
+                                          }
+                                        </span>
 
                                         <ChevronDown className="ml-auto h-3 w-3 text-zinc-400" />
                                       </button>
                                     }
                                   >
+                                    <DropdownTitle>
+                                      Priority
+                                    </DropdownTitle>
+
                                     {(
                                       Object.keys(
                                         priorityLabels,
@@ -2010,7 +2053,11 @@ export default function TaskDetailsPage() {
                                             priority
                                           }
                                           type="button"
-                                          onClick={() => {
+                                          onMouseDown={(
+                                            event,
+                                          ) => {
+                                            event.preventDefault();
+
                                             setEditingSubtaskPriority(
                                               priority,
                                             );
@@ -2028,11 +2075,19 @@ export default function TaskDetailsPage() {
                                               }
                                             />
 
-                                            {
-                                              priorityLabels[
-                                                priority
-                                              ]
-                                            }
+                                            <span
+                                              className={
+                                                priorityColors[
+                                                  priority
+                                                ]
+                                              }
+                                            >
+                                              {
+                                                priorityLabels[
+                                                  priority
+                                                ]
+                                              }
+                                            </span>
                                           </span>
 
                                           {editingSubtaskPriority ===
@@ -2077,8 +2132,7 @@ export default function TaskDetailsPage() {
                                             ) =>
                                               member.userId ===
                                               editingSubtaskAssigneeId,
-                                          )
-                                            ?.user
+                                          )?.user
                                             .name ||
                                             "Unassigned"}
                                         </span>
@@ -2089,7 +2143,11 @@ export default function TaskDetailsPage() {
                                   >
                                     <button
                                       type="button"
-                                      onClick={() => {
+                                      onMouseDown={(
+                                        event,
+                                      ) => {
+                                        event.preventDefault();
+
                                         setEditingSubtaskAssigneeId(
                                           "",
                                         );
@@ -2116,7 +2174,11 @@ export default function TaskDetailsPage() {
                                             member.userId
                                           }
                                           type="button"
-                                          onClick={() => {
+                                          onMouseDown={(
+                                            event,
+                                          ) => {
+                                            event.preventDefault();
+
                                             setEditingSubtaskAssigneeId(
                                               member.userId,
                                             );
@@ -2150,6 +2212,8 @@ export default function TaskDetailsPage() {
                                       ),
                                     )}
                                   </CustomDropdown>
+
+                                  {/* DATE */}
 
                                   <input
                                     type="date"
@@ -2199,6 +2263,10 @@ export default function TaskDetailsPage() {
                                 </div>
                               </div>
                             ) : (
+                              /* ============================
+                                 NORMAL SUBTASK
+                              ============================ */
+
                               <div className="grid min-w-[650px] grid-cols-[minmax(0,1fr)_100px_125px_110px_40px] items-center px-3 py-2.5 text-xs">
 
                                 {/* TASK */}
@@ -2319,8 +2387,7 @@ export default function TaskDetailsPage() {
                                           : subtask.id,
                                       )
                                     }
-                                    className="rounded p-1 text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
-                                    aria-label="Subtask actions"
+                                    className="rounded p-1 text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
                                   >
                                     <MoreHorizontal className="h-3.5 w-3.5" />
                                   </button>
@@ -2335,10 +2402,9 @@ export default function TaskDetailsPage() {
                                             subtask,
                                           )
                                         }
-                                        className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-[11px] text-zinc-700 transition hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                                        className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-[11px] text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800"
                                       >
                                         <Settings className="h-3.5 w-3.5 text-zinc-400" />
-
                                         Edit
                                       </button>
 
@@ -2349,10 +2415,9 @@ export default function TaskDetailsPage() {
                                             subtask.id,
                                           )
                                         }
-                                        className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-[11px] text-red-500 transition hover:bg-red-50 dark:hover:bg-red-950/30"
+                                        className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-[11px] text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30"
                                       >
                                         <Trash2 className="h-3.5 w-3.5" />
-
                                         Delete
                                       </button>
                                     </div>
@@ -2374,9 +2439,7 @@ export default function TaskDetailsPage() {
                 )}
               </section>
 
-              {/* =================================================
-                  UPDATES / COMMENTS
-              ================================================= */}
+              {/* COMMENTS */}
 
               <section>
                 <div className="mb-3 flex items-center gap-2">
@@ -2387,7 +2450,10 @@ export default function TaskDetailsPage() {
                   </h2>
 
                   <span className="text-[10px] text-zinc-400">
-                    {task.comments.length}
+                    {
+                      task.comments
+                        .length
+                    }
                   </span>
                 </div>
 
@@ -2420,7 +2486,7 @@ export default function TaskDetailsPage() {
 
                             <div className="min-w-0 flex-1">
                               <div className="flex flex-wrap items-center gap-2">
-                                <span className="text-xs font-medium text-zinc-800 dark:text-zinc-200">
+                                <span className="text-xs font-medium">
                                   {comment
                                     .user
                                     ?.name ||
@@ -2446,8 +2512,6 @@ export default function TaskDetailsPage() {
                     </div>
                   )}
 
-                  {/* COMMENT INPUT */}
-
                   <form
                     onSubmit={
                       handleAddComment
@@ -2458,46 +2522,22 @@ export default function TaskDetailsPage() {
                       value={
                         newComment
                       }
-                      onChange={(
-                        event,
-                      ) => {
+                      onChange={(event) =>
                         setNewComment(
                           event.target
                             .value,
-                        );
-
-                        setCommentError(
-                          "",
-                        );
-                      }}
-                      onKeyDown={(
-                        event,
-                      ) => {
-                        if (
-                          event.key ===
-                            "Enter" &&
-                          !event.shiftKey
-                        ) {
-                          event.preventDefault();
-
-                          if (
-                            newComment.trim() &&
-                            !isAddingComment
-                          ) {
-                            event.currentTarget.form?.requestSubmit();
-                          }
-                        }
-                      }}
+                        )
+                      }
                       placeholder="Add a comment..."
                       rows={3}
-                      className="w-full resize-none bg-transparent px-4 py-3 text-xs text-zinc-800 outline-none placeholder:text-zinc-400 dark:text-zinc-100"
+                      className="w-full resize-none bg-transparent px-4 py-3 text-xs outline-none"
                     />
 
                     <div className="flex items-center justify-between border-t border-zinc-100 px-3 py-2 dark:border-zinc-800">
                       <button
                         type="button"
                         disabled
-                        className="p-1.5 text-zinc-300 dark:text-zinc-700"
+                        className="p-1.5 text-zinc-300"
                       >
                         <Paperclip className="h-4 w-4" />
                       </button>
@@ -2508,7 +2548,7 @@ export default function TaskDetailsPage() {
                           !newComment.trim() ||
                           isAddingComment
                         }
-                        className="flex items-center gap-1.5 rounded-md bg-zinc-900 px-3 py-1.5 text-[10px] font-medium text-white transition disabled:opacity-40 dark:bg-white dark:text-black"
+                        className="flex items-center gap-1.5 rounded-md bg-zinc-900 px-3 py-1.5 text-[10px] font-medium text-white disabled:opacity-40 dark:bg-white dark:text-black"
                       >
                         <Send className="h-3 w-3" />
 
@@ -2528,15 +2568,10 @@ export default function TaskDetailsPage() {
               </section>
             </section>
 
-            {/* =================================================
-                RIGHT DETAILS
-            ================================================= */}
+            {/* RIGHT DETAILS */}
 
             <aside className="h-fit pt-4">
-
               <div className="overflow-visible rounded-xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
-
-                {/* DETAILS HEADER */}
 
                 <div className="flex items-center justify-between border-b border-zinc-200 px-4 py-3 dark:border-zinc-800">
                   <div className="flex items-center gap-2">
@@ -2547,12 +2582,7 @@ export default function TaskDetailsPage() {
                     </h2>
                   </div>
 
-                  <button
-                    type="button"
-                    className="rounded p-1 text-zinc-400 transition hover:bg-zinc-100 dark:hover:bg-zinc-800"
-                  >
-                    <Settings className="h-3.5 w-3.5" />
-                  </button>
+                  <Settings className="h-3.5 w-3.5 text-zinc-400" />
                 </div>
 
                 {/* STATUS */}
@@ -2580,18 +2610,7 @@ export default function TaskDetailsPage() {
                           task.status
                         ]
                       }
-                      color={
-                        task.status ===
-                        "COMPLETED"
-                          ? "text-emerald-500"
-                          : task.status ===
-                            "DOING"
-                            ? "text-blue-500"
-                            : task.status ===
-                              "ON_HOLD"
-                              ? "text-orange-500"
-                              : "text-zinc-600 dark:text-zinc-300"
-                      }
+                      color="text-zinc-600 dark:text-zinc-300"
                       onClick={() => {}}
                     />
                   }
@@ -2610,19 +2629,19 @@ export default function TaskDetailsPage() {
                         key={status}
                         type="button"
                         onClick={() =>
-                          handleUpdateTask({
-                            status,
-                          })
+                          handleUpdateTask(
+                            {
+                              status,
+                            },
+                          )
                         }
                         className="dropdown-item"
                       >
-                        <span>
-                          {
-                            statusLabels[
-                              status
-                            ]
-                          }
-                        </span>
+                        {
+                          statusLabels[
+                            status
+                          ]
+                        }
 
                         {task.status ===
                           status && (
@@ -2688,9 +2707,11 @@ export default function TaskDetailsPage() {
                         key={priority}
                         type="button"
                         onClick={() =>
-                          handleUpdateTask({
-                            priority,
-                          })
+                          handleUpdateTask(
+                            {
+                              priority,
+                            },
+                          )
                         }
                         className="dropdown-item"
                       >
@@ -2718,14 +2739,12 @@ export default function TaskDetailsPage() {
 
                         {task.priority ===
                           priority && (
-                          <Check className="h-3.5 w-3.5 text-zinc-800 dark:text-zinc-100" />
+                          <Check className="h-3.5 w-3.5 text-violet-600" />
                         )}
                       </button>
                     ),
                   )}
                 </CustomDropdown>
-
-                {/* MEMBERS */}
 
                 <DetailRow
                   icon={
@@ -2733,12 +2752,11 @@ export default function TaskDetailsPage() {
                   }
                   label="Members"
                   value={
-                    task.assignee?.name ||
+                    task.assignee
+                      ?.name ||
                     "Unassigned"
                   }
                 />
-
-                {/* DATES */}
 
                 <DetailRow
                   icon={
@@ -2761,8 +2779,6 @@ export default function TaskDetailsPage() {
                   }
                 />
 
-                {/* LABELS */}
-
                 <DetailRow
                   icon={
                     <Tag className="h-3.5 w-3.5" />
@@ -2773,8 +2789,6 @@ export default function TaskDetailsPage() {
                   )}
                 />
 
-                {/* TEAMS */}
-
                 <DetailRow
                   icon={
                     <User className="h-3.5 w-3.5" />
@@ -2783,22 +2797,19 @@ export default function TaskDetailsPage() {
                   value="Workspace"
                 />
 
-                {/* REPORTER */}
-
                 <DetailRow
                   icon={
                     <User className="h-3.5 w-3.5" />
                   }
                   label="Reporter"
                   value={
-                    task.creator?.name ||
+                    task.creator
+                      ?.name ||
                     "Unknown"
                   }
                 />
 
-                {/* =================================================
-                    UPDATES
-                ================================================= */}
+                {/* UPDATES */}
 
                 <div className="border-t border-zinc-200 dark:border-zinc-800">
                   <div className="flex items-center gap-2 px-4 py-3">
@@ -2880,7 +2891,10 @@ function CustomDropdown({
   align?: "left" | "right";
 }) {
   return (
-    <div className="relative">
+    <div
+      className="relative"
+      data-dropdown-root
+    >
       <div onClick={onToggle}>
         {trigger}
       </div>
@@ -3022,7 +3036,9 @@ function PriorityIcon({
 }) {
   return (
     <span
-      className={`flex items-end gap-[1px] ${priorityColors[priority]}`}
+      className={`flex items-end gap-[1px] ${
+        priorityColors[priority]
+      }`}
       aria-hidden="true"
     >
       <span
@@ -3076,15 +3092,13 @@ function formatDateForInput(
   const year =
     parsed.getFullYear();
 
-  const month =
-    String(
-      parsed.getMonth() + 1,
-    ).padStart(2, "0");
+  const month = String(
+    parsed.getMonth() + 1,
+  ).padStart(2, "0");
 
-  const day =
-    String(
-      parsed.getDate(),
-    ).padStart(2, "0");
+  const day = String(
+    parsed.getDate(),
+  ).padStart(2, "0");
 
   return `${year}-${month}-${day}`;
 }
